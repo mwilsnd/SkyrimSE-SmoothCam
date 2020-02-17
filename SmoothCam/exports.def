@@ -1,0 +1,4 @@
+LIBRARY SMOOTHCAM
+EXPORTS
+	SKSEPlugin_Query	@1
+	SKSEPlugin_Load		@2

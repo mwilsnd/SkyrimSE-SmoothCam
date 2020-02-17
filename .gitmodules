@@ -1,0 +1,18 @@
+[submodule "Deps/eternal"]
+	path = Deps/eternal
+	url = https://github.com/mapbox/eternal
+[submodule "Deps/glm"]
+	path = Deps/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Deps/PolyHook_2_0"]
+	path = Deps/PolyHook_2_0
+	url = https://github.com/stevemk14ebr/PolyHook_2_0.git
+[submodule "Deps/Detours"]
+	path = Deps/Detours
+	url = https://github.com/microsoft/Detours.git
+[submodule "Deps/skyrimui"]
+	path = Deps/skyrimui
+	url = https://github.com/Mardoxx/skyrimui.git
+[submodule "Deps/cereal"]
+	path = Deps/cereal
+	url = https://github.com/USCiLab/cereal.git
