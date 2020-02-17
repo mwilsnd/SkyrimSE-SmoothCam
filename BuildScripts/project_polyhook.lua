@@ -13,14 +13,14 @@ project "PolyHook2"
 	objdir( loc.. "/bin-obj/".. outputDir.. "/%{prj.name}" )
 
 	files {
-		loc.. "/headers/Virtuals/VTableSwapHook.hpp",
-		loc.. "/headers/Virtuals/VFuncSwapHook.hpp",
-		loc.. "/headers/Enums.hpp",
-		loc.. "/header/IHook.hpp",
-		loc.. "/header/MemProtector.hpp",
-		loc.. "/header/Misc.hpp",
-		loc.. "/header/Instruction.hpp",
-		loc.. "/header/ADisassembler.hpp",
+		loc.. "/polyhook2/Virtuals/VTableSwapHook.hpp",
+		loc.. "/polyhook2/Virtuals/VFuncSwapHook.hpp",
+		loc.. "/polyhook2/Enums.hpp",
+		loc.. "/polyhook2/IHook.hpp",
+		loc.. "/polyhook2/MemProtector.hpp",
+		loc.. "/polyhook2/Misc.hpp",
+		loc.. "/polyhook2/Instruction.hpp",
+		loc.. "/polyhook2/ADisassembler.hpp",
 
 		loc.. "/sources/VTableSwapHook.cpp",
 		loc.. "/sources/VFuncSwapHook.cpp",

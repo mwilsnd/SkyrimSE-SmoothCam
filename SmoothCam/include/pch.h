@@ -65,7 +65,7 @@
     
 // @TODO: Use Polyhook2's function detouring instead, drop microsoft detours
 #   include <../Detours/include/detours.h>
-#   include <headers/Virtuals/VFuncSwapHook.hpp>
+#   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 #   include <mapbox/eternal.hpp>
 #   include <cereal/cereal.hpp>
 #   include <cereal/archives/json.hpp>
