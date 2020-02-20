@@ -36,7 +36,7 @@ void Camera::State::BaseCameraState::UpdateCameraPosition(const glm::vec3& raySt
 	}
 }
 
-void Camera::State::BaseCameraState::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
+void Camera::State::BaseCameraState::UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
 	if (camera->config->enable3DCrosshair)
 		camera->UpdateCrosshairPosition(player, playerCamera);
 	else
@@ -54,7 +54,11 @@ glm::vec2 Camera::State::BaseCameraState::GetCameraRotation(const CorrectedPlaye
 	};
 }
 
-glm::vec3 Camera::State::BaseCameraState::GetCameraLocalPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const noexcept {
+void Camera::State::BaseCameraState::SetCrosshairEnabled(bool enabled) const {
+	camera->SetCrosshairEnabled(enabled);
+}
+
+glm::vec3 Camera::State::BaseCameraState::GetCameraLocalPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const noexcept {
 	return camera->GetCurrentCameraOffset(player, playerCamera);
 }
 
@@ -62,11 +66,14 @@ glm::vec3 Camera::State::BaseCameraState::GetCameraWorldPosition(const PlayerCha
 	return camera->GetCurrentCameraTargetWorldPosition(player, playerCamera);
 }
 
-glm::vec3 Camera::State::BaseCameraState::GetInterpolatedPosition(const glm::vec3& pos, const float distance) const {
-	if (!GetConfig()->enableInterp) {
+glm::vec3 Camera::State::BaseCameraState::GetInterpolatedPosition(PlayerCharacter* player, const glm::vec3& pos, const float distance) const {
+	if (!GetConfig()->enableInterp)
 		return pos;
 
-	} else if (GetConfig()->separateZInterp) {
+	if (!camera->IsInterpAllowed(player))
+		return pos;
+
+	if (GetConfig()->separateZInterp) {
 		glm::vec3 curPos = GetLastCameraPosition();
 		auto xy = mmath::Interpolate<glm::vec3, float>(
 			curPos, pos, camera->GetCurrentSmoothingScalar(distance)
@@ -95,6 +102,10 @@ bool Camera::State::BaseCameraState::IsPlayerMoving(const PlayerCharacter* playe
 
 bool Camera::State::BaseCameraState::IsWeaponDrawn(const PlayerCharacter* player) const noexcept {
 	return camera->IsWeaponDrawn(player);
+}
+
+bool Camera::State::BaseCameraState::IsMeleeWeaponDrawn(PlayerCharacter* player) const noexcept {
+	return camera->IsMeleeWeaponDrawn(player);
 }
 
 const Config::UserConfig* const Camera::State::BaseCameraState::GetConfig() const noexcept {

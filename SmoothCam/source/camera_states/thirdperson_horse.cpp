@@ -2,11 +2,6 @@
 #include "camera_states/thirdperson_horse.h"
 #include "camera.h"
 
-/*
- * The thirdperson horse state is currently exactly the same as thirdperson combat.
- * I might end up doing some slightly different logic here in the future so for now this state will hang around.
- */
-
 Camera::State::ThirdpersonHorseState::ThirdpersonHorseState(Camera::SmoothCamera* camera) noexcept : BaseCameraState(camera) {
 
 }
@@ -19,7 +14,7 @@ void Camera::State::ThirdpersonHorseState::OnEnd(const PlayerCharacter* player, 
 	SetCrosshairPosition({ 0, 0 });
 }
 
-void Camera::State::ThirdpersonHorseState::Update(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
+void Camera::State::ThirdpersonHorseState::Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
 	// Get the current pitch and yaw values the game has set for the camera.
 	const auto cameraAngles = GetCameraRotation(camera);
 	// Get our computed local-space xyz offset.
@@ -58,7 +53,7 @@ void Camera::State::ThirdpersonHorseState::Update(const PlayerCharacter* player,
 	// Add the final local space transformation to the player postion
 	const auto finalPos = worldTarget + glm::vec3(translated);
 	// Now lerp it based on camera distance to player position
-	const auto lerped = GetInterpolatedPosition(finalPos, glm::length(finalPos - worldTarget));
+	const auto lerped = GetInterpolatedPosition(player, finalPos, glm::length(finalPos - worldTarget));
 
 	// Cast our ray and update the camera position
 	UpdateCameraPosition(start, lerped);
@@ -68,4 +63,21 @@ void Camera::State::ThirdpersonHorseState::Update(const PlayerCharacter* player,
 		UpdateCrosshairPosition(player, camera);
 	else
 		SetCrosshairPosition({ 0, 0 });
+
+	// Update crosshair
+	if (IsWeaponDrawn(player)) {
+		if (GetConfig()->hideCrosshairMeleeCombat && IsMeleeWeaponDrawn(player)) {
+			SetCrosshairEnabled(false);
+		} else {
+			SetCrosshairEnabled(true);
+			UpdateCrosshairPosition(player, camera);
+		}
+	} else {
+		if (GetConfig()->hideNonCombatCrosshair) {
+			SetCrosshairEnabled(false);
+		} else {
+			SetCrosshairEnabled(true);
+			SetCrosshairPosition({ 0, 0 });
+		}
+	}
 }

@@ -25,7 +25,7 @@ project "skse64"
 	filter "system:windows"
 		systemversion "latest"
 		debugdir( "../bin/".. outputDir.. "/%{prj.name}" )
-		vectorextensions "AVX"
+		vectorextensions( _SIMD_MODE )
 		characterset "MBCS"
 		intrinsics "On"
 		fpu "Hardware"

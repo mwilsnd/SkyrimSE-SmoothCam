@@ -2,7 +2,8 @@
 #include "detours.h"
 #include "camera.h"
 
-static PLH::VFuncMap origVFuncs;
+static PLH::VFuncMap origVFuncs_PlayerInput;
+static PLH::VFuncMap origVFuncs_MenuOpenClose;
 std::weak_ptr<Camera::SmoothCamera> g_theCamera;
 
 // This detour was placed just so I could follow code execution through the debugger
@@ -35,7 +36,20 @@ uintptr_t __fastcall mPOV1(PlayerInputHandler* pThis, InputEvent* input) {
 				break;
 		}
 	}
-	return reinterpret_cast<POV1>(origVFuncs[1])(pThis, input);
+	return reinterpret_cast<POV1>(origVFuncs_PlayerInput[1])(pThis, input);
+}
+
+typedef EventResult(__fastcall* MenuOpenCloseHandler)(uintptr_t pThis, MenuOpenCloseEvent* ev, EventDispatcher<MenuOpenCloseEvent>* dispatcher);
+EventResult __fastcall mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent* ev, EventDispatcher<MenuOpenCloseEvent>* dispatcher) {
+	if (pThis == (uint64_t)&(*g_thePlayer)->menuOpenCloseEvent) {
+		if (ev->menuName != nullptr && strcmp(ev->menuName, "Dialogue Menu") == 0) {
+			std::shared_ptr<Camera::SmoothCamera> lockedPtr;
+			if (!g_theCamera.expired() && (lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)) {
+				lockedPtr->OnDialogMenuChanged(ev);
+			}
+		}
+	}
+	return reinterpret_cast<MenuOpenCloseHandler>(origVFuncs_MenuOpenClose[1])(pThis, ev, dispatcher);
 }
 
 // This method calls the method that then calls update camera
@@ -78,20 +92,32 @@ bool Detours::Attach(std::shared_ptr<Camera::SmoothCamera> theCamera) {
 		FatalError(L"Failed to place detour on target update camera function, this error is fatal.");
 	}
 	
-	PLH::VFuncMap redirect = {
-		{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mPOV1) },
-	};
-
 	// Any PlayerInputHandler instance will do
 	// Main reason for doing a vtable detour is just because its easier (to me anyways),
 	// and because we only get called when the game would normally call this.
-	PLH::VFuncSwapHook hook(
+	PLH::VFuncSwapHook playerInputHooks(
 		(uint64_t)PlayerControls::GetSingleton()->togglePOVHandler,
-		redirect,
-		&origVFuncs
+		{
+			{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mPOV1) },
+		},
+		&origVFuncs_PlayerInput
 	);
 
-	if (!hook.hook()) {
+	if (!playerInputHooks.hook()) {
+		_ERROR("Failed to place detour on target virtual function, this error is fatal.");
+		FatalError(L"Failed to place detour on target virtual function, this error is fatal."); 
+	}
+
+	// Intercept menu open/close events so we can see when the player is talking to another NPC
+	PLH::VFuncSwapHook menuOpenCloseHooks(
+		(uint64_t)&(*g_thePlayer)->menuOpenCloseEvent,
+		{
+			{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mMenuOpenCloseHandler) },
+		},
+		&origVFuncs_MenuOpenClose
+	);
+
+	if (!menuOpenCloseHooks.hook()) {
 		_ERROR("Failed to place detour on target virtual function, this error is fatal.");
 		FatalError(L"Failed to place detour on target virtual function, this error is fatal."); 
 	}

@@ -100,7 +100,7 @@ namespace Camera {
 	});
 #endif
 
-	class SmoothCamera /*: public std::enable_shared_from_this<SmoothCamera>*/ {
+	class SmoothCamera {
 		public:
 			SmoothCamera() noexcept;
 			SmoothCamera(const SmoothCamera&) = delete;
@@ -111,9 +111,11 @@ namespace Camera {
 
 		public:
 			// Selects the correct update method and positions the camera
-			void UpdateCamera(const PlayerCharacter* player, CorrectedPlayerCamera* camera);
-			// Called when the player toggle's the POV
+			void UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera);
+			// Called when the player toggles the POV
 			void OnTogglePOV(const ButtonEvent* ev) noexcept;
+			// Called when the dialog menu is shown or hidden
+			void OnDialogMenuChanged(const MenuOpenCloseEvent* const ev) noexcept;
 
 		private:
 			double GetTime() const noexcept;
@@ -159,6 +161,14 @@ namespace Camera {
 
 			/// Player action states
 			const bool IsWeaponDrawn(const PlayerCharacter* player) const noexcept;
+			// Get an equipped weapon
+			const TESObjectWEAP* GetEquippedWeapon(PlayerCharacter* player, bool leftHand = false) const noexcept;
+			// Returns true if the player has a melee weapon equiped
+			const bool IsMeleeWeaponDrawn(PlayerCharacter* player) const noexcept;
+			// Returns true if the player has magic drawn
+			const bool IsMagicDrawn(PlayerCharacter* player) const noexcept;
+			// Returns true if the player has a ranged weapon drawn
+			const bool IsRangedWeaponDrawn(PlayerCharacter* player) const noexcept;
 			// Returns true if the player is sneaking
 			const bool IsSneaking(const PlayerCharacter* player) const noexcept;
 			// Returns true if the player is sprinting
@@ -191,7 +201,7 @@ namespace Camera {
 			void OnCameraActionStateTransition(const PlayerCharacter* player, const CameraActionState newState,
 				const CameraActionState oldState) const noexcept;
 #endif
-			// Triggers when the camera state changes, for debugging
+			// Triggers when the camera state changes
 			void OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera, const CameraState newState,
 				const CameraState oldState) const;
 
@@ -199,23 +209,32 @@ namespace Camera {
 			/// Camera position calculations
 			// Returns the zoom value set from the given camera state
 			float GetCurrentCameraZoom(const CorrectedPlayerCamera* camera, const CameraState currentState) const noexcept;
+			// Returns an offset group for the current player movement state
+			const Config::OffsetGroup GetOffsetForState(const CameraActionState state) const noexcept;
+			// Selects the right offset from an offset group for the player's weapon state
+			float GetActiveWeaponStateUpOffset(PlayerCharacter* player, const Config::OffsetGroup& group) const noexcept;
+			// Selects the right offset from an offset group for the player's weapon state
+			float GetActiveWeaponStateSideOffset(PlayerCharacter* player, const Config::OffsetGroup& group) const noexcept;
 			// Returns the camera height for the current player state
-			float GetCurrentCameraHeight(const PlayerCharacter* player) const noexcept;
+			float GetCurrentCameraHeight(PlayerCharacter* player) const noexcept;
 			// Returns the ideal camera distance for the current zoom level
 			float GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the camera side offset for the current player state
-			float GetCurrentCameraSideOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
+			float GetCurrentCameraSideOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the full local-space camera offset for the current player state
-			glm::vec3 GetCurrentCameraOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
+			glm::vec3 GetCurrentCameraOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the full world-space camera target postion for the current player state
 			glm::vec3 GetCurrentCameraTargetWorldPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const;
 			// Returns the current smoothing scalar to use for the given distance to the player
 			float GetCurrentSmoothingScalar(const float distance, bool zScalar = false) const;
+			// Returns true if interpolation is allowed in the current state
+			bool IsInterpAllowed(PlayerCharacter* player) const noexcept;
 
 			/// Crosshair stuff
 			// Updates the screen position of the crosshair for correct aiming
-			void UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const;
+			void UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const;
 			void SetCrosshairPosition(const glm::vec2& pos) const;
+			void SetCrosshairEnabled(bool enabled) const;
 
 			/// Camera getters
 			// Returns the camera's yaw
@@ -239,6 +258,7 @@ namespace Camera {
 			bool firstFrame = false;
 			bool povIsThird = false;
 			bool povWasPressed = false;
+			bool dialogMenuOpen = false;
 
 			double curFrame = 0.0;
 			double lastFrame = 0.0;

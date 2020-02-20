@@ -8,8 +8,26 @@ newoption {
 	}
 }
 
+newoption {
+	trigger = "INTRIN",
+	value = "ON",
+	description = "Enable use of hardware SIMD intrinsics.",
+	allowed = {
+		{ "ON", "Use SIMD instructions" },
+		{ "OFF", "Disable SIMD instructions" },
+	}
+}
+
 if not _OPTIONS["VS_PLATFORM"] then
 	return error( "No visual studio platform selected, please set --VS_PLATFORM to vs2017 or vs2019" )
+end
+
+if _OPTIONS["INTRIN"] == "ON" then
+	_SIMD_MODE = "AVX"
+	print "Using AVX instructions"
+else
+	_SIMD_MODE = "SSE"
+	print "Building for old CPUs"
 end
 
 newaction {
@@ -20,22 +38,11 @@ newaction {
 			print( "Checking for command line tools..." )
 		term.popColor()
 
-		local found_git = false
 		local found_7z = false
 		for str in os.getenv( "PATH" ):gmatch( "([^;]+)" ) do
-			if str:find("git\\cmd") ~= nil then
-				found_git = true
-			end
 			if str:find("7-Zip") ~= nil then
 				found_7z = true
-			end			
-		end
-
-		if not found_git then
-			term.pushColor( term.errorColor )
-				print( "git not found! Please install git for windows!" )
-			term.popColor()
-			return
+			end
 		end
 
 		if not found_7z then
@@ -134,7 +141,7 @@ project "SmoothCam"
 	filter "system:windows"
 		systemversion "latest"
 		debugdir( "../bin/".. outputDir.. "/%{prj.name}" )
-		vectorextensions "AVX"
+		vectorextensions( _SIMD_MODE )
 		characterset "Unicode"
 		intrinsics "On"
 		fpu "Hardware"
@@ -192,7 +199,7 @@ project "SmoothCam"
 			"common_skse64.lib",
 			"skse64_common.lib",
 			"skse64.lib",
-			
+
 			"detours.lib",
 			"PolyHook2.lib",
 		}

@@ -18,7 +18,7 @@ void Camera::State::ThirdpersonState::OnEnd(const PlayerCharacter* player, const
 
 }
 
-void Camera::State::ThirdpersonState::Update(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
+void Camera::State::ThirdpersonState::Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
 	// Get the current pitch and yaw values the game has set for the camera.
 	const auto cameraAngles = GetCameraRotation(camera);
 	// Get our computed local-space xyz offset.
@@ -57,8 +57,11 @@ void Camera::State::ThirdpersonState::Update(const PlayerCharacter* player, cons
 	// Add the final local space transformation to the player postion
 	const auto finalPos = worldTarget + glm::vec3(translated);
 	// Now lerp it based on camera distance to player position
-	const auto lerped = GetInterpolatedPosition(finalPos, glm::length(finalPos - worldTarget));
+	const auto lerped = GetInterpolatedPosition(player, finalPos, glm::length(finalPos - worldTarget));
 
 	// Cast our ray and update the camera position
 	UpdateCameraPosition(start, lerped);
+
+	// Update crosshair visibility
+	SetCrosshairEnabled(!GetConfig()->hideNonCombatCrosshair);
 }

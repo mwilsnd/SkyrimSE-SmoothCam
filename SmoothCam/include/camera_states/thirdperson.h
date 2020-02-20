@@ -15,7 +15,7 @@ namespace Camera {
 			public:
 				virtual void OnBegin(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
 				virtual void OnEnd(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
-				virtual void Update(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
+				virtual void Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
 		};
 	}
 }

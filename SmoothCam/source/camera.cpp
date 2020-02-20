@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "camera.h"
 
-using namespace mmath;
-
 Camera::SmoothCamera::SmoothCamera() noexcept : config(Config::GetCurrentConfig()) {
 	cameraStates[static_cast<size_t>(CameraState::ThirdPerson)] =
 		std::move(std::make_unique<State::ThirdpersonState>(this));
@@ -18,6 +16,10 @@ void Camera::SmoothCamera::OnTogglePOV(const ButtonEvent* ev) noexcept {
 	povWasPressed = true;
 }
 
+void Camera::SmoothCamera::OnDialogMenuChanged(const MenuOpenCloseEvent* const ev) noexcept {
+	dialogMenuOpen = ev->opening;
+}
+
 double Camera::SmoothCamera::GetTime() const noexcept {
 	LARGE_INTEGER f, i;
 	if (QueryPerformanceCounter(&i) && QueryPerformanceFrequency(&f)) {
@@ -28,13 +30,15 @@ double Camera::SmoothCamera::GetTime() const noexcept {
 }
 
 float Camera::SmoothCamera::GetFrameDelta() const noexcept {
-	return glm::max(static_cast<float>(curFrame - lastFrame), 0.0001f); // Prevent any "accidents" during the inital frame
+	// Prevent any "accidents" during the inital frame by clamping above 0
+	// @Note: This value might've been too large before, reduced one more decimal place
+	return glm::max(static_cast<float>(curFrame - lastFrame), 0.00001f);
 }
 
 #pragma region Player flags
 // Returns the bits for player->actorState->flags04 which appear to convey movement info
 const std::bitset<32> Camera::SmoothCamera::GetPlayerMovementBits(const PlayerCharacter* player) const noexcept {
-	const auto bits = std::bitset<32>(static_cast<uint64_t>(player->actorState.flags04));
+	const auto bits = std::bitset<32>(player->actorState.flags04);
 #ifdef _DEBUG
 	// Just to see what actions end up setting these unknown bits
 	for (int i = 0; i < 32; i++) {
@@ -51,7 +55,7 @@ const std::bitset<32> Camera::SmoothCamera::GetPlayerMovementBits(const PlayerCh
 
 // Returns the bits for player->actorState->flags08 which appear to convey action info
 const std::bitset<32> Camera::SmoothCamera::GetPlayerActionBits(const PlayerCharacter* player) const noexcept {
-	const auto bits = std::bitset<32>(static_cast<uint64_t>(player->actorState.flags08));
+	const auto bits = std::bitset<32>(player->actorState.flags08);
 #ifdef _DEBUG
 	// Just to see what actions end up setting these unknown bits
 	for (int i = 0; i < 32; i++) {
@@ -154,6 +158,106 @@ const bool Camera::SmoothCamera::UpdateCameraPOVState(const PlayerCharacter* pla
 const bool Camera::SmoothCamera::IsWeaponDrawn(const PlayerCharacter* player) const noexcept {
 	const auto bits = GetPlayerActionBits(player);
 	return bits[5] && bits[6];
+}
+
+// Get an equipped weapon
+const TESObjectWEAP* Camera::SmoothCamera::GetEquippedWeapon(PlayerCharacter* player, bool leftHand) const noexcept {
+	auto value = player->GetEquippedObject(player);
+	if (!value || !value->IsWeapon()) return nullptr;
+	return reinterpret_cast<TESObjectWEAP*>(value);
+}
+
+// Returns true if the player has a melee weapon equiped
+const bool Camera::SmoothCamera::IsMeleeWeaponDrawn(PlayerCharacter* player) const noexcept {
+	if (!IsWeaponDrawn(player)) return false;
+	const auto right = GetEquippedWeapon(player);
+	const auto left = GetEquippedWeapon(player, true);
+
+	// Emchanted weapons are considered spells
+	if (!right && !left && !IsMagicDrawn(player) && !IsRangedWeaponDrawn(player))
+		return true;
+
+	if (right) {
+		if (right->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
+			right->gameData.type != TESObjectWEAP::GameData::kType_Staff &&
+			right->gameData.type != TESObjectWEAP::GameData::kType_CrossBow &&
+			right->gameData.type != TESObjectWEAP::GameData::kType_Bow2 &&
+			right->gameData.type != TESObjectWEAP::GameData::kType_Staff2 &&
+			right->gameData.type != TESObjectWEAP::GameData::kType_CBow)
+		{
+			return true;
+		}
+	}
+
+	if (left) {
+		if (left->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
+			left->gameData.type != TESObjectWEAP::GameData::kType_Staff &&
+			left->gameData.type != TESObjectWEAP::GameData::kType_CrossBow &&
+			left->gameData.type != TESObjectWEAP::GameData::kType_Bow2 &&
+			left->gameData.type != TESObjectWEAP::GameData::kType_Staff2 &&
+			left->gameData.type != TESObjectWEAP::GameData::kType_CBow)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// Returns true if the player has magic drawn
+const bool Camera::SmoothCamera::IsMagicDrawn(PlayerCharacter* player) const noexcept {
+	if (!IsWeaponDrawn(player)) return false;
+
+	EnchantmentItem* leftWep;
+	if (player->leftHandSpell != nullptr)
+		leftWep = DYNAMIC_CAST(player->leftHandSpell, TESForm, EnchantmentItem);
+
+	if (player->leftHandSpell != nullptr && leftWep == nullptr) {
+		return true;
+	}
+
+	EnchantmentItem* rightWep;
+	if (player->rightHandSpell != nullptr)
+		rightWep = DYNAMIC_CAST(player->rightHandSpell, TESForm, EnchantmentItem);
+
+	if (player->rightHandSpell != nullptr && rightWep == nullptr) {
+		return true;
+	}
+
+	return false;
+}
+
+// Returns true if the player has a ranged weapon drawn
+const bool Camera::SmoothCamera::IsRangedWeaponDrawn(PlayerCharacter* player) const noexcept {
+	if (!IsWeaponDrawn(player)) return false;
+	const auto right = GetEquippedWeapon(player);
+	const auto left = GetEquippedWeapon(player, true);
+
+	if (right) {
+		if (right->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
+			right->gameData.type == TESObjectWEAP::GameData::kType_Staff ||
+			right->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
+			right->gameData.type == TESObjectWEAP::GameData::kType_Bow2 ||
+			right->gameData.type == TESObjectWEAP::GameData::kType_Staff2 ||
+			right->gameData.type == TESObjectWEAP::GameData::kType_CBow)
+		{
+			return true;
+		}
+	}
+
+	if (left) {
+		if (left->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
+			left->gameData.type == TESObjectWEAP::GameData::kType_Staff ||
+			left->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
+			left->gameData.type == TESObjectWEAP::GameData::kType_Bow2 ||
+			left->gameData.type == TESObjectWEAP::GameData::kType_Staff2 ||
+			left->gameData.type == TESObjectWEAP::GameData::kType_CBow)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // Returns true if the player is sneaking
@@ -389,7 +493,7 @@ void Camera::SmoothCamera::OnCameraActionStateTransition(const PlayerCharacter* 
 }
 #endif
 
-// Triggers when the camera state changes, for debugging
+// Triggers when the camera state changes
 void Camera::SmoothCamera::OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 	const CameraState newState, const CameraState oldState) const
 {
@@ -475,50 +579,99 @@ float Camera::SmoothCamera::GetCurrentCameraZoom(const CorrectedPlayerCamera* ca
 	}
 }
 
+// Returns an offset group for the current player movement state
+const Config::OffsetGroup Camera::SmoothCamera::GetOffsetForState(const CameraActionState state) const noexcept {
+	switch (state) {
+		case CameraActionState::DisMounting: {
+			return config->standing; // Better when dismounting
+		}
+		case CameraActionState::Sleeping: {
+			return config->sitting;
+		}
+		case CameraActionState::Sitting: {
+			return config->sitting;
+		}
+		case CameraActionState::Sneaking: {
+			return config->sneaking;
+		}
+		case CameraActionState::Aiming: {
+			return config->bowAim;
+		}
+		case CameraActionState::Swimming: {
+			return config->swimming;
+		}
+		case CameraActionState::Sprinting: {
+			return config->sprinting;
+		}
+		case CameraActionState::Walking: {
+			return config->walking;
+		}
+		case CameraActionState::Running: {
+			return config->running;
+		}
+		case CameraActionState::Standing: {
+			return config->standing;
+		}
+		default: {
+			return config->standing;
+		}
+	}
+}
+
+// Selects the right offset from an offset group for the player's weapon state
+float Camera::SmoothCamera::GetActiveWeaponStateUpOffset(PlayerCharacter* player, const Config::OffsetGroup& group) const noexcept {
+	if (!IsWeaponDrawn(player)) return group.upOffset;
+	if (IsRangedWeaponDrawn(player)) {
+		return group.combatRangedUpOffset;
+	}
+	if (IsMagicDrawn(player)) {
+		return group.combatMagicUpOffset;
+	}
+	return group.combatMeleeUpOffset;
+}
+
+// Selects the right offset from an offset group for the player's weapon state
+float Camera::SmoothCamera::GetActiveWeaponStateSideOffset(PlayerCharacter* player, const Config::OffsetGroup& group) const noexcept {
+	if (!IsWeaponDrawn(player)) return group.sideOffset;
+	if (IsRangedWeaponDrawn(player)) {
+		return group.combatRangedSideOffset;
+	}
+	if (IsMagicDrawn(player)) {
+		return group.combatMagicSideOffset;
+	}
+	return group.combatMeleeSideOffset;
+}
+
 // Returns the camera height for the current player state
-float Camera::SmoothCamera::GetCurrentCameraHeight(const PlayerCharacter* player) const noexcept {
+float Camera::SmoothCamera::GetCurrentCameraHeight(PlayerCharacter* player) const noexcept {
 	switch (currentState) {
 		case CameraState::Horseback: {
 			if (IsBowDrawn(player)) {
-				return config->bowAimHorseUpOffset;
+				return config->bowAim.horseUpOffset;
 			} else {
-				return config->horsebackUpOffset;
+				return GetActiveWeaponStateUpOffset(player, config->horseback);
 			}
 		}
 		default:
 			break;
 	}
 
+	const auto ofs = GetOffsetForState(currentActionState);
+
 	switch (currentActionState) {
-		case CameraActionState::DisMounting: {
-			return config->standingUpOffset; // Better when dismounting
-		}
-		case CameraActionState::Sleeping: {
-			return config->sittingUpOffset;
-		}
-		case CameraActionState::Sitting: {
-			return config->sittingUpOffset;
-		}
-		case CameraActionState::Sneaking: {
-			return IsWeaponDrawn(player) ? config->sneakingCombatUpOffset : config->sneakingUpOffset;
-		}
-		case CameraActionState::Aiming: {
-			return config->bowAimUpOffset;
-		}
+		case CameraActionState::DisMounting:
+		case CameraActionState::Sleeping:
+		case CameraActionState::Sitting:
+		case CameraActionState::Aiming:
 		case CameraActionState::Swimming: {
-			return config->swimmingUpOffset;
+			return ofs.upOffset;
 		}
-		case CameraActionState::Sprinting: {
-			return IsWeaponDrawn(player) ? config->sprintingCombatUpOffset : config->sprintingUpOffset;
-		}
-		case CameraActionState::Walking: {
-			return IsWeaponDrawn(player) ? config->walkingCombatUpOffset : config->walkingUpOffset;
-		}
-		case CameraActionState::Running: {
-			return IsWeaponDrawn(player) ? config->runningCombatUpOffset : config->runningUpOffset;
-		}
+		case CameraActionState::Sneaking:
+		case CameraActionState::Sprinting:
+		case CameraActionState::Walking:
+		case CameraActionState::Running:
 		case CameraActionState::Standing: {
-			return IsWeaponDrawn(player) ? config->standingCombatUpOffset : config->standingUpOffset;
+			return GetActiveWeaponStateUpOffset(player, ofs);
 		}
 		default: {
 			break;
@@ -528,49 +681,35 @@ float Camera::SmoothCamera::GetCurrentCameraHeight(const PlayerCharacter* player
 }
 
 // Returns the camera side offset for the current player state
-float Camera::SmoothCamera::GetCurrentCameraSideOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept {
+float Camera::SmoothCamera::GetCurrentCameraSideOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept {
 	switch (currentState) {
 		case CameraState::Horseback: {
 			if (IsBowDrawn(player)) {
-				return config->bowAimHorseSideOffset;
+				return config->bowAim.horseSideOffset;
 			} else {
-				return config->horsebackSideOffset;
+				return GetActiveWeaponStateSideOffset(player, config->horseback);
 			}
 		}
 		default:
 			break;
 	}
+
+	const auto ofs = GetOffsetForState(currentActionState);
 	
 	switch (currentActionState) {
-		case CameraActionState::DisMounting: {
-			return config->standingSideOffset; // Better when dismounting
-		}
-		case CameraActionState::Sleeping: {
-			return config->sittingSideOffset;
-		}
-		case CameraActionState::Sitting: {
-			return config->sittingSideOffset;
-		}
-		case CameraActionState::Sneaking: {
-			return IsWeaponDrawn(player) ? config->sneakingCombatSideOffset : config->sneakingSideOffset;
-		}
-		case CameraActionState::Aiming: {
-			return config->bowAimSideOffset;
-		}
+		case CameraActionState::DisMounting:
+		case CameraActionState::Sleeping:
+		case CameraActionState::Sitting:
+		case CameraActionState::Aiming:
 		case CameraActionState::Swimming: {
-			return config->swimmingSideOffset;
+			return ofs.sideOffset;
 		}
-		case CameraActionState::Sprinting: {
-			return IsWeaponDrawn(player) ? config->sprintingCombatSideOffset : config->sprintingSideOffset;
-		}
-		case CameraActionState::Walking: {
-			return IsWeaponDrawn(player) ? config->walkingCombatSideOffset : config->walkingSideOffset;
-		}
-		case CameraActionState::Running: {
-			return IsWeaponDrawn(player) ? config->runningCombatSideOffset : config->runningSideOffset;
-		}
+		case CameraActionState::Sneaking:
+		case CameraActionState::Sprinting:
+		case CameraActionState::Walking:
+		case CameraActionState::Running:
 		case CameraActionState::Standing: {
-			return IsWeaponDrawn(player) ? config->standingCombatSideOffset : config->standingSideOffset;
+			return GetActiveWeaponStateSideOffset(player, ofs);
 		}
 		default: {
 			break;
@@ -585,7 +724,7 @@ float Camera::SmoothCamera::GetCurrentCameraDistance(const CorrectedPlayerCamera
 }
 
 // Returns the full local-space camera offset for the current player state
-glm::vec3 Camera::SmoothCamera::GetCurrentCameraOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept {
+glm::vec3 Camera::SmoothCamera::GetCurrentCameraOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept {
 	return {
 		GetCurrentCameraSideOffset(player, camera),
 		GetCurrentCameraDistance(camera),
@@ -638,9 +777,13 @@ float Camera::SmoothCamera::GetCurrentSmoothingScalar(const float distance, bool
 		scalarMethod = config->currentScalar;
 	}
 
-	const auto mul = -fps * glm::log2(1.0f - remapped);
-	interpValue = glm::clamp(1.0f - glm::exp2(-mul * delta), 0.0f, 1.0f);
-	
+	if (!config->disableDeltaTime) {
+		const auto mul = -fps * glm::log2(1.0f - remapped);
+		interpValue = glm::clamp(1.0f - glm::exp2(-mul * delta), 0.0f, 1.0f);
+	} else {
+		interpValue = remapped;
+	}
+
 	switch (scalarMethod) {
 		case Config::ScalarMethods::LINEAR: {
 			scalar = glm::linearInterpolation(interpValue);
@@ -738,63 +881,100 @@ float Camera::SmoothCamera::GetCurrentSmoothingScalar(const float distance, bool
 
 	return scalar;
 }
+
+// Returns true if interpolation is allowed in the current state
+bool Camera::SmoothCamera::IsInterpAllowed(PlayerCharacter* player) const noexcept {
+	auto ofs = GetOffsetForState(currentActionState);
+	if (currentState == CameraState::Horseback) {
+		if (IsWeaponDrawn(player) && IsBowDrawn(player)) {
+			return config->bowAim.interpHorseback;
+		} else {
+			ofs = config->horseback;
+		}
+	}
+
+	if (!IsWeaponDrawn(player)) return ofs.interp;
+	if (IsRangedWeaponDrawn(player)) {
+		return ofs.interpRangedCombat;
+	}
+	if (IsMagicDrawn(player)) {
+		return ofs.interpMagicCombat;
+	}
+	return ofs.interpMeleeCombat;
+}
 #pragma endregion
 
 #pragma region Crosshair stuff
 // Updates the screen position of the crosshair for correct aiming
-void Camera::SmoothCamera::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const {
-	const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraStates[PlayerCamera::kCameraState_ThirdPerson2]);
-	
-	auto cameraLocalOfs = glm::vec3(
-		0.0f,
-		0.0f,
-		tps->fOverShoulderPosZ
-	);
+void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const {
+	NiPoint3 niOrigin = { 0.01f, 0.01f, 0.01f };
+	NiPoint3 niNormal = { 0.0f, 1.00f, 0.0f };
 
-	if (player->leftHandSpell || player->rightHandSpell) {
-		cameraLocalOfs.z = 60.0f;
+	if (currentState != CameraState::Horseback) {
+		// @TODO: Add CommonLibSSE during next major refactor
+		typedef void(__thiscall PlayerCharacter::* GetEyeVector)(NiPoint3& origin, NiPoint3& normal, bool factorCameraOffset);
+		(player->*reinterpret_cast<GetEyeVector>(&PlayerCharacter::Unk_C2))(niOrigin, niNormal, false);
+	} else {
+		// EyeVector is busted on horseback
+		BSFixedString nodeName = "Throat 2"; // Gets me the closest to niOrigin
+		const auto node = player->loadedState->node->GetObjectByName(&nodeName.data);
+		if (node) {
+			niOrigin = NiPoint3(player->pos.x, player->pos.y, node->m_worldTransform.pos.z);
+		}
+
+		auto aproxNormal = glm::vec4(0.0, 1.0, 0.0, 1.0);
+
+		auto m = glm::identity<glm::mat4>();
+		m = glm::rotate(m, -GetCameraPitchRotation(camera), UNIT_FORWARD);
+		aproxNormal = m * aproxNormal;
+
+		m = glm::identity<glm::mat4>();
+		m = glm::rotate(m, -GetCameraYawRotation(camera), UNIT_UP);
+		aproxNormal = m * aproxNormal;
+
+		niNormal = NiPoint3(aproxNormal.x, aproxNormal.y, aproxNormal.z);
 	}
 
-	auto rotation = glm::identity<glm::mat4>();
-	rotation = glm::rotate(rotation, -GetCameraPitchRotation(camera), UNIT_FORWARD); // pitch
-	auto rotated = rotation * glm::vec4(0.0f, 2048.0f, 0.0f, 1.0f);
-	auto cameraWorldOfs = rotation * glm::vec4(cameraLocalOfs.x, cameraLocalOfs.y, cameraLocalOfs.z, 1.0f);
+	// Bow appear to respect the eye vector well enough on it's own
 
-	rotation = glm::identity<glm::mat4>();
-	rotation = glm::rotate(rotation, -GetCameraYawRotation(camera), UNIT_UP); // yaw
-	rotated = rotation * rotated;
-	cameraWorldOfs = rotation * cameraWorldOfs;
-
-	if (!mmath::IsValid(rotated)) return;
-
-	NiPoint3 xform;
-	BSFixedString nodeName = "NPC Head [Head]";
-	const NiAVObject* node = player->loadedState->node->GetObjectByName(&nodeName.data);
-	if (node) {
-		xform = node->m_worldTransform.pos;
+	// This isn't perfect, but better than it was
+	if (IsMagicDrawn(player) || IsMeleeWeaponDrawn(player)) {
+		BSFixedString nodeName = "NPC Spine1 [Spn1]";
+		const auto node = player->loadedState->node->GetObjectByName(&nodeName.data);
+		if (node) {
+			niOrigin.z -= player->pos.z - node->m_worldTransform.pos.z;
+		}
 	}
 
-	cameraWorldOfs.w = 0.0f;
-	const auto origin = glm::vec4(xform.x, xform.y, xform.z, 0.0f) + cameraWorldOfs;
+	// Cast the aim ray
+	constexpr auto rayLength = 8192.0f;
+	const auto origin = glm::vec4(niOrigin.x, niOrigin.y, niOrigin.z, 0.0f);
+	const auto ray = glm::vec4(niNormal.x, niNormal.y, niNormal.z, 0.0f) * rayLength;
+	const auto result = Raycast::CastRay(origin, origin + ray, 0.01f);
 
-	const auto ray = origin + glm::vec4(rotated.x, rotated.y, rotated.z, 0.0f);
-
-	const auto result = Raycast::CastRay(origin, ray, 1.0f);
 	glm::vec2 crosshairPos(0.0f, 0.0f);
-
 	if (result.hit) {
 		glm::vec3 screen = {};
-		auto pt = NiPoint3(result.hitPos.x, result.hitPos.y, result.hitPos.z);
+
+		// Offset our camera local transformation, projview matrix is not in sync with our changes
+		const auto localSpace = currentPosition - GetCurrentCameraTargetWorldPosition(player, camera);
+		auto pt = NiPoint3(
+			result.hitPos.x - localSpace.x,
+			result.hitPos.y - localSpace.y,
+			result.hitPos.z - localSpace.z
+		);
+
+		// Project to screen
 		(*WorldPtToScreenPt3_Internal)(
 			g_worldToCamMatrix, g_viewPort, &pt,
 			&screen.x, &screen.y, &screen.z, 1.0f
 		);
 
+		// Remap to scaleform coords
 		constexpr auto w = 1280.0f;
 		constexpr auto h = 720.0f;
 		constexpr auto half_w = w * 0.5f;
 		constexpr auto half_h = h * 0.5f;
-
 		crosshairPos.x = (screen.x * w) - half_w;
 		crosshairPos.y = (screen.y * h) - half_h;
 	}
@@ -808,9 +988,20 @@ void Camera::SmoothCamera::SetCrosshairPosition(const glm::vec2& pos) const {
 		GFxValue result;
 		GFxValue args[3];
 		args[0].SetString("SetCrosshairPosition");
-		args[1].SetNumber(static_cast<double>(pos.x) + 23.0); // These offsets were obtained by just comparing screenshots
-		args[2].SetNumber(static_cast<double>(pos.y) - 115.0); // I really need to figure out what is actually going on here, rather than use magic numbers
+		args[1].SetNumber(static_cast<double>(pos.x) + 23.0); // @TODO: These offsets were obtained by just comparing screenshots
+		args[2].SetNumber(static_cast<double>(pos.y) - 115.0f); // I really need to figure out what is actually going on here, rather than use magic numbers
 		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 3);
+	}
+}
+
+void Camera::SmoothCamera::SetCrosshairEnabled(bool enabled) const {
+	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
+	if (menu && menu->view) {
+		GFxValue result;
+		GFxValue args[2];
+		args[0].SetString("SetCrosshairEnabled");
+		args[1].SetBool(enabled);
+		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 2);
 	}
 }
 #pragma endregion
@@ -819,9 +1010,8 @@ void Camera::SmoothCamera::SetCrosshairPosition(const glm::vec2& pos) const {
 // Returns the camera's pitch
 float Camera::SmoothCamera::GetCameraPitchRotation(const CorrectedPlayerCamera* camera) const noexcept {
 	const auto mat = camera->cameraNode->m_localTransform.rot;
-	auto a = glm::clamp(-mat.data[2][1], -0.99f, 0.99f);
-	auto arcsin = glm::asin(a);
-	return arcsin;
+	const auto a = glm::clamp(-mat.data[2][1], -0.99f, 0.99f);
+	return glm::asin(a);
 }
 
 // Returns the camera's yaw
@@ -831,26 +1021,14 @@ float Camera::SmoothCamera::GetCameraYawRotation(const CorrectedPlayerCamera* ca
 
 // Returns the camera's current zoom level - Camera must extend ThirdPersonState
 float Camera::SmoothCamera::GetCameraZoomScalar(const CorrectedPlayerCamera* camera, uint16_t cameraState) const noexcept {
-	const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraStates[cameraState]);
-	if (!tps) return 0.0f;
-
-	if (config->comaptIC_FirstPersonHorse && cameraState == static_cast<uint16_t>(CameraState::Horseback)) {
-		if (tps->cameraZoom == SKYRIM_MIN_ZOOM_FRACTION && tps->cameraLastZoom == SKYRIM_MIN_ZOOM_FRACTION) {
-			return 0.0f;
-		}
-	} else if (config->comaptIC_FirstPersonDragon && cameraState == static_cast<uint16_t>(CameraState::Dragon)) {
-		if (tps->cameraZoom == SKYRIM_MIN_ZOOM_FRACTION && tps->cameraLastZoom == SKYRIM_MIN_ZOOM_FRACTION) {
-			return 0.0f;
-		}
-	}
-
-	const auto zoom = tps->cameraZoom;
-	return zoom + SKYRIM_MIN_ZOOM_FRACTION;
+	const auto state = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraStates[cameraState]);
+	if (!state) return 0.0f;
+	return state->cameraZoom + SKYRIM_MIN_ZOOM_FRACTION;
 }
 #pragma endregion
 
 // Selects the correct update method and positions the camera
-void Camera::SmoothCamera::UpdateCamera(const PlayerCharacter* player, CorrectedPlayerCamera* camera) {
+void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera) {
 	auto cameraNode = camera->cameraNode;
 	auto cameraNi = reinterpret_cast<NiCamera*>(
 		cameraNode->m_children.m_size == 0 ?
@@ -884,52 +1062,64 @@ void Camera::SmoothCamera::UpdateCamera(const PlayerCharacter* player, Corrected
 	// Save the camera position
 	lastPosition = currentPosition;
 
-	switch (state) {
-		case CameraState::ThirdPerson: {
-			if (cameraStates.at(static_cast<size_t>(CameraState::ThirdPerson))) {
-				dynamic_cast<State::ThirdpersonState*>(
-					cameraStates.at(static_cast<size_t>(CameraState::ThirdPerson)).get()
-				)->Update(player, camera);
-				break;
+	if (config->disableDuringDialog && dialogMenuOpen) {
+		currentPosition = {
+			cameraNode->m_worldTransform.pos.x,
+			cameraNode->m_worldTransform.pos.y,
+			cameraNode->m_worldTransform.pos.z
+		};
+	} else {
+		switch (state) {
+			case CameraState::ThirdPerson:
+			{
+				if (cameraStates.at(static_cast<size_t>(CameraState::ThirdPerson))) {
+					dynamic_cast<State::ThirdpersonState*>(
+						cameraStates.at(static_cast<size_t>(CameraState::ThirdPerson)).get()
+					)->Update(player, camera);
+					break;
+				}
 			}
-		}
-		case CameraState::ThirdPersonCombat: {
-			if (cameraStates.at(static_cast<size_t>(CameraState::ThirdPersonCombat))) {
-				dynamic_cast<State::ThirdpersonCombatState*>(
-					cameraStates.at(static_cast<size_t>(CameraState::ThirdPersonCombat)).get()
-				)->Update(player, camera);
-				break;
+			case CameraState::ThirdPersonCombat:
+			{
+				if (cameraStates.at(static_cast<size_t>(CameraState::ThirdPersonCombat))) {
+					dynamic_cast<State::ThirdpersonCombatState*>(
+						cameraStates.at(static_cast<size_t>(CameraState::ThirdPersonCombat)).get()
+					)->Update(player, camera);
+					break;
+				}
 			}
-		}
-		case CameraState::Horseback: {
-			if (cameraStates.at(static_cast<size_t>(CameraState::Horseback))) {
-				dynamic_cast<State::ThirdpersonHorseState*>(
-					cameraStates.at(static_cast<size_t>(CameraState::Horseback)).get()
-				)->Update(player, camera);
-				break;
+			case CameraState::Horseback:
+			{
+				if (cameraStates.at(static_cast<size_t>(CameraState::Horseback))) {
+					dynamic_cast<State::ThirdpersonHorseState*>(
+						cameraStates.at(static_cast<size_t>(CameraState::Horseback)).get()
+					)->Update(player, camera);
+					break;
+				}
 			}
-		}
 
-		// Here just for my own reference that these are unused (for now)
-		case CameraState::FirstPerson:
-		case CameraState::KillMove:
-		case CameraState::Tweening:
-		case CameraState::Transitioning:
-		case CameraState::UsingObject:
-		case CameraState::Vanity:
-		case CameraState::Free:
-		case CameraState::IronSights:
-		case CameraState::Furniture:
-		case CameraState::Bleedout:
-		case CameraState::Dragon:
-		case CameraState::Unknown:
-		default: {
-			currentPosition = {
-				cameraNode->m_worldTransform.pos.x,
-				cameraNode->m_worldTransform.pos.y,
-				cameraNode->m_worldTransform.pos.z
-			};
-			break;
+			// Here just for my own reference that these are unused (for now)
+			case CameraState::FirstPerson:
+			case CameraState::KillMove:
+			case CameraState::Tweening:
+			case CameraState::Transitioning:
+			case CameraState::UsingObject:
+			case CameraState::Vanity:
+			case CameraState::Free:
+			case CameraState::IronSights:
+			case CameraState::Furniture:
+			case CameraState::Bleedout:
+			case CameraState::Dragon:
+			case CameraState::Unknown:
+			default:
+			{
+				currentPosition = {
+					cameraNode->m_worldTransform.pos.x,
+					cameraNode->m_worldTransform.pos.y,
+					cameraNode->m_worldTransform.pos.z
+				};
+				break;
+			}
 		}
 	}
 

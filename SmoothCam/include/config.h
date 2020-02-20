@@ -63,9 +63,57 @@ namespace Config {
 		{ ScalarMethods::EXP_INOUT, 	"exponentialEaseInOut" },
 	});
 
+	typedef struct {
+		float sideOffset = 25.0;
+		float upOffset = 0.0;
+
+		float combatRangedSideOffset = 25.0f;
+		float combatRangedUpOffset = 0.0f;
+
+		float combatMagicSideOffset = 25.0f;
+		float combatMagicUpOffset = 0.0f;
+
+		float combatMeleeSideOffset = 25.0f;
+		float combatMeleeUpOffset = 0.0f;
+
+		float horseSideOffset = 25.0f;
+		float horseUpOffset = 0.0f;
+
+		bool interp = true;
+		bool interpRangedCombat = true;
+		bool interpMagicCombat = true;
+		bool interpMeleeCombat = true;
+		bool interpHorseback = true;
+
+		template <class Archive>
+		void serialize(Archive& ar) {
+			ar(
+				CEREAL_NVP(sideOffset),
+				CEREAL_NVP(upOffset),
+				CEREAL_NVP(combatRangedSideOffset),
+				CEREAL_NVP(combatRangedUpOffset),
+				CEREAL_NVP(combatMagicSideOffset),
+				CEREAL_NVP(combatMagicUpOffset),
+				CEREAL_NVP(combatMeleeSideOffset),
+				CEREAL_NVP(combatMeleeUpOffset),
+				CEREAL_NVP(horseSideOffset),
+				CEREAL_NVP(horseUpOffset),
+				CEREAL_NVP(interp),
+				CEREAL_NVP(interpRangedCombat),
+				CEREAL_NVP(interpMagicCombat),
+				CEREAL_NVP(interpMeleeCombat),
+				CEREAL_NVP(interpHorseback)
+			);
+		}
+	} OffsetGroup;
+
 	typedef struct parsedConfig {
 		bool enableInterp = true;
 		bool enable3DCrosshair = true;
+		bool hideNonCombatCrosshair = false;
+		bool hideCrosshairMeleeCombat = false;
+		bool disableDeltaTime = false;
+		bool disableDuringDialog = false;
 
 		ScalarMethods currentScalar = ScalarMethods::CIRC_IN;
 
@@ -91,59 +139,28 @@ namespace Config {
 		ScalarMethods separateZScalar = ScalarMethods::CIRC_IN;
 
 		// Per state positions
-		float standingSideOffset = 25.0f;
-		float standingUpOffset = 0.0f;
+		OffsetGroup standing;
+		OffsetGroup walking;
+		OffsetGroup running;
+		OffsetGroup sprinting;
+		OffsetGroup sneaking;
 
-		float standingCombatSideOffset = 25.0f;
-		float standingCombatUpOffset = 0.0f;
+		OffsetGroup swimming;
+		OffsetGroup bowAim;
+		OffsetGroup sitting;
 
-		float walkingSideOffset = 25.0f;
-		float walkingUpOffset = 0.0f;
-
-		float walkingCombatSideOffset = 25.0f;
-		float walkingCombatUpOffset = 0.0f;
-
-		float runningSideOffset = 25.0f;
-		float runningUpOffset = 0.0f;
-
-		float runningCombatSideOffset = 25.0f;
-		float runningCombatUpOffset = 0.0f;
-
-		float sprintingSideOffset = 25.0f;
-		float sprintingUpOffset = 0.0f;
-
-		float sprintingCombatSideOffset = 25.0f;
-		float sprintingCombatUpOffset = 0.0f;
-
-		float sneakingSideOffset = 25.0f;
-		float sneakingUpOffset = -5.0f;
-
-		float sneakingCombatSideOffset = 25.0f;
-		float sneakingCombatUpOffset = 0.0f;
-
-		float swimmingSideOffset = 25.0f;
-		float swimmingUpOffset = 0.0f;
-
-		float bowAimSideOffset = 35.0f;
-		float bowAimUpOffset = 0.0f;
-
-		float bowAimHorseSideOffset = 40.0f;
-		float bowAimHorseUpOffset = 0.0f;
-
-		float sittingSideOffset = 18.0f;
-		float sittingUpOffset = 0.0f;
-
-		float horsebackSideOffset = 18.0f;
-		float horsebackUpOffset = 0.0f;
-
-		float dragonSideOffset = 18.0f;
-		float dragonUpOffset = 0.0f;
+		OffsetGroup horseback;
+		OffsetGroup dragon; // @TODO
 
 		template <class Archive>
 		void serialize(Archive& ar) {
 			ar(
 				CEREAL_NVP(enableInterp),
 				CEREAL_NVP(enable3DCrosshair),
+				CEREAL_NVP(hideNonCombatCrosshair),
+				CEREAL_NVP(hideCrosshairMeleeCombat),
+				CEREAL_NVP(disableDeltaTime),
+				CEREAL_NVP(disableDuringDialog),
 				CEREAL_NVP(currentScalar),
 				CEREAL_NVP(comaptIC_FirstPersonHorse),
 				CEREAL_NVP(comaptIC_FirstPersonDragon),
@@ -153,38 +170,21 @@ namespace Config {
 				CEREAL_NVP(maxCameraFollowRate),
 				CEREAL_NVP(zoomMul),
 				CEREAL_NVP(zoomMaxSmoothingDistance),
-				CEREAL_NVP(standingSideOffset),
-				CEREAL_NVP(standingUpOffset),
-				CEREAL_NVP(standingCombatSideOffset),
-				CEREAL_NVP(standingCombatUpOffset),
-				CEREAL_NVP(walkingSideOffset),
-				CEREAL_NVP(walkingUpOffset),
-				CEREAL_NVP(walkingCombatSideOffset),
-				CEREAL_NVP(walkingCombatUpOffset),
-				CEREAL_NVP(runningSideOffset),
-				CEREAL_NVP(runningUpOffset),
-				CEREAL_NVP(runningCombatSideOffset),
-				CEREAL_NVP(runningCombatUpOffset),
-				CEREAL_NVP(sprintingSideOffset),
-				CEREAL_NVP(sprintingUpOffset),
-				CEREAL_NVP(sprintingCombatSideOffset),
-				CEREAL_NVP(sprintingCombatUpOffset),
-				CEREAL_NVP(sneakingSideOffset),
-				CEREAL_NVP(sneakingUpOffset),
-				CEREAL_NVP(sneakingCombatSideOffset),
-				CEREAL_NVP(sneakingCombatUpOffset),
-				CEREAL_NVP(swimmingSideOffset),
-				CEREAL_NVP(swimmingUpOffset),
-				CEREAL_NVP(bowAimSideOffset),
-				CEREAL_NVP(bowAimUpOffset),
-				CEREAL_NVP(bowAimHorseSideOffset),
-				CEREAL_NVP(bowAimHorseUpOffset),
-				CEREAL_NVP(sittingSideOffset),
-				CEREAL_NVP(sittingUpOffset),
-				CEREAL_NVP(horsebackSideOffset),
-				CEREAL_NVP(horsebackUpOffset),
-				CEREAL_NVP(dragonSideOffset),
-				CEREAL_NVP(dragonUpOffset)
+				CEREAL_NVP(separateZInterp),
+				CEREAL_NVP(separateZMaxSmoothingDistance),
+				CEREAL_NVP(separateZMinFollowRate),
+				CEREAL_NVP(separateZMaxFollowRate),
+				CEREAL_NVP(separateZScalar),
+				CEREAL_NVP(standing),
+				CEREAL_NVP(walking),
+				CEREAL_NVP(running),
+				CEREAL_NVP(sprinting),
+				CEREAL_NVP(sneaking),
+				CEREAL_NVP(swimming),
+				CEREAL_NVP(bowAim),
+				CEREAL_NVP(sitting),
+				CEREAL_NVP(horseback),
+				CEREAL_NVP(dragon)
 			);
 		}
 	} UserConfig;

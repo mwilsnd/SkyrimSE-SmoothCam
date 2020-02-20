@@ -34,6 +34,7 @@
     
 #   include <skse64/PluginAPI.h>
 #   include <skse64/GameAPI.h>
+#   include <skse64/GameRTTI.h>
 #   include <skse64_common/skse_version.h>
     
 #   include <skse64/NiTypes.h>

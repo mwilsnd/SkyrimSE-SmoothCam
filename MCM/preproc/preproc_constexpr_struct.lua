@@ -140,7 +140,6 @@ do class "ConstexprStructToVars" : namespace "papyrus.preproc" {
 					else
 						self.m_tblStructMemberUsage[decl.."."..member] = { name = value }
 					end
-					print( "FindAndGenerateStructImplMemberUsage", decl, member, self.m_tblStructMemberUsage[decl.."."..member].name )
 				end
 			end
 		end
@@ -172,13 +171,16 @@ do class "ConstexprStructToVars" : namespace "papyrus.preproc" {
 						if usage then
 							code = code:replace( gen_decl.."."..gen_member, usage.name )
 						else
-							-- Value literal
-							local value = self.m_tblStructImpls[gen_decl].members[gen_member]
-							if not value then
-								value = typeInfo.members[gen_member].value
+							if typeInfo.members[gen_member].isreal then
+								code = code:replace( gen_decl.."."..gen_member, gen_decl.. "_".. gen_member )
+							else
+								-- Value literal
+								local value = self.m_tblStructImpls[gen_decl].members[gen_member]
+								if not value then
+									value = typeInfo.members[gen_member].value
+								end
+								code = code:replace( gen_decl.."."..gen_member, value )
 							end
-
-							code = code:replace( gen_decl.."."..gen_member, value )
 						end
 
 						generated[member.."."..gen_decl.."."..gen_member] = true

@@ -25,7 +25,7 @@ project "skse64_common"
 	filter "system:windows"
 		systemversion "latest"
 		debugdir( "../bin/".. outputDir.. "/%{prj.name}" )
-		vectorextensions "AVX"
+		vectorextensions( _SIMD_MODE )
 		characterset "MBCS"
 		intrinsics "On"
 		fpu "Hardware"
@@ -43,7 +43,7 @@ project "skse64_common"
 		editandcontinue "On"
 		floatingpoint "Strict"
 		functionlevellinking "On"
-		
+
 		libdirs {
 			parent.. "/../common/bin/Debug-windows-x86_64/common_skse64",
 		}
