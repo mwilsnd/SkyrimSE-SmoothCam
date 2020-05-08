@@ -110,39 +110,10 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 2
+	version: 3
 }
 
-ToggleSetting interpEnabled -> {
-	settingName: "InterpolationEnabled"
-	displayName: "Interpolation Enabled"
-	desc: "Enable camera smoothing."
-}
-ToggleSetting sepZInterpEnabled -> {
-	settingName: "SeparateZInterpEnabled"
-	displayName: "Separate Z Interpolation Enabled"
-	desc: "Enable the separate Z smoothing settings for smoothing camera height differently."
-}
-ToggleSetting disableDeltaTime -> {
-	settingName: "DisableDeltaTime"
-	displayName: "Disable Delta Time Factoring"
-	desc: "Remove time from interpolation math. May result in less jitter but can cause speed to vary with frame rate."
-}
-ToggleSetting crosshair3DEnabled -> {
-	settingName: "Enable3DCrosshair"
-	displayName: "3D Crosshair Enabled"
-	desc: "Enable the raycasted 3D crosshair when in combat."
-}
-ToggleSetting hideCrosshairOutOfCombat -> {
-	settingName: "HideCrosshairOutOfCombat"
-	displayName: "Hide Non-Combat Crosshair"
-	desc: "Hide the crosshair when not in combat."
-}
-ToggleSetting hideCrosshairMeleeCombat -> {
-	settingName: "HideCrosshairMeleeCombat"
-	displayName: "Hide Melee Combat Crosshair"
-	desc: "Hide the crosshair when in melee combat."
-}
+; Compat
 ToggleSetting icFirstPersonHorse -> {
 	settingName: "FirstPersonHorse"
 	displayName: "First Person Horse"
@@ -163,6 +134,48 @@ ToggleSetting disableDuringDialog -> {
 	displayName: "Disable During Dialog"
 	desc: "Disables SmoothCam when the dialog menu is open."
 }
+ToggleSetting patchWorldToScreenMatrix -> {
+	settingName: "PatchWorldToScreenMatrix"
+	displayName: "Patch Projected HUD Elements"
+	desc: "Patch floating HUD elements like quest markers. You must restart your game for this option to apply. If this causes you to crash, set patchWorldToScreenMatrix to false in SKSE/Plugins/SmoothCam.json."
+}
+
+; Following
+ToggleSetting interpEnabled -> {
+	settingName: "InterpolationEnabled"
+	displayName: "Interpolation Enabled"
+	desc: "Enable camera smoothing."
+}
+ToggleSetting sepZInterpEnabled -> {
+	settingName: "SeparateZInterpEnabled"
+	displayName: "Separate Z Interpolation Enabled"
+	desc: "Enable the separate Z smoothing settings for smoothing camera height differently."
+}
+ToggleSetting sepLocalInterpEnabled -> {
+	settingName: "SeparateLocalInterpolation"
+	displayName: "Local-Space Interpolation Enabled"
+	desc: "Enable separate local-space camera smoothing (Camera rotation)."
+}
+ToggleSetting disableDeltaTime -> {
+	settingName: "DisableDeltaTime"
+	displayName: "Disable Delta Time Factoring"
+	desc: "Remove time from interpolation math. May result in less jitter but can cause speed to vary with frame rate."
+}
+ToggleSetting cameraDistanceClampXEnable -> {
+	settingName: "CameraDistanceClampXEnable"
+	displayName: "Enable X Distance Clamp"
+	desc: "Clamp the maximum distance the camera may move away from the target position along the X (side) axis."
+}
+ToggleSetting cameraDistanceClampYEnable -> {
+	settingName: "CameraDistanceClampYEnable"
+	displayName: "Enable Y Distance Clamp"
+	desc: "Clamp the maximum distance the camera may move away from the target position along the Y (forward) axis."
+}
+ToggleSetting cameraDistanceClampZEnable -> {
+	settingName: "CameraDistanceClampZEnable"
+	displayName: "Enable Z Distance Clamp"
+	desc: "Clamp the maximum distance the camera may move away from the target position along the Z (up) axis."
+}
 
 ListSetting interpMethod -> {
 	settingName: "InterpolationMethod"
@@ -173,6 +186,11 @@ ListSetting sepZInterpMethod -> {
 	settingName: "SeparateZInterpMethod"
 	displayName: "Sep. Z Interpolation Method"
 	desc: "The scalar method to use for smoothing the camera height (If enabled)."
+}
+ListSetting sepLocalInterpMethod -> {
+	settingName: "SepLocalInterpMethod"
+	displayName: "Local-Space Interpolation Method"
+	desc: "The scalar method to use for local-space smoothing (If enabled)."
 }
 
 SliderSetting minCameraFollowRate -> {
@@ -223,7 +241,6 @@ SliderSetting zoomMul -> {
 	min: 1.0
 	max: 500.0
 }
-
 SliderSetting minSepZFollowRate -> {
 	settingName: "SepZMinFollowRate"
 	displayName: "Separate Z Min Follow Rate"
@@ -253,6 +270,93 @@ SliderSetting maxSepZSmoothingDistance -> {
 	min: 1.0
 	max: 300.0
 	displayFormat: "{0}"
+}
+SliderSetting cameraDistanceClampXMin -> {
+	settingName: "CameraDistanceClampXMin"
+	displayName: "Distance Clamp X Min"
+	desc: "The minimal distance the camera may get from the target position along the X axis before being clamped."
+	defaultValue: -75.0
+	interval: 1.0
+	min: -300.0
+	max: 0.0
+	displayFormat: "{0}"
+}
+SliderSetting cameraDistanceClampXMax -> {
+	settingName: "CameraDistanceClampXMax"
+	displayName: "Distance Clamp X Max"
+	desc: "The maximal distance the camera may get from the target position along the X axis before being clamped."
+	defaultValue: 75.0
+	interval: 1.0
+	min: 0.0
+	max: 300.0
+	displayFormat: "{0}"
+}
+SliderSetting cameraDistanceClampYMin -> {
+	settingName: "CameraDistanceClampYMin"
+	displayName: "Distance Clamp Y Min"
+	desc: "The minimal distance the camera may get from the target position along the Y axis before being clamped."
+	defaultValue: -100.0
+	interval: 1.0
+	min: -500.0
+	max: 0.0
+	displayFormat: "{0}"
+}
+SliderSetting cameraDistanceClampYMax -> {
+	settingName: "CameraDistanceClampYMax"
+	displayName: "Distance Clamp Y Max"
+	desc: "The maximal distance the camera may get from the target position along the Y axis before being clamped."
+	defaultValue: 100.0
+	interval: 1.0
+	min: 0.0
+	max: 500.0
+	displayFormat: "{0}"
+}
+SliderSetting cameraDistanceClampZMin -> {
+	settingName: "CameraDistanceClampZMin"
+	displayName: "Distance Clamp Z Min"
+	desc: "The minimal distance the camera may get from the target position along the Z axis before being clamped."
+	defaultValue: -50.0
+	interval: 1.0
+	min: -300.0
+	max: 0.0
+	displayFormat: "{0}"
+}
+SliderSetting cameraDistanceClampZMax -> {
+	settingName: "CameraDistanceClampZMax"
+	displayName: "Distance Clamp Z Max"
+	desc: "The maximal distance the camera may get from the target position along the Z axis before being clamped."
+	defaultValue: 50.0
+	interval: 1.0
+	min: 0.0
+	max: 300.0
+	displayFormat: "{0}"
+}
+SliderSetting sepLocalSpaceInterpRate -> {
+	settingName: "SepLocalInterpRate"
+	displayName: "Local-Space Follow Rate"
+	desc: "The smoothing rate to use for local-space smoothing."
+	defaultValue: 0.5
+	interval: 0.01
+	min: 0.01
+	max: 1.0
+	displayFormat: "{2}"
+}
+
+; Crosshair
+ToggleSetting crosshair3DEnabled -> {
+	settingName: "Enable3DCrosshair"
+	displayName: "3D Crosshair Enabled"
+	desc: "Enable the raycasted 3D crosshair when in combat."
+}
+ToggleSetting hideCrosshairOutOfCombat -> {
+	settingName: "HideCrosshairOutOfCombat"
+	displayName: "Hide Non-Combat Crosshair"
+	desc: "Hide the crosshair when not in combat."
+}
+ToggleSetting hideCrosshairMeleeCombat -> {
+	settingName: "HideCrosshairMeleeCombat"
+	displayName: "Hide Melee Combat Crosshair"
+	desc: "Hide the crosshair when in melee combat."
 }
 
 ; Standing
@@ -740,7 +844,7 @@ endFunction
 
 event OnConfigInit()
 	Pages = new string[] -> {
-		" Info", " Compatibility", " Following", " Standing",
+		" Info", " Compatibility", " Following", " Crosshair", " Standing",
 		" Walking", " Running", " Sprinting", " Sneaking",
 		" Swimming", " Bow Aiming", " Sitting", " Horseback",
 		" Dragon"
@@ -766,17 +870,43 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Compatibility")
 		AddHeaderOption("General")
 		disableDuringDialog->!implControl
+		patchWorldToScreenMatrix->!implControl
 
 		AddHeaderOption("Improved Camera Patches")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			icFirstPersonHorse, icFirstPersonDragon, icFirstPersonSitting
 		})
 	elseIf (a_page == " Following")
-		AddHeaderOption("Following Settings")
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			interpMethod, interpEnabled, sepZInterpMethod, sepZInterpEnabled, disableDeltaTime, minCameraFollowDistance,
-			minCameraFollowRate, maxCameraFollowRate, maxSmoothingInterpDistance, zoomMul, minSepZFollowRate,
-			maxSepZFollowRate, maxSepZSmoothingDistance, crosshair3DEnabled, hideCrosshairOutOfCombat, hideCrosshairMeleeCombat
+			interpMethod, interpEnabled, minCameraFollowDistance, minCameraFollowRate, maxCameraFollowRate, maxSmoothingInterpDistance
+		})
+
+		AddHeaderOption("Separate Z Interpolation")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			sepZInterpMethod, sepZInterpEnabled, minSepZFollowRate, maxSepZFollowRate, maxSepZSmoothingDistance
+		})
+
+		AddHeaderOption("Local-Space Interpolation")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			sepLocalInterpEnabled, sepLocalInterpMethod, sepLocalSpaceInterpRate
+		})
+
+		SetCursorPosition(1)
+		AddHeaderOption("Distance Clamping")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			cameraDistanceClampXEnable, cameraDistanceClampXMin, cameraDistanceClampXMax,
+			cameraDistanceClampYEnable, cameraDistanceClampYMin, cameraDistanceClampYMax,
+			cameraDistanceClampZEnable, cameraDistanceClampZMin, cameraDistanceClampZMax
+		})
+
+		AddHeaderOption("Misc")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			zoomMul, disableDeltaTime
+		})
+	elseIf (a_page == " Crosshair")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			crosshair3DEnabled, hideCrosshairOutOfCombat, hideCrosshairMeleeCombat
 		})
 	elseIf (a_page == " Standing")
 		AddHeaderOption("Standing Offsets")
@@ -788,7 +918,11 @@ event OnPageReset(string a_page)
 			standing_sideOffsetMagicCombat,
 			standing_upOffsetMagicCombat,
 			standing_sideOffsetMeleeCombat,
-			standing_upOffsetMeleeCombat,
+			standing_upOffsetMeleeCombat
+		})
+
+		SetCursorPosition(1)
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			standing_interp,
 			standing_interpRanged,
 			standing_interpMagic,
@@ -804,7 +938,11 @@ event OnPageReset(string a_page)
 			walking_sideOffsetMagicCombat,
 			walking_upOffsetMagicCombat,
 			walking_sideOffsetMeleeCombat,
-			walking_upOffsetMeleeCombat,
+			walking_upOffsetMeleeCombat
+		})
+
+		SetCursorPosition(1)
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			walking_interp,
 			walking_interpRanged,
 			walking_interpMagic,
@@ -820,7 +958,11 @@ event OnPageReset(string a_page)
 			running_sideOffsetMagicCombat,
 			running_upOffsetMagicCombat,
 			running_sideOffsetMeleeCombat,
-			running_upOffsetMeleeCombat,
+			running_upOffsetMeleeCombat
+		})
+
+		SetCursorPosition(1)
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			running_interp,
 			running_interpRanged,
 			running_interpMagic,
@@ -836,7 +978,11 @@ event OnPageReset(string a_page)
 			sprinting_sideOffsetMagicCombat,
 			sprinting_upOffsetMagicCombat,
 			sprinting_sideOffsetMeleeCombat,
-			sprinting_upOffsetMeleeCombat,
+			sprinting_upOffsetMeleeCombat
+		})
+
+		SetCursorPosition(1)
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sprinting_interp,
 			sprinting_interpRanged,
 			sprinting_interpMagic,
@@ -852,7 +998,11 @@ event OnPageReset(string a_page)
 			sneaking_sideOffsetMagicCombat,
 			sneaking_upOffsetMagicCombat,
 			sneaking_sideOffsetMeleeCombat,
-			sneaking_upOffsetMeleeCombat,
+			sneaking_upOffsetMeleeCombat
+		})
+
+		SetCursorPosition(1)
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sneaking_interp,
 			sneaking_interpRanged,
 			sneaking_interpMagic,
@@ -892,7 +1042,11 @@ event OnPageReset(string a_page)
 			horseback_sideOffsetMagicCombat,
 			horseback_upOffsetMagicCombat,
 			horseback_sideOffsetMeleeCombat,
-			horseback_upOffsetMeleeCombat,
+			horseback_upOffsetMeleeCombat
+		})
+
+		SetCursorPosition(1)
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			horseback_interp,
 			horseback_interpRanged,
 			horseback_interpMagic,

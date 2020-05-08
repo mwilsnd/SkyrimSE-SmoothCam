@@ -35,7 +35,7 @@ From there just compile the generated code like any normal papyrus script.
 ## Known Issues
 When interpolation is very slow, culling of geometry can be seen.
 
-Floating quest markers do not respect the camera position - Interpolation causes them to lazily drift around the screen and camera offsets also offset the markers.
+Floating quest markers: To fix these, enable "Patch Projected HUD Elements" in the MCM.
 
 The crosshair is still being refined, though as of alpha 1.1 is much improved.
 
@@ -54,20 +54,33 @@ hideNonCombatCrosshair | Hides the crosshair when no weapon is drawn
 hideCrosshairMeleeCombat | Hides the crosshair when melee weapons are drawn
 disableDeltaTime | Disables frame time factoring in the smoothing math
 disableDuringDialog | Disables SmoothCam during character-NPC conversations
-currentScalar | A value from 0 - 21: The scalar function to use for interpolation
+patchWorldToScreenMatrix | Applies the world-projection patch for HUD elements like quest markers. **Note:** If enabling this ends up conflicting with another mod and causes a crash, set this value to `false` manually.
 comaptIC_FirstPersonHorse | Enables compat code for dealing with issue when running the Improved Camera mod
 comaptIC_FirstPersonDragon | Enables compat code for dealing with issue when running the Improved Camera mod
 compatIC_FirstPersonSitting | Enables compat code for dealing with issue when running the Improved Camera mod
+currentScalar | A value from 0 - 21: The scalar function to use for interpolation
 minCameraFollowDistance | The distance the camera follows the player from when at the lowest zoom level
 minCameraFollowRate | The amount of camera latency when the camera is close to the player (lower = more latency)
 maxCameraFollowRate | The amount of camera latency when the camera is far from the player (higher = less latency)
 zoomMul | The maximum zoom-out distance from the player (added to MinFollowDistance)
 zoomMaxSmoothingDistance | The distance from camera to player at which MaxCameraFollowRate is used for smoothing (when distance is small, MinCameraFollowRate is used, otherwise is mixed with MaxCameraFollowRate) This results in the camera being more "lazy" when close to the player and more snappy when further away
+separateLocalInterp | Enable separate local-space interpolation settings
+separateLocalScalar | A value from 0 - 21: The scalar function to use for local-space interpolation
+localScalarRate | The constant smoothing rate for local-space interpolation
 separateZInterp | Enable the separate Z interpolation settings
 separateZMaxSmoothingDistance | The distance from camera to player at which separateZMaxFollowRate is used for smoothing (when distance is small, separateZMinFollowRate is used, otherwise is mixed with separateZMaxFollowRate) This results in the camera being more "lazy" when close to the player and more snappy when further away
 separateZMinFollowRate | The amount of camera latency when the camera is close to the player (lower = more latency)
 separateZMaxFollowRate | The amount of camera latency when the camera is far from the player (higher = less latency)
 separateZScalar | A value from 0 - 21: The scalar function to use for Z interpolation
+cameraDistanceClampXEnable | Enable distance clamping on the local X axis
+cameraDistanceClampXMin | The minimum value the camera position may reach on the X axis
+cameraDistanceClampXMax | The maximum value the camera position may reach on the X axis
+cameraDistanceClampYEnable | Enable distance clamping on the local Y axis
+cameraDistanceClampYMin | The minimum value the camera position may reach on the Y axis
+cameraDistanceClampYMax | The maximum value the camera position may reach on the Y axis
+cameraDistanceClampZEnable | Enable distance clamping on the local Z axis
+cameraDistanceClampZMin | The minimum value the camera position may reach on the Z axis
+cameraDistanceClampZMax | The maximum value the camera position may reach on the Z axis
 standing | The offset collection to use when standing
 walking | The offset collection to use when walking
 running | The offset collection to use when running

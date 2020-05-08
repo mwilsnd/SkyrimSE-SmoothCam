@@ -30,19 +30,32 @@ const std::unordered_map<ConfigStringMapping, std::function<BSFixedString(void)>
 		else
 			return BSFixedString("linear");
 	} },
+	{ ConfigStringMapping::SepLocalInterpMethod, []() {
+		const auto it = Config::scalarMethodRevLookup.find(Config::GetCurrentConfig()->separateLocalScalar);
+		if (it != Config::scalarMethodRevLookup.end())
+			return BSFixedString(it->second.c_str());
+		else
+			return BSFixedString("linear");
+	} },
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<bool(void)>> boolGetters = {
-	IMPL_GETTER(ConfigStringMapping::FirstPersonHorse, comaptIC_FirstPersonHorse)
-	IMPL_GETTER(ConfigStringMapping::FirstPersonDragon, comaptIC_FirstPersonDragon)
-	IMPL_GETTER(ConfigStringMapping::FirstPersonSitting, compatIC_FirstPersonSitting)
-	IMPL_GETTER(ConfigStringMapping::InterpolationEnabled, enableInterp)
-	IMPL_GETTER(ConfigStringMapping::DisableDeltaTime, disableDeltaTime)
-	IMPL_GETTER(ConfigStringMapping::DisableDuringDialog, disableDuringDialog)
-	IMPL_GETTER(ConfigStringMapping::Crosshair3DEnabled, enable3DCrosshair)
-	IMPL_GETTER(ConfigStringMapping::HideCrosshairOutOfCombat, hideNonCombatCrosshair)
-	IMPL_GETTER(ConfigStringMapping::HideCrosshairMeleeCombat, hideCrosshairMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::SepZInterpEnabled, separateZInterp)
+	IMPL_GETTER(ConfigStringMapping::FirstPersonHorse,					comaptIC_FirstPersonHorse)
+	IMPL_GETTER(ConfigStringMapping::FirstPersonDragon,					comaptIC_FirstPersonDragon)
+	IMPL_GETTER(ConfigStringMapping::FirstPersonSitting,				compatIC_FirstPersonSitting)
+	IMPL_GETTER(ConfigStringMapping::PatchWorldToScreenMatrix,			patchWorldToScreenMatrix)
+	IMPL_GETTER(ConfigStringMapping::InterpolationEnabled,				enableInterp)
+	IMPL_GETTER(ConfigStringMapping::SeparateLocalInterpolation,		separateLocalInterp)
+	IMPL_GETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime)
+	IMPL_GETTER(ConfigStringMapping::DisableDuringDialog,				disableDuringDialog)
+	IMPL_GETTER(ConfigStringMapping::Crosshair3DEnabled,				enable3DCrosshair)
+	IMPL_GETTER(ConfigStringMapping::HideCrosshairOutOfCombat,			hideNonCombatCrosshair)
+	IMPL_GETTER(ConfigStringMapping::HideCrosshairMeleeCombat,			hideCrosshairMeleeCombat)
+	IMPL_GETTER(ConfigStringMapping::SepZInterpEnabled,					separateZInterp)
+
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXEnable,		cameraDistanceClampXEnable)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYEnable,		cameraDistanceClampYEnable)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampZEnable,		cameraDistanceClampZEnable)
 
 	IMPL_GETTER(ConfigStringMapping::InterpStanding,					standing.interp)
 	IMPL_GETTER(ConfigStringMapping::InterpStandingRangedCombat,		standing.interpRangedCombat)
@@ -75,15 +88,23 @@ const std::unordered_map<ConfigStringMapping, std::function<bool(void)>> boolGet
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<float(void)>> floatGetters = {
-	IMPL_GETTER(ConfigStringMapping::MinFollowDistance, minCameraFollowDistance)
-	IMPL_GETTER(ConfigStringMapping::MinCameraFollowRate, minCameraFollowRate)
-	IMPL_GETTER(ConfigStringMapping::MaxCameraFollowRate, maxCameraFollowRate)
-	IMPL_GETTER(ConfigStringMapping::MaxSmoothingInterpDistance, zoomMaxSmoothingDistance)
-	IMPL_GETTER(ConfigStringMapping::ZoomMul, zoomMul)
+	IMPL_GETTER(ConfigStringMapping::MinFollowDistance,					minCameraFollowDistance)
+	IMPL_GETTER(ConfigStringMapping::MinCameraFollowRate,				minCameraFollowRate)
+	IMPL_GETTER(ConfigStringMapping::MaxCameraFollowRate,				maxCameraFollowRate)
+	IMPL_GETTER(ConfigStringMapping::MaxSmoothingInterpDistance,		zoomMaxSmoothingDistance)
+	IMPL_GETTER(ConfigStringMapping::ZoomMul,							zoomMul)
 
-	IMPL_GETTER(ConfigStringMapping::SepZMaxInterpDistance, separateZMaxSmoothingDistance)
-	IMPL_GETTER(ConfigStringMapping::SepZMinFollowRate, separateZMinFollowRate)
-	IMPL_GETTER(ConfigStringMapping::SepZMaxFollowRate, separateZMaxFollowRate)
+	IMPL_GETTER(ConfigStringMapping::SepZMaxInterpDistance,				separateZMaxSmoothingDistance)
+	IMPL_GETTER(ConfigStringMapping::SepZMinFollowRate,					separateZMinFollowRate)
+	IMPL_GETTER(ConfigStringMapping::SepZMaxFollowRate,					separateZMaxFollowRate)
+	IMPL_GETTER(ConfigStringMapping::SepLocalInterpRate,                localScalarRate)
+
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXMin,			cameraDistanceClampXMin)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXMax,			cameraDistanceClampXMax)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYMin,			cameraDistanceClampYMin)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYMax,			cameraDistanceClampYMax)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampZMin,			cameraDistanceClampZMin)
+	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampZMax,			cameraDistanceClampZMax)
 
 	IMPL_GETTER(ConfigStringMapping::StandingSideOffset, 				standing.sideOffset)
 	IMPL_GETTER(ConfigStringMapping::StandingUpOffset, 					standing.upOffset)
@@ -169,19 +190,32 @@ const std::unordered_map<ConfigStringMapping, std::function<void(BSFixedString)>
 			Config::SaveCurrentConfig();
 		}
 	} },
+	{ ConfigStringMapping::SepLocalInterpMethod, [](BSFixedString str) {
+		const auto it = Config::scalarMethods.find(str.c_str());
+		if (it != Config::scalarMethods.end()) {
+			Config::GetCurrentConfig()->separateLocalScalar = it->second;
+			Config::SaveCurrentConfig();
+		}
+	} },
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<void(bool)>> boolSetters = {
-	IMPL_SETTER(ConfigStringMapping::FirstPersonHorse, comaptIC_FirstPersonHorse, bool)
-	IMPL_SETTER(ConfigStringMapping::FirstPersonDragon, comaptIC_FirstPersonDragon, bool)
-	IMPL_SETTER(ConfigStringMapping::FirstPersonSitting, compatIC_FirstPersonSitting, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpolationEnabled, enableInterp, bool)
-	IMPL_SETTER(ConfigStringMapping::DisableDeltaTime, disableDeltaTime, bool)
-	IMPL_SETTER(ConfigStringMapping::DisableDuringDialog, disableDuringDialog, bool)
-	IMPL_SETTER(ConfigStringMapping::Crosshair3DEnabled, enable3DCrosshair, bool)
-	IMPL_SETTER(ConfigStringMapping::HideCrosshairOutOfCombat, hideNonCombatCrosshair, bool)
-	IMPL_SETTER(ConfigStringMapping::HideCrosshairMeleeCombat, hideCrosshairMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::SepZInterpEnabled, separateZInterp, bool)
+	IMPL_SETTER(ConfigStringMapping::FirstPersonHorse,					comaptIC_FirstPersonHorse, bool)
+	IMPL_SETTER(ConfigStringMapping::FirstPersonDragon,					comaptIC_FirstPersonDragon, bool)
+	IMPL_SETTER(ConfigStringMapping::FirstPersonSitting,				compatIC_FirstPersonSitting, bool)
+	IMPL_SETTER(ConfigStringMapping::PatchWorldToScreenMatrix,			patchWorldToScreenMatrix, bool)
+	IMPL_SETTER(ConfigStringMapping::InterpolationEnabled,				enableInterp, bool)
+	IMPL_SETTER(ConfigStringMapping::SeparateLocalInterpolation,		separateLocalInterp, bool)
+	IMPL_SETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime, bool)
+	IMPL_SETTER(ConfigStringMapping::DisableDuringDialog,				disableDuringDialog, bool)
+	IMPL_SETTER(ConfigStringMapping::Crosshair3DEnabled,				enable3DCrosshair, bool)
+	IMPL_SETTER(ConfigStringMapping::HideCrosshairOutOfCombat,			hideNonCombatCrosshair, bool)
+	IMPL_SETTER(ConfigStringMapping::HideCrosshairMeleeCombat,			hideCrosshairMeleeCombat, bool)
+	IMPL_SETTER(ConfigStringMapping::SepZInterpEnabled,					separateZInterp, bool)
+
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXEnable,		cameraDistanceClampXEnable, bool)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYEnable,		cameraDistanceClampYEnable, bool)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampZEnable,		cameraDistanceClampZEnable, bool)
 
 	IMPL_SETTER(ConfigStringMapping::InterpStanding,					standing.interp, bool)
 	IMPL_SETTER(ConfigStringMapping::InterpStandingRangedCombat,		standing.interpRangedCombat, bool)
@@ -214,15 +248,23 @@ const std::unordered_map<ConfigStringMapping, std::function<void(bool)>> boolSet
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<void(float)>> floatSetters = {
-	IMPL_SETTER(ConfigStringMapping::MinFollowDistance, minCameraFollowDistance, float)
-	IMPL_SETTER(ConfigStringMapping::MinCameraFollowRate, minCameraFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::MaxCameraFollowRate, maxCameraFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::MaxSmoothingInterpDistance, zoomMaxSmoothingDistance, float)
-	IMPL_SETTER(ConfigStringMapping::ZoomMul, zoomMul, float)
+	IMPL_SETTER(ConfigStringMapping::MinFollowDistance,					minCameraFollowDistance, float)
+	IMPL_SETTER(ConfigStringMapping::MinCameraFollowRate,				minCameraFollowRate, float)
+	IMPL_SETTER(ConfigStringMapping::MaxCameraFollowRate,				maxCameraFollowRate, float)
+	IMPL_SETTER(ConfigStringMapping::MaxSmoothingInterpDistance,		zoomMaxSmoothingDistance, float)
+	IMPL_SETTER(ConfigStringMapping::ZoomMul,							zoomMul, float)
 
-	IMPL_SETTER(ConfigStringMapping::SepZMaxInterpDistance, separateZMaxSmoothingDistance, float)
-	IMPL_SETTER(ConfigStringMapping::SepZMinFollowRate, separateZMinFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::SepZMaxFollowRate, separateZMaxFollowRate, float)
+	IMPL_SETTER(ConfigStringMapping::SepZMaxInterpDistance,				separateZMaxSmoothingDistance, float)
+	IMPL_SETTER(ConfigStringMapping::SepZMinFollowRate,					separateZMinFollowRate, float)
+	IMPL_SETTER(ConfigStringMapping::SepZMaxFollowRate,					separateZMaxFollowRate, float)
+	IMPL_SETTER(ConfigStringMapping::SepLocalInterpRate,                localScalarRate, float)
+
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXMin,			cameraDistanceClampXMin, float)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXMax,			cameraDistanceClampXMax, float)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYMin,			cameraDistanceClampYMin, float)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYMax,			cameraDistanceClampYMax, float)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampZMin,			cameraDistanceClampZMin, float)
+	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampZMax,			cameraDistanceClampZMax, float)
 
 	IMPL_SETTER(ConfigStringMapping::StandingSideOffset, 				standing.sideOffset, float)
 	IMPL_SETTER(ConfigStringMapping::StandingUpOffset, 					standing.upOffset, float)

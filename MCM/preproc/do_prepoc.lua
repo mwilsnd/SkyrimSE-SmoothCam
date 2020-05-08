@@ -44,7 +44,7 @@ lava.loadClass "preproc_struct.lua"
 lava.loadClass "preproc_constexpr_struct.lua"
 lava.loadClass "preproc_ifchain_macro_invoke.lua"
 lava.loadClass "preproc_all_of_struct_impl.lua"
-lava.loadClass "preproc_group_struct_macro_invoke..lua"
+lava.loadClass "preproc_group_struct_macro_invoke.lua"
 
 local function readFile( strPath )
 	local f = io.open( strPath, "r" )

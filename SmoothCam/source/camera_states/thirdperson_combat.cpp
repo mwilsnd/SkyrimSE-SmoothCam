@@ -15,48 +15,45 @@ void Camera::State::ThirdpersonCombatState::OnEnd(const PlayerCharacter* player,
 }
 
 void Camera::State::ThirdpersonCombatState::Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
-	// Get the current pitch and yaw values the game has set for the camera.
-	const auto cameraAngles = GetCameraRotation(camera);
 	// Get our computed local-space xyz offset.
 	const auto cameraLocal = GetCameraLocalPosition(player, camera);
 	// Get the base world position for the camera which we will offset with the local-space values.
 	const auto worldTarget = GetCameraWorldPosition(player, camera);
-
-	// Build a rotation matrix to rotate the camera around pitch and yaw axes.
-	auto m = glm::identity<glm::mat4>();
-	m = glm::rotate(m, -cameraAngles.x, Camera::UNIT_FORWARD); // pitch
-
-	// Rotate around just x-y, if we include z then the camera will be pitching around an offset which is not what we want.
-	auto translated = m * glm::vec4(
-		cameraLocal.x,
-		cameraLocal.y,
-		0.0f,
-		1.0f
-	);
-
-	// Now rotate around yaw
-	m = glm::identity<glm::mat4>();
-	if (IsPlayerMoving(player)) {
-		// When moving the camera yaw is locked to the player yaw
-		m = glm::rotate(m, -player->rot.z, Camera::UNIT_UP); // yaw
-	} else {
-		// Rotate around the player based on camera angles instead
-		m = glm::rotate(m, -cameraAngles.y, Camera::UNIT_UP); // yaw
-	}
-	translated = m * translated;
-
-	// Apply the height offset here to get proper rotation around the point we want
-	translated.z += cameraLocal.z;
-
+	// Transform the camera offsets based on the computed view matrix
+	const auto transformedLocalPos = GetTransformedCameraLocalPosition(player, camera);
 	// Define the starting point for our raycast
 	const auto start = worldTarget + glm::vec3(0.0f, 0.0f, cameraLocal.z);
-	// Add the final local space transformation to the player postion
-	const auto finalPos = worldTarget + glm::vec3(translated);
-	// Now lerp it based on camera distance to player position
-	const auto lerped = GetInterpolatedPosition(player, finalPos, glm::length(finalPos - worldTarget));
+
+	glm::vec3 preFinalPos;
+	if (GetConfig()->separateLocalInterp) {
+		// Handle separate local-space interpolation
+
+		// Interpolate the local position (rotation and translation offsets)
+		const auto lerpedLocalPos = UpdateInterpolatedLocalPosition(player, transformedLocalPos);
+		// And the world target
+		const auto lerpedWorldPos = UpdateInterpolatedWorldPosition(player, worldTarget, glm::length(GetLastWorldPosition() - worldTarget));
+		// Compute offset clamping if enabled
+		const auto clampedWorldPos = ComputeOffsetClamping(player, start, lerpedWorldPos);
+		StoreLastWorldPosition(clampedWorldPos);
+
+		// Construct the final position
+		preFinalPos = clampedWorldPos + lerpedLocalPos;
+	} else {
+		// Combined case
+
+		// Add the final local space transformation to the player postion
+		const auto targetWorldPos = worldTarget + transformedLocalPos;
+		// Now lerp it based on camera distance to player position
+		const auto lerpedWorldPos = UpdateInterpolatedWorldPosition(player, targetWorldPos, glm::length(targetWorldPos - worldTarget));
+		// Compute offset clamping if enabled
+		preFinalPos = ComputeOffsetClamping(player, camera, transformedLocalPos, worldTarget, lerpedWorldPos);
+		StoreLastWorldPosition(preFinalPos);
+	}
 
 	// Cast our ray and update the camera position
-	UpdateCameraPosition(start, lerped);
+	const auto finalPos = ComputeRaycast(start, preFinalPos);
+	// Set the position
+	SetCameraPosition(finalPos);
 
 	// Update the crosshair
 	if (GetConfig()->hideCrosshairMeleeCombat && IsMeleeWeaponDrawn(player)) {

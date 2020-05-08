@@ -17,10 +17,14 @@ namespace PapyrusBindings {
 		DisableDeltaTime,
 		Crosshair3DEnabled,
 		HideCrosshairOutOfCombat, HideCrosshairMeleeCombat,
-		DisableDuringDialog,
+		DisableDuringDialog, PatchWorldToScreenMatrix,
 		MinFollowDistance, MinCameraFollowRate, MaxCameraFollowRate, MaxSmoothingInterpDistance,
 		ZoomMul,
+		CameraDistanceClampXEnable, CameraDistanceClampXMin, CameraDistanceClampXMax,
+		CameraDistanceClampYEnable, CameraDistanceClampYMin, CameraDistanceClampYMax,
+		CameraDistanceClampZEnable, CameraDistanceClampZMin, CameraDistanceClampZMax,
 		SepZInterpEnabled, SepZMaxInterpDistance, SepZMinFollowRate, SepZMaxFollowRate, SepZInterpMethod,
+		SeparateLocalInterpolation, SepLocalInterpMethod, SepLocalInterpRate,
 
 		// Offsets
 		StandingSideOffset, StandingUpOffset, StandingCombatRangedSideOffset, StandingCombatRangedUpOffset,
@@ -70,6 +74,7 @@ namespace PapyrusBindings {
 		{ "FirstPersonHorse",					{ConfigStringMapping::FirstPersonHorse, ConfigType::BOOL} },
 		{ "FirstPersonDragon",					{ConfigStringMapping::FirstPersonDragon, ConfigType::BOOL} },
 		{ "FirstPersonSitting",					{ConfigStringMapping::FirstPersonSitting, ConfigType::BOOL} },
+		{ "PatchWorldToScreenMatrix",			{ConfigStringMapping::PatchWorldToScreenMatrix, ConfigType::BOOL} },
 
 		{ "InterpolationEnabled",				{ConfigStringMapping::InterpolationEnabled, ConfigType::BOOL} },
 		{ "InterpolationMethod",				{ConfigStringMapping::InterpolationMethod, ConfigType::STRING} },
@@ -82,6 +87,10 @@ namespace PapyrusBindings {
 		{ "SepZMaxFollowRate",					{ConfigStringMapping::SepZMaxFollowRate, ConfigType::FLOAT} },
 		{ "SeparateZInterpMethod",				{ConfigStringMapping::SepZInterpMethod, ConfigType::STRING} },
 
+		{ "SeparateLocalInterpolation",			{ConfigStringMapping::SeparateLocalInterpolation, ConfigType::BOOL} },
+		{ "SepLocalInterpMethod",				{ConfigStringMapping::SepLocalInterpMethod, ConfigType::STRING} },
+		{ "SepLocalInterpRate",					{ConfigStringMapping::SepLocalInterpRate, ConfigType::FLOAT} },
+
 		{ "Enable3DCrosshair",					{ConfigStringMapping::Crosshair3DEnabled, ConfigType::BOOL} },
 		{ "HideCrosshairOutOfCombat",			{ConfigStringMapping::HideCrosshairOutOfCombat, ConfigType::BOOL} },
 		{ "HideCrosshairMeleeCombat",			{ConfigStringMapping::HideCrosshairMeleeCombat, ConfigType::BOOL} },
@@ -91,6 +100,16 @@ namespace PapyrusBindings {
 		{ "MaxCameraFollowRate",				{ConfigStringMapping::MaxCameraFollowRate, ConfigType::FLOAT} },
 		{ "MaxSmoothingInterpDistance",			{ConfigStringMapping::MaxSmoothingInterpDistance, ConfigType::FLOAT} },
 		{ "ZoomMul",							{ConfigStringMapping::ZoomMul, ConfigType::FLOAT} },
+
+		{ "CameraDistanceClampXEnable",			{ConfigStringMapping::CameraDistanceClampXEnable, ConfigType::BOOL} },
+		{ "CameraDistanceClampXMin",			{ConfigStringMapping::CameraDistanceClampXMin, ConfigType::FLOAT} },
+		{ "CameraDistanceClampXMax",			{ConfigStringMapping::CameraDistanceClampXMax, ConfigType::FLOAT} },
+		{ "CameraDistanceClampYEnable",			{ConfigStringMapping::CameraDistanceClampYEnable, ConfigType::BOOL} },
+		{ "CameraDistanceClampYMin",			{ConfigStringMapping::CameraDistanceClampYMin, ConfigType::FLOAT} },
+		{ "CameraDistanceClampYMax",			{ConfigStringMapping::CameraDistanceClampYMax, ConfigType::FLOAT} },
+		{ "CameraDistanceClampZEnable",			{ConfigStringMapping::CameraDistanceClampZEnable, ConfigType::BOOL} },
+		{ "CameraDistanceClampZMin",			{ConfigStringMapping::CameraDistanceClampZMin, ConfigType::FLOAT} },
+		{ "CameraDistanceClampZMax",			{ConfigStringMapping::CameraDistanceClampZMax, ConfigType::FLOAT} },
 
 		{ "Standing:SideOffset",				{ConfigStringMapping::StandingSideOffset, ConfigType::FLOAT} },
 		{ "Standing:UpOffset",					{ConfigStringMapping::StandingUpOffset, ConfigType::FLOAT} },

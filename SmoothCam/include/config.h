@@ -108,35 +108,52 @@ namespace Config {
 	} OffsetGroup;
 
 	typedef struct parsedConfig {
-		bool enableInterp = true;
+		// Crosshair
 		bool enable3DCrosshair = true;
-		bool hideNonCombatCrosshair = false;
-		bool hideCrosshairMeleeCombat = false;
+		bool hideNonCombatCrosshair = true;
+		bool hideCrosshairMeleeCombat = true;
+
+		// Misc
 		bool disableDeltaTime = false;
-		bool disableDuringDialog = false;
-
-		ScalarMethods currentScalar = ScalarMethods::CIRC_IN;
-
+		
 		// Comapt
+		bool disableDuringDialog = false;
 		bool comaptIC_FirstPersonHorse = true;
 		bool comaptIC_FirstPersonDragon = true;
 		bool compatIC_FirstPersonSitting = true;
+		bool patchWorldToScreenMatrix = false;
 
-		// mins + maxs
+		// Primary interpolation
+		bool enableInterp = true;
+		ScalarMethods currentScalar = ScalarMethods::CIRC_IN;
 		float minCameraFollowDistance = 64.0f;
-		float minCameraFollowRate = 0.4f;
-		float maxCameraFollowRate = 0.8f;
-
+		float minCameraFollowRate = 0.2f;
+		float maxCameraFollowRate = 0.5f;
 		float zoomMul = 500.0f;
-		float zoomMaxSmoothingDistance = 500.0f;
+		float zoomMaxSmoothingDistance = 650.0f;
+
+		// Separate local space interpolation
+		bool separateLocalInterp = false;
+		ScalarMethods separateLocalScalar = ScalarMethods::CIRC_IN;
+		float localScalarRate = 1.0f;
 
 		// Separate Z
 		bool separateZInterp = false;
-		float separateZMaxSmoothingDistance = 60.0f;
-		float separateZMinFollowRate = 0.5f;
-		float separateZMaxFollowRate = 1.0f;
-
 		ScalarMethods separateZScalar = ScalarMethods::CIRC_IN;
+		float separateZMaxSmoothingDistance = 80.0f;
+		float separateZMinFollowRate = 0.15f;
+		float separateZMaxFollowRate = 0.3f;
+
+		// Distance clamping
+		bool cameraDistanceClampXEnable = true;
+		float cameraDistanceClampXMin = -75.0f;
+		float cameraDistanceClampXMax = 75.0f;
+		bool cameraDistanceClampYEnable = true;
+		float cameraDistanceClampYMin = -100.0f;
+		float cameraDistanceClampYMax = 100.0f;
+		bool cameraDistanceClampZEnable = true;
+		float cameraDistanceClampZMin = -80.0f;
+		float cameraDistanceClampZMax = 80.0f;
 
 		// Per state positions
 		OffsetGroup standing;
@@ -144,11 +161,9 @@ namespace Config {
 		OffsetGroup running;
 		OffsetGroup sprinting;
 		OffsetGroup sneaking;
-
 		OffsetGroup swimming;
 		OffsetGroup bowAim;
 		OffsetGroup sitting;
-
 		OffsetGroup horseback;
 		OffsetGroup dragon; // @TODO
 
@@ -165,11 +180,24 @@ namespace Config {
 				CEREAL_NVP(comaptIC_FirstPersonHorse),
 				CEREAL_NVP(comaptIC_FirstPersonDragon),
 				CEREAL_NVP(compatIC_FirstPersonSitting),
+				CEREAL_NVP(patchWorldToScreenMatrix),
 				CEREAL_NVP(minCameraFollowDistance),
 				CEREAL_NVP(minCameraFollowRate),
 				CEREAL_NVP(maxCameraFollowRate),
 				CEREAL_NVP(zoomMul),
 				CEREAL_NVP(zoomMaxSmoothingDistance),
+				CEREAL_NVP(separateLocalInterp),
+				CEREAL_NVP(separateLocalScalar),
+				CEREAL_NVP(localScalarRate),
+				CEREAL_NVP(cameraDistanceClampXEnable),
+				CEREAL_NVP(cameraDistanceClampXMin),
+				CEREAL_NVP(cameraDistanceClampXMax),
+				CEREAL_NVP(cameraDistanceClampYEnable),
+				CEREAL_NVP(cameraDistanceClampYMin),
+				CEREAL_NVP(cameraDistanceClampYMax),
+				CEREAL_NVP(cameraDistanceClampZEnable),
+				CEREAL_NVP(cameraDistanceClampZMin),
+				CEREAL_NVP(cameraDistanceClampZMax),
 				CEREAL_NVP(separateZInterp),
 				CEREAL_NVP(separateZMaxSmoothingDistance),
 				CEREAL_NVP(separateZMinFollowRate),
