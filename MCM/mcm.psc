@@ -691,13 +691,13 @@ ToggleSetting sneaking_interpMelee -> {
 
 ; Swimming
 SliderSetting swimming_sideOffset -> {
-	settingName: "Sneaking:SideOffset"
+	settingName: "Swimming:SideOffset"
 	displayName: "Side Offset"
 	desc: "The amount to move the camera to the right."
 	defaultValue: 25.0
 }
 SliderSetting swimming_upOffset -> {
-	settingName: "Sneaking:UpOffset"
+	settingName: "Swimming:UpOffset"
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
