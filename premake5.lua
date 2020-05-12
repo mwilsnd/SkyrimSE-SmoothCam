@@ -32,7 +32,7 @@ end
 
 local function rewriteFile(strPath, strData)
 	local f = io.open(strPath, "w")
-	assert(f, "Failed to open file ".. target.. "!\n")
+	assert(f, "Failed to open file ".. strPath.. "!\n")
 	f:write(strData)
 	f:close()
 end
@@ -106,7 +106,7 @@ const char * GetObjectClassName(void * objBase);
 void DumpClass(void * theClassPtr, UInt64 nIntsToDump);]])
 
 					--And rewrite this one to use our own impl
-					rewriteFile(root.. "/skse64/skse64_common/Utilities.h", [[
+					rewriteFile(root.. "/skse64/skse64_common/Relocation.h", [[
 #pragma once
 #include "addrlib/relocation.h"
 					]])
