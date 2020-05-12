@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "camera_state.h"
 #include "camera.h"
 
@@ -22,8 +21,8 @@ glm::vec3 Camera::State::BaseCameraState::GetLastCameraPosition() const noexcept
 }
 
 // Sets the camera position
-void Camera::State::BaseCameraState::SetCameraPosition(const glm::vec3& pos) noexcept {
-	camera->currentPosition = pos;
+void Camera::State::BaseCameraState::SetCameraPosition(const glm::vec3& pos, const CorrectedPlayerCamera* playerCamera) noexcept {
+	camera->SetPosition(pos, playerCamera);
 }
 
 // Performs a ray cast and returns a new position based on the result

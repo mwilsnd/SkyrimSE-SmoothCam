@@ -15,11 +15,19 @@ project "skse64"
 
 	dependson { "common_skse64", "skse64_common" }
 
-	files { loc.. "/**.h", loc.. "/**.cpp" }
-	forceincludes { "../Deps/skse64_2_00_17/src/common/IPrefix.h" }
+	files {
+		loc.. "/**.h",
+		loc.. "/**.cpp",
+	}
+	forceincludes {
+		"../Deps/skse64_2_00_17/src/common/IPrefix.h",
+		"../SmoothCam/include/addrlib/skse_macros.h",
+	}
 	includedirs {
 		parent,
-		parent.. "/../"
+		parent.. "/../",
+		"../SmoothCam/include",
+		"../Deps/eternal/include",
 	}
 
 	filter "system:windows"
@@ -29,6 +37,9 @@ project "skse64"
 		characterset "MBCS"
 		intrinsics "On"
 		fpu "Hardware"
+		flags {
+			"MultiProcessorCompile"
+		}
 
 		defines {
 			"_USRDLL",
@@ -49,7 +60,6 @@ project "skse64"
 			parent.. "/skse64_common/bin/Debug-windows-x86_64/skse64_common",
 		}
 		links {
-			--"common_skse64.lib",
 			"skse64_common.lib",
 		}
 
@@ -65,7 +75,7 @@ project "skse64"
 		omitframepointer "On"
 		flags {
 			"LinkTimeOptimization", "NoBufferSecurityCheck",
-			"NoMinimalRebuild", "NoRuntimeChecks",
+			"NoMinimalRebuild", "NoRuntimeChecks", "MultiProcessorCompile"
 		}
 
 		libdirs {
@@ -73,6 +83,5 @@ project "skse64"
 			parent.. "/skse64_common/bin/Release-windows-x86_64/skse64_common",
 		}
 		links {
-			--"common_skse64.lib",
 			"skse64_common.lib",
 		}

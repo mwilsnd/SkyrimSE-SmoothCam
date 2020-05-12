@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 
 namespace Raycast {
 	// These require more inspection - They all contain vtables of assorted physics shapes

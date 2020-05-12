@@ -1,9 +1,5 @@
-#include "pch.h"
-
 namespace {
 	typedef bhkWorld*(__fastcall* bhkWorldGetter)(const TESObjectCELL* cell);
-	RelocAddr<bhkWorldGetter> GetBhkWorld(0x2654c0);
-	
 	constexpr auto hkpBroadphaseOffset = 0x88;
 }
 
@@ -13,5 +9,5 @@ hkp3AxisSweep* Physics::GetBroadphase(const bhkWorld* physicsWorld) {
 }
 
 bhkWorld* Physics::GetWorld(const TESObjectCELL* parentCell) {
-	return (*GetBhkWorld)(parentCell);
+	return Offsets::Get<bhkWorldGetter>(18536)(parentCell); // 0x2654c0
 }

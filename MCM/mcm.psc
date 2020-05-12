@@ -110,7 +110,7 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 3
+	version: 4
 }
 
 ; Compat
@@ -133,11 +133,6 @@ ToggleSetting disableDuringDialog -> {
 	settingName: "DisableDuringDialog"
 	displayName: "Disable During Dialog"
 	desc: "Disables SmoothCam when the dialog menu is open."
-}
-ToggleSetting patchWorldToScreenMatrix -> {
-	settingName: "PatchWorldToScreenMatrix"
-	displayName: "Patch Projected HUD Elements"
-	desc: "Patch floating HUD elements like quest markers. You must restart your game for this option to apply. If this causes you to crash, set patchWorldToScreenMatrix to false in SKSE/Plugins/SmoothCam.json."
 }
 
 ; Following
@@ -870,7 +865,6 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Compatibility")
 		AddHeaderOption("General")
 		disableDuringDialog->!implControl
-		patchWorldToScreenMatrix->!implControl
 
 		AddHeaderOption("Improved Camera Patches")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {

@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 
 namespace PapyrusBindings {
 	constexpr auto ScriptClassName = "SmoothCamMCM";
@@ -17,7 +16,7 @@ namespace PapyrusBindings {
 		DisableDeltaTime,
 		Crosshair3DEnabled,
 		HideCrosshairOutOfCombat, HideCrosshairMeleeCombat,
-		DisableDuringDialog, PatchWorldToScreenMatrix,
+		DisableDuringDialog,
 		MinFollowDistance, MinCameraFollowRate, MaxCameraFollowRate, MaxSmoothingInterpDistance,
 		ZoomMul,
 		CameraDistanceClampXEnable, CameraDistanceClampXMin, CameraDistanceClampXMax,
@@ -74,7 +73,6 @@ namespace PapyrusBindings {
 		{ "FirstPersonHorse",					{ConfigStringMapping::FirstPersonHorse, ConfigType::BOOL} },
 		{ "FirstPersonDragon",					{ConfigStringMapping::FirstPersonDragon, ConfigType::BOOL} },
 		{ "FirstPersonSitting",					{ConfigStringMapping::FirstPersonSitting, ConfigType::BOOL} },
-		{ "PatchWorldToScreenMatrix",			{ConfigStringMapping::PatchWorldToScreenMatrix, ConfigType::BOOL} },
 
 		{ "InterpolationEnabled",				{ConfigStringMapping::InterpolationEnabled, ConfigType::BOOL} },
 		{ "InterpolationMethod",				{ConfigStringMapping::InterpolationMethod, ConfigType::STRING} },

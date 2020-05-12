@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 
 namespace GameState {
 	#ifdef _DEBUG

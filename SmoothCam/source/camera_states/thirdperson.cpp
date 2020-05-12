@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "camera_states/thirdperson.h"
 #include "camera.h"
 
@@ -57,7 +56,7 @@ void Camera::State::ThirdpersonState::Update(PlayerCharacter* player, const Corr
 	// Cast our ray and update the camera position
 	const auto finalPos = ComputeRaycast(start, preFinalPos);
 	// Set the position
-	SetCameraPosition(finalPos);
+	SetCameraPosition(finalPos, camera);
 
 	// Update crosshair visibility
 	SetCrosshairEnabled(!GetConfig()->hideNonCombatCrosshair);

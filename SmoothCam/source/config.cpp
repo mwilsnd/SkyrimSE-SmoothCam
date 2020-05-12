@@ -1,5 +1,3 @@
-#include "pch.h"
-
 Config::UserConfig currentConfig;
 
 void Config::ReadConfigFile() {

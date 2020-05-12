@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "camera.h"
 
 float GetFrameDelta() noexcept;
@@ -20,10 +19,6 @@ void Camera::SmoothCamera::OnTogglePOV(const ButtonEvent* ev) noexcept {
 
 void Camera::SmoothCamera::OnDialogMenuChanged(const MenuOpenCloseEvent* const ev) noexcept {
 	dialogMenuOpen = ev->opening;
-}
-
-glm::vec3 Camera::SmoothCamera::GetGameExpectedPosition() const noexcept {
-	return gameExpectedPosition;
 }
 
 glm::vec3 Camera::SmoothCamera::GetCurrentPosition() const noexcept {
@@ -423,6 +418,41 @@ glm::vec3 Camera::SmoothCamera::GetCurrentCameraTargetWorldPosition(const Player
 	};
 }
 
+void Camera::SmoothCamera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept {
+	auto cameraNode = camera->cameraNode;
+	auto cameraNi = reinterpret_cast<NiCamera*>(
+		cameraNode->m_children.m_size == 0 ?
+		nullptr :
+		cameraNode->m_children.m_data[0]
+	);
+	if (!cameraNi) return;
+
+	currentPosition = pos;
+
+#ifdef _DEBUG
+	if (!mmath::IsValid(currentPosition)) {
+		__debugbreak();
+		// Oops, go ahead and clear both
+		lastPosition = currentPosition = {
+			cameraNode->m_worldTransform.pos.x,
+			cameraNode->m_worldTransform.pos.y,
+			cameraNode->m_worldTransform.pos.z
+		};
+		return;
+	}
+#endif
+
+	const NiPoint3 niPos = { currentPosition.x, currentPosition.y, currentPosition.z };
+	cameraNode->m_localTransform.pos = niPos;
+	cameraNode->m_worldTransform.pos = niPos;
+	cameraNi->m_worldTransform.pos = niPos;
+
+	// Data breakpoints for the win!
+	// Recalculate the world to screen matrix
+	typedef void(*UpdateWorldToScreenMtx)(NiCamera*);
+	Offsets::Get<UpdateWorldToScreenMtx>(69271)(cameraNi);
+}
+
 // Returns the current smoothing scalar to use for the given distance to the player
 float Camera::SmoothCamera::GetCurrentSmoothingScalar(const float distance, ScalarSelector method) const {
 	Config::ScalarMethods scalarMethod;
@@ -523,19 +553,21 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 
 	// Bow
 	if (GameState::IsBowDrawn(player)) {
-		BSFixedString handNodeName = "Bow_MidBone";
+		BSFixedString handNodeName = "WEAPON";
 		const auto handNode = player->loadedState->node->GetObjectByName(&handNodeName.data);
 		if (handNode) {
 			niOrigin = handNode->m_worldTransform.pos;
+
+			// Assuming the weapon node is close enough, the arrow seems to use a different normal
+			// This gets pretty close
+			const auto n = mmath::GetViewVector(
+				glm::vec3(0.0, 1.0, 0.0),
+				GetCameraPitchRotation(camera) + 0.025f,
+				GetCameraYawRotation(camera) + 0.015f
+			);
+			niNormal = NiPoint3(n.x, n.y, n.z);
 		}
 
-	} else if (GameState::IsMagicDrawn(player) || GameState::IsMeleeWeaponDrawn(player)) {
-		// This isn't perfect, but better than it was
-		BSFixedString nodeName = "NPC Spine1 [Spn1]";
-		const auto node = player->loadedState->node->GetObjectByName(&nodeName.data);
-		if (node) {
-			niOrigin.z -= player->pos.z - node->m_worldTransform.pos.z;
-		}
 	}
 
 	// Cast the aim ray
@@ -547,19 +579,24 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 	glm::vec2 crosshairPos(0.0f, 0.0f);
 	if (result.hit) {
 		glm::vec3 screen = {};
-
-		// Offset our camera local transformation, projview matrix is not in sync with our changes
-		const auto localSpace = (config->patchWorldToScreenMatrix ? GetGameExpectedPosition() : currentPosition)
-			- GetCurrentCameraTargetWorldPosition(player, camera);
 		auto pt = NiPoint3(
-			result.hitPos.x - localSpace.x,
-			result.hitPos.y - localSpace.y,
-			result.hitPos.z - localSpace.z
+			result.hitPos.x,
+			result.hitPos.y,
+			result.hitPos.z
 		);
+
+		auto cameraNode = camera->cameraNode;
+		auto cameraNi = reinterpret_cast<NiCamera*>(
+			cameraNode->m_children.m_size == 0 ?
+			nullptr :
+			cameraNode->m_children.m_data[0]
+		);
+		if (!cameraNi) return;
 
 		// Project to screen
 		(*WorldPtToScreenPt3_Internal)(
-			g_worldToCamMatrix, g_viewPort, &pt,
+			(float*)cameraNi->m_aafWorldToCam,
+			g_viewPort, &pt,
 			&screen.x, &screen.y, &screen.z, 1.0f
 		);
 
@@ -582,7 +619,7 @@ void Camera::SmoothCamera::SetCrosshairPosition(const glm::vec2& pos) const {
 		GFxValue args[3];
 		args[0].SetString("SetCrosshairPosition");
 		args[1].SetNumber(static_cast<double>(pos.x) + 23.0); // @TODO: These offsets were obtained by just comparing screenshots
-		args[2].SetNumber(static_cast<double>(pos.y) - 115.0f); // I really need to figure out what is actually going on here, rather than use magic numbers
+		args[2].SetNumber(static_cast<double>(pos.y) - 115.0); // I really need to figure out what is actually going on here, rather than use magic numbers
 		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 3);
 	}
 }
@@ -623,20 +660,6 @@ float Camera::SmoothCamera::GetCameraZoomScalar(const CorrectedPlayerCamera* cam
 // Selects the correct update method and positions the camera
 void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera) {
 	auto cameraNode = camera->cameraNode;
-	auto cameraNi = reinterpret_cast<NiCamera*>(
-		cameraNode->m_children.m_size == 0 ?
-		nullptr :
-		cameraNode->m_children.m_data[0]
-	);
-	if (!cameraNi) return;
-
-	// Store the position the game expects for the camera to be at
-	gameExpectedPosition = {
-		cameraNi->m_worldTransform.pos.x,
-		cameraNi->m_worldTransform.pos.y,
-		cameraNi->m_worldTransform.pos.z
-	};
-
 	config = Config::GetCurrentConfig();
 
 	// Update states & effects
@@ -709,28 +732,10 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 					cameraNode->m_worldTransform.pos.y,
 					cameraNode->m_worldTransform.pos.z
 				};
-				break; 
+				break;
 			}
 		}
 	}
 
 	povWasPressed = false;
-
-#ifdef _DEBUG
-	if (!mmath::IsValid(currentPosition)) {
-		__debugbreak();
-		// Oops, go ahead and clear both
-		lastPosition = currentPosition = {
-			cameraNode->m_worldTransform.pos.x,
-			cameraNode->m_worldTransform.pos.y,
-			cameraNode->m_worldTransform.pos.z
-		};
-		return;
-	}
-#endif
-
-	const NiPoint3 pos = { currentPosition.x, currentPosition.y, currentPosition.z };
-	cameraNode->m_localTransform.pos = pos;
-	cameraNode->m_worldTransform.pos = pos;
-	cameraNi->m_worldTransform.pos = pos;
 }

@@ -1,12 +1,8 @@
-#include "pch.h"
-
 namespace {
 	typedef bool(__fastcall* RayCastFunType)(
 		UnkPhysicsHolder* physics, bhkWorld* world, glm::vec4& rayStart,
 		glm::vec4& rayEnd, uint32_t* rayResultInfo, Character** hitCharacter, float traceHullSize
 	);
-
-	RelocAddr<RayCastFunType> playerCameraRayCastingFunc(0x4f45f0); // 1404f45f0
 }
 
 Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize) {
@@ -21,7 +17,7 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	}
 #endif
 
-	auto playerCamera = reinterpret_cast<CorrectedPlayerCamera*>(PlayerCamera::GetSingleton());
+	auto playerCamera = CorrectedPlayerCamera::GetSingleton();
 	auto ply = (*g_thePlayer);
 	if (!ply || !ply->parentCell || !playerCamera || !playerCamera->physics) return res;
 
@@ -30,7 +26,7 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	{
 		auto physicsWorld = Physics::GetWorld(ply->parentCell);
 		if (physicsWorld) {
-			res.hit = (*playerCameraRayCastingFunc)(
+			res.hit = Offsets::Get<RayCastFunType>(32270)( // 0x4f45f0
 				playerCamera->physics, physicsWorld,
 				start, end, static_cast<uint32_t*>(res.data), &res.hitCharacter,
 				traceHullSize

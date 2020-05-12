@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 #include "game_state.h"
 #include "camera_state.h"
 #include "camera_states/thirdperson.h"
@@ -55,13 +54,13 @@ namespace Camera {
 			void OnTogglePOV(const ButtonEvent* ev) noexcept;
 			// Called when the dialog menu is shown or hidden
 			void OnDialogMenuChanged(const MenuOpenCloseEvent* const ev) noexcept;
-			// Returns the camera position before we change it
-			glm::vec3 GetGameExpectedPosition() const noexcept;
 			// Returns our most recent camera position
 			glm::vec3 GetCurrentPosition() const noexcept;
 			// Returns the full world-space camera target postion for the current player state
 			glm::vec3 GetCurrentCameraTargetWorldPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const;
-			
+			// Set the camera world position
+			void SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept;
+
 		private:
 			// Updates our POV state to the true value the game expects for each state
 			const bool UpdateCameraPOVState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
@@ -129,7 +128,6 @@ namespace Camera {
 			CameraActionState currentActionState = CameraActionState::Unknown;
 			CameraActionState lastActionState = CameraActionState::Unknown;
 
-			glm::vec3 gameExpectedPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 currentPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastLocalPosition = { 0.0f, 0.0f, 0.0f };

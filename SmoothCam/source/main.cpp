@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "main.h"
 #include "detours.h"
 #include "papyrus.h"
@@ -35,9 +34,19 @@ extern "C" {
 		_DMESSAGE("SmoothCam plugin query begin");
 #endif
 
+		if (!Offsets::Initialize()) {
+			_ERROR("Failed to load game offset database. Visit https://www.nexusmods.com/skyrimspecialedition/mods/32444 to aquire the correct database file.");
+			FatalError(L"Failed to load game offset database. Visit https://www.nexusmods.com/skyrimspecialedition/mods/32444 to aquire the correct database file.");
+			return false;
+		}
+
+//#ifdef _DEBUG
+//		Offsets::DumpDatabaseTextFile();
+//#endif
+
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 3;
+		info->version = 4;
 
 		g_pluginHandle = skse->GetPluginHandle();
 
@@ -46,8 +55,7 @@ extern "C" {
 		}
 
 		if (skse->runtimeVersion != RUNTIME_VERSION_1_5_97) {
-			_DMESSAGE("This module was compiled for skse 1.5.97, you are running an unsupported verion.");
-			return false;
+			_WARNING("This module was compiled for skse 1.5.97, you are running an unsupported verion. You may experience crashes or other stange issues.");
 		}
 		
 		return true;

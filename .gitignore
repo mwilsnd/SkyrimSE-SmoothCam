@@ -25,3 +25,4 @@ SmoothCam/bin-obj
 enc_temp_folder/
 
 MCM/SmoothCamMCM.psc
+CodeGen/gen_addrmap/*.txt

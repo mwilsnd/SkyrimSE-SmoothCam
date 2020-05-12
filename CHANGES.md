@@ -1,3 +1,15 @@
+## Alpha 1.3
+* Bumped module and MCM version number to 4
+* Fixed issue #11 causing the player to teleport when using Skyrim Souls RE and the HUD patch.
+* Added SKSE Address Library support per issue #9, allowing the mod to be used across many versions of SKSE (In theory). The mod ships with the version database for 1.5.97, refer to https://www.nexusmods.com/skyrimspecialedition/mods/32444 for using this mod with older versions. **Note:** The mod is not guaranteed to work on all versions, things other than simple addresses can change from version to version which may cause crashes or other instabilities. Tested and working on 1.5.97 and 1.5.80.
+* Trying out changing the primary camera detour for a collection of virtual function detours. These should be more compatible with other mods and are more maintainable.
+* Force include the PCH via the build scripts
+* Add some small code rewriting in the build scripts for SKSE, to enable a more transparent implementation of Address library.
+* Created a code generator for building a map of SKSE 1.5.97 addresses, mapping them to address library ID numbers. This tool requires LuaJIT to run. Thanks to LuaPower for the support libraries used.
+* Revert the original HUD patch, it caused massive issues with geometry culling and shadow maps due to being applied to every NiCamera in the game.
+* Added an improved HUD patch, invoking the internal game method used to calculate the world-to-screen matrix. This patch is much safer and thus can always be active, the setting to enable the patch has been removed. This patch also appears to have fixed the geometry culling issue.
+* Worked on the crosshair a bit more.
+
 ## Alpha 1.2
 * Bumped module and MCM version number to 3
 * Added distance clamping options which limit how far away the camera may drift from the player along each axis

@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 
 class hkp3AxisSweep {
 	public:

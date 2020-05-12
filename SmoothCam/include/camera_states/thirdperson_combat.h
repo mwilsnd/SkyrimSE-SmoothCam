@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 #include "camera_state.h"
 
 namespace Camera {

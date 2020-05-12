@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 
 class CorrectedThirdPersonState : public TESCameraState
 {
@@ -13,8 +12,8 @@ public:
 	PlayerInputHandler		inputHandler;				// 20
 	NiNode*                 cameraNode;				    // 30
 	NiNode*                 controllerNode;			    // 38
-	float					unk40[4];					// 40
-	UInt32					unk50[3];					// 50
+	NiPoint3				translation;				// 40
+	NiQuaternion			rotation;					// 50
 	float					fOverShoulderPosX;			// 5C
 	float					fOverShoulderCombatAddY;	// 60
 	float					fOverShoulderPosZ;			// 64

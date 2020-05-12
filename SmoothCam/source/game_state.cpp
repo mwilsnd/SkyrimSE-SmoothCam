@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "game_state.h"
 
 // Returns the bits for player->actorState->flags04 which appear to convey movement info

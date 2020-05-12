@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "basicdetour.h"
 
 BasicDetour::BasicDetour(void** old, void* replacement) noexcept : attached(false) {

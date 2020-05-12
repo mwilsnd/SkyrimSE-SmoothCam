@@ -30,6 +30,13 @@ else
 	print "Building for old CPUs"
 end
 
+local function rewriteFile(strPath, strData)
+	local f = io.open(strPath, "w")
+	assert(f, "Failed to open file ".. target.. "!\n")
+	f:write(strData)
+	f:close()
+end
+
 newaction {
 	trigger = "dd",
 	description = "Auto download all required dependencies and place them in the correct location",
@@ -61,7 +68,49 @@ newaction {
 		local deps = {
 			{
 				ok = false, name = "SKSE64", path = "BuildScripts/download_file.lua",
-				args = {"Deps/temp_downloads", "Deps", "skse64_2_00_17.7z", "https://skse.silverlock.org/beta/skse64_2_00_17.7z" }
+				args = { "Deps/temp_downloads", "Deps", "skse64_2_00_17.7z", "https://skse.silverlock.org/beta/skse64_2_00_17.7z" },
+				postExec = function(tbl)
+					--Gross hack to deal with SKSE macros and our use of versionlib
+					--We blank the macros from this file, then force include our own version with the edits we need
+					local root = tbl.args[2].. "/skse64_2_00_17/src"
+					rewriteFile(root.. "/skse64/skse64_common/Utilities.h", [[
+#pragma once
+// this is the solution to getting a pointer-to-member-function pointer
+template <typename T>
+uintptr_t GetFnAddr(T src)
+{
+	union
+	{
+		uintptr_t	u;
+		T			t;
+	} data;
+
+	data.t = src;
+
+	return data.u;
+}
+
+std::string GetRuntimePath();
+std::string GetRuntimeName();
+const std::string & GetRuntimeDirectory();
+
+const std::string & GetConfigPath();
+std::string GetConfigOption(const char * section, const char * key);
+bool GetConfigOption_UInt32(const char * section, const char * key, UInt32 * dataOut);
+
+const std::string & GetOSInfoStr();
+
+void * GetIATAddr(void * module, const char * searchDllName, const char * searchImportName);
+
+const char * GetObjectClassName(void * objBase);
+void DumpClass(void * theClassPtr, UInt64 nIntsToDump);]])
+
+					--And rewrite this one to use our own impl
+					rewriteFile(root.. "/skse64/skse64_common/Utilities.h", [[
+#pragma once
+#include "addrlib/relocation.h"
+					]])
+				end,
 			},
 		}
 		for k, v in ipairs( deps ) do
@@ -69,6 +118,9 @@ newaction {
 				printf( "Downloading %s...", v.name )
 			term.popColor()
 			v.ok = dofile( v.path )( table.unpack(v.args) )
+			if v.ok then
+				if v.postExec then v.postExec(v) end
+			end
 		end
 
 		for k, v in ipairs( deps ) do
@@ -127,7 +179,11 @@ project "SmoothCam"
 	files { "SmoothCam/**.h", "SmoothCam/**.cpp", "SmoothCam/**.rc", "SmoothCam/**.def", "SmoothCam/**.ini" }
 	pchheader "pch.h"
 	pchsource "SmoothCam/source/pch.cpp"
-	forceincludes { "../Deps/skse64_2_00_17/src/common/IPrefix.h" }
+	forceincludes {
+		"../Deps/skse64_2_00_17/src/common/IPrefix.h",
+		"../SmoothCam/include/addrlib/skse_macros.h",
+		"pch.h"
+	}
 	includedirs {
 		"./SmoothCam/include",
 		"Deps/skse64_2_00_17/src/skse64",
@@ -147,7 +203,7 @@ project "SmoothCam"
 		fpu "Hardware"
 
 	filter "configurations:Debug"
-		defines { "DEBUG" }
+		defines { "DEBUG", "SMOOTHCAM_IMPL" }
 		symbols "On"
 		editandcontinue "On"
 		floatingpoint "Strict"
@@ -172,7 +228,7 @@ project "SmoothCam"
 		}
 
 	filter "configurations:Release"
-		defines { "NODEBUG", "NDEBUG" }
+		defines { "NODEBUG", "NDEBUG", "SMOOTHCAM_IMPL" }
 		linkoptions { "/LTCG" }
 		buildoptions { "/Ob2", "/Ot" }
 		optimize "Speed"

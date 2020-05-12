@@ -71,6 +71,9 @@
 #   include <cereal/cereal.hpp>
 #   include <cereal/archives/json.hpp>
 
+#   include <addrlib/versiondb.h>
+#   include <addrlib/offsets.h>
+
 #   define GLM_FORCE_LEFT_HANDED
 #   define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #   define GLM_FORCE_QUAT_DATA_WXYZ

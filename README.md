@@ -12,7 +12,9 @@ Mod authors of conflicting mods can add support for the crosshair by adding a `S
 * Alternate Conversation Camera is supported, just make sure "Disable During Dialog" is selected in the MCM.
 
 ## Runtime Requirements
-SmoothCam only requires SKSE64 (2.0.17 (runtime 1.5.97)). SkyUI is optional if using the MCM esp.
+SmoothCam only requires SKSE64. SkyUI is optional if using the MCM esp.
+SmoothCam uses [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444) as of Alpha 1.3, allowing the mod to run on many different versions of the game. SmoothCam includes the 1.5.97 database file, for older versions refer to the link for the correct database.
+**Note:** I only offer active support for SKSE 2.0.17 (1.5.97), using SmoothCam on older versions may cause unforeseen issues.
 
 #### Notice:
 Depending on the age of your processor (~2011 and earlier), you might need to use the SSE version (Streaming SIMD Extensions). Most people can use the normal version without issue.
@@ -33,12 +35,6 @@ To build the papyrus script, you'll need `lua` on the system path. To run the co
 From there just compile the generated code like any normal papyrus script.
 
 ## Known Issues
-When interpolation is very slow, culling of geometry can be seen.
-
-Floating quest markers: To fix these, enable "Patch Projected HUD Elements" in the MCM.
-
-The crosshair is still being refined, though as of alpha 1.1 is much improved.
-
 Improved Camera issues - Switching POV on horseback is buggy. Moving from first person to thirdperson must be done via the `Switch POV` key, rather than scrolling the camera.
 
 Improved Camera issues - Sitting is even more buggy. This might be wholly an Improved Camera issue, however once in first person while sitting you cannot re-enter third person.

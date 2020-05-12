@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "pch.h"
 #include "game_state.h"
 
 namespace Camera {
@@ -32,7 +31,7 @@ namespace Camera {
 				// Returns the position of the camera during the last frame
 				glm::vec3 GetLastCameraPosition() const noexcept;
 				// Sets the camera position
-				void SetCameraPosition(const glm::vec3& pos) noexcept;
+				void SetCameraPosition(const glm::vec3& pos, const CorrectedPlayerCamera* playerCamera) noexcept;
 				// Performs a ray cast and returns a new position based on the result
 				glm::vec3 ComputeRaycast(const glm::vec3& rayStart, const glm::vec3& rayEnd);
 				// Clamps the camera position based on offset clamp settings

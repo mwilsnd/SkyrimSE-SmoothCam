@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "papyrus.h"
 
 /* I kind of turned my brain off for all of this */
@@ -43,7 +42,6 @@ const std::unordered_map<ConfigStringMapping, std::function<bool(void)>> boolGet
 	IMPL_GETTER(ConfigStringMapping::FirstPersonHorse,					comaptIC_FirstPersonHorse)
 	IMPL_GETTER(ConfigStringMapping::FirstPersonDragon,					comaptIC_FirstPersonDragon)
 	IMPL_GETTER(ConfigStringMapping::FirstPersonSitting,				compatIC_FirstPersonSitting)
-	IMPL_GETTER(ConfigStringMapping::PatchWorldToScreenMatrix,			patchWorldToScreenMatrix)
 	IMPL_GETTER(ConfigStringMapping::InterpolationEnabled,				enableInterp)
 	IMPL_GETTER(ConfigStringMapping::SeparateLocalInterpolation,		separateLocalInterp)
 	IMPL_GETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime)
@@ -203,7 +201,6 @@ const std::unordered_map<ConfigStringMapping, std::function<void(bool)>> boolSet
 	IMPL_SETTER(ConfigStringMapping::FirstPersonHorse,					comaptIC_FirstPersonHorse, bool)
 	IMPL_SETTER(ConfigStringMapping::FirstPersonDragon,					comaptIC_FirstPersonDragon, bool)
 	IMPL_SETTER(ConfigStringMapping::FirstPersonSitting,				compatIC_FirstPersonSitting, bool)
-	IMPL_SETTER(ConfigStringMapping::PatchWorldToScreenMatrix,			patchWorldToScreenMatrix, bool)
 	IMPL_SETTER(ConfigStringMapping::InterpolationEnabled,				enableInterp, bool)
 	IMPL_SETTER(ConfigStringMapping::SeparateLocalInterpolation,		separateLocalInterp, bool)
 	IMPL_SETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime, bool)

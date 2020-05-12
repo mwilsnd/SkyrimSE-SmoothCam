@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 #include "skyrimSE/bhkSimpleShapePhantom.h"
 #include "skyrimSE/bhkRigidBody.h"
 
@@ -16,6 +15,12 @@ class CorrectedPlayerCamera : public TESCamera {
 	public:
 		CorrectedPlayerCamera();
 		virtual ~CorrectedPlayerCamera();
+
+		static CorrectedPlayerCamera* GetSingleton(void) {
+			// 0FAF5D3C755F11266ECC496FD392A0A2EA23403B+37
+			static RelocPtr<CorrectedPlayerCamera*> g_playerCamera(0x02EC59B8);
+			return *g_playerCamera;
+		}
 
 		enum {
 			kCameraState_FirstPerson = 0,

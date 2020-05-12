@@ -15,11 +15,19 @@ project "skse64_common"
 
 	dependson { "common_skse64" }
 
-	files { loc.. "/**.h", loc.. "/**.cpp" }
-	forceincludes  { parent.. "/../common/IPrefix.h" }
+	files {
+		loc.. "/**.h",
+		loc.. "/**.cpp",
+	}
+	forceincludes {
+		"../Deps/skse64_2_00_17/src/common/IPrefix.h",
+		"../SmoothCam/include/addrlib/skse_macros.h",
+	}
 	includedirs {
 		parent,
-		parent.. "/../"
+		parent.. "/../",
+		"../SmoothCam/include",
+		"../Deps/eternal/include",
 	}
 
 	filter "system:windows"
@@ -43,6 +51,9 @@ project "skse64_common"
 		editandcontinue "On"
 		floatingpoint "Strict"
 		functionlevellinking "On"
+		flags {
+			"MultiProcessorCompile"
+		}
 
 		libdirs {
 			parent.. "/../common/bin/Debug-windows-x86_64/common_skse64",
@@ -54,7 +65,7 @@ project "skse64_common"
 	filter "configurations:Release"
 		defines { "NODEBUG", "NDEBUG" }
 		linkoptions { "/LTCG" }
-		buildoptions { "/Ob2", "/Ot" }
+		buildoptions { "/Ob2", "/Ot", "/MP" }
 		optimize "Speed"
 		editandcontinue "Off"
 		floatingpoint "Fast"
@@ -63,7 +74,7 @@ project "skse64_common"
 		omitframepointer "On"
 		flags {
 			"LinkTimeOptimization", "NoBufferSecurityCheck",
-			"NoMinimalRebuild", "NoRuntimeChecks",
+			"NoMinimalRebuild", "NoRuntimeChecks", "MultiProcessorCompile"
 		}
 
 		libdirs {

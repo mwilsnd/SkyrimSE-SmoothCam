@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "camera_states/thirdperson_horse.h"
 #include "camera.h"
 
@@ -53,7 +52,7 @@ void Camera::State::ThirdpersonHorseState::Update(PlayerCharacter* player, const
 	// Cast our ray and update the camera position
 	const auto finalPos = ComputeRaycast(start, preFinalPos);
 	// Set the position
-	SetCameraPosition(finalPos);
+	SetCameraPosition(finalPos, camera);
 
 	// Update the crosshair
 	if (IsWeaponDrawn(player))

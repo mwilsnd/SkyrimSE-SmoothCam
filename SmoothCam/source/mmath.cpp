@@ -1,5 +1,3 @@
-#include "pch.h"
-
 bool mmath::IsInf(const float& f) noexcept {
 	return glm::isinf(f);
 }

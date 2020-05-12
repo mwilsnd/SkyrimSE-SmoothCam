@@ -1,5 +1,4 @@
 #pragma once
-#include "pch.h"
 
 namespace Config {
 	enum class ScalarMethods {
@@ -121,7 +120,6 @@ namespace Config {
 		bool comaptIC_FirstPersonHorse = true;
 		bool comaptIC_FirstPersonDragon = true;
 		bool compatIC_FirstPersonSitting = true;
-		bool patchWorldToScreenMatrix = false;
 
 		// Primary interpolation
 		bool enableInterp = true;
@@ -180,7 +178,6 @@ namespace Config {
 				CEREAL_NVP(comaptIC_FirstPersonHorse),
 				CEREAL_NVP(comaptIC_FirstPersonDragon),
 				CEREAL_NVP(compatIC_FirstPersonSitting),
-				CEREAL_NVP(patchWorldToScreenMatrix),
 				CEREAL_NVP(minCameraFollowDistance),
 				CEREAL_NVP(minCameraFollowRate),
 				CEREAL_NVP(maxCameraFollowRate),
