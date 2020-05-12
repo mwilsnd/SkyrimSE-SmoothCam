@@ -50,7 +50,6 @@ hideNonCombatCrosshair | Hides the crosshair when no weapon is drawn
 hideCrosshairMeleeCombat | Hides the crosshair when melee weapons are drawn
 disableDeltaTime | Disables frame time factoring in the smoothing math
 disableDuringDialog | Disables SmoothCam during character-NPC conversations
-patchWorldToScreenMatrix | Applies the world-projection patch for HUD elements like quest markers. **Note:** If enabling this ends up conflicting with another mod and causes a crash, set this value to `false` manually.
 comaptIC_FirstPersonHorse | Enables compat code for dealing with issue when running the Improved Camera mod
 comaptIC_FirstPersonDragon | Enables compat code for dealing with issue when running the Improved Camera mod
 compatIC_FirstPersonSitting | Enables compat code for dealing with issue when running the Improved Camera mod
