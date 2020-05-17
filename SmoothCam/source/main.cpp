@@ -2,6 +2,10 @@
 #include "detours.h"
 #include "papyrus.h"
 
+#ifdef _DEBUG
+#   include "debug_drawing.h"
+#endif
+
 PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 const SKSEMessagingInterface* g_messaging = nullptr;
 const SKSEPapyrusInterface* g_papyrus = nullptr;
@@ -14,10 +18,16 @@ void SKSEMessageHandler(SKSEMessagingInterface::Message* message) {
 	switch (message->type) {
 		case SKSEMessagingInterface::kMessage_PostLoadGame: {
 			// The game has loaded, go ahead and hook the camera now
-			if (!hooked && g_theCamera)
+			if (!hooked && g_theCamera) {
 				hooked = Detours::Attach(g_theCamera);
+			}
 			break;
 		}
+#ifdef _DEBUG
+		case SKSEMessagingInterface::kMessage_InputLoaded: {
+			DebugDrawing::DetourD3D11();
+		}
+#endif
 		default:
 			break;
 	}
@@ -46,7 +56,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 4;
+		info->version = 5;
 
 		g_pluginHandle = skse->GetPluginHandle();
 
@@ -55,7 +65,7 @@ extern "C" {
 		}
 
 		if (skse->runtimeVersion != RUNTIME_VERSION_1_5_97) {
-			_WARNING("This module was compiled for skse 1.5.97, you are running an unsupported verion. You may experience crashes or other stange issues.");
+			_WARNING("This module was compiled for skse 1.5.97, you are running an unsupported verion. You may experience crashes or other strange issues.");
 		}
 		
 		return true;

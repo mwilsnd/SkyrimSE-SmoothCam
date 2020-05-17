@@ -14,28 +14,30 @@ using namespace PapyrusBindings;
 		Config::SaveCurrentConfig();                \
 	} },
 
+#define IMPL_SCALAR_METHOD_GETTER(Mapping, Var)													\
+	{ Mapping, []() {																			\
+		const auto it = Config::scalarMethodRevLookup.find(Config::GetCurrentConfig()->Var);	\
+		if (it != Config::scalarMethodRevLookup.end())											\
+			return BSFixedString(it->second.c_str());											\
+		else																					\
+			return BSFixedString("linear");														\
+	} },
+
+#define IMPL_SCALAR_METHOD_SETTER(Mapping, Var)						\
+	{ Mapping, [](BSFixedString str) {								\
+		const auto it = Config::scalarMethods.find(str.c_str());	\
+		if (it != Config::scalarMethods.end()) {					\
+			Config::GetCurrentConfig()->Var = it->second;			\
+			Config::SaveCurrentConfig();							\
+		}															\
+	} },
+
 const std::unordered_map<ConfigStringMapping, std::function<BSFixedString(void)>> stringGetters = {
-	{ ConfigStringMapping::InterpolationMethod, []() {
-		const auto it = Config::scalarMethodRevLookup.find(Config::GetCurrentConfig()->currentScalar);
-		if (it != Config::scalarMethodRevLookup.end())
-			return BSFixedString(it->second.c_str());
-		else
-			return BSFixedString("linear");
-	} },
-	{ ConfigStringMapping::SepZInterpMethod, []() {
-		const auto it = Config::scalarMethodRevLookup.find(Config::GetCurrentConfig()->separateZScalar);
-		if (it != Config::scalarMethodRevLookup.end())
-			return BSFixedString(it->second.c_str());
-		else
-			return BSFixedString("linear");
-	} },
-	{ ConfigStringMapping::SepLocalInterpMethod, []() {
-		const auto it = Config::scalarMethodRevLookup.find(Config::GetCurrentConfig()->separateLocalScalar);
-		if (it != Config::scalarMethodRevLookup.end())
-			return BSFixedString(it->second.c_str());
-		else
-			return BSFixedString("linear");
-	} },
+	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::InterpolationMethod, currentScalar)
+	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::SepZInterpMethod, separateZScalar)
+	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::SepLocalInterpMethod, separateLocalScalar)
+	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::OffsetTransitionMethod, offsetScalar)
+	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::ZoomTransitionMethod, zoomScalar)
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<bool(void)>> boolGetters = {
@@ -47,9 +49,12 @@ const std::unordered_map<ConfigStringMapping, std::function<bool(void)>> boolGet
 	IMPL_GETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime)
 	IMPL_GETTER(ConfigStringMapping::DisableDuringDialog,				disableDuringDialog)
 	IMPL_GETTER(ConfigStringMapping::Crosshair3DEnabled,				enable3DCrosshair)
+	IMPL_GETTER(ConfigStringMapping::AlwaysUse3DCrosshair,              alwaysUse3DCrosshair)
 	IMPL_GETTER(ConfigStringMapping::HideCrosshairOutOfCombat,			hideNonCombatCrosshair)
 	IMPL_GETTER(ConfigStringMapping::HideCrosshairMeleeCombat,			hideCrosshairMeleeCombat)
 	IMPL_GETTER(ConfigStringMapping::SepZInterpEnabled,					separateZInterp)
+	IMPL_GETTER(ConfigStringMapping::OffsetTransitionEnabled,			enableOffsetInterpolation)
+	IMPL_GETTER(ConfigStringMapping::ZoomTransitionEnabled,				enableZoomInterpolation)
 
 	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXEnable,		cameraDistanceClampXEnable)
 	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYEnable,		cameraDistanceClampYEnable)
@@ -92,10 +97,17 @@ const std::unordered_map<ConfigStringMapping, std::function<float(void)>> floatG
 	IMPL_GETTER(ConfigStringMapping::MaxSmoothingInterpDistance,		zoomMaxSmoothingDistance)
 	IMPL_GETTER(ConfigStringMapping::ZoomMul,							zoomMul)
 
+	IMPL_GETTER(ConfigStringMapping::CrosshairNPCGrowSize,              crosshairNPCHitGrowSize)
+	IMPL_GETTER(ConfigStringMapping::CrosshairMinDistSize,              crosshairMinDistSize)
+	IMPL_GETTER(ConfigStringMapping::CrosshairMaxDistSize,              crosshairMaxDistSize)
+
 	IMPL_GETTER(ConfigStringMapping::SepZMaxInterpDistance,				separateZMaxSmoothingDistance)
 	IMPL_GETTER(ConfigStringMapping::SepZMinFollowRate,					separateZMinFollowRate)
 	IMPL_GETTER(ConfigStringMapping::SepZMaxFollowRate,					separateZMaxFollowRate)
 	IMPL_GETTER(ConfigStringMapping::SepLocalInterpRate,                localScalarRate)
+
+	IMPL_GETTER(ConfigStringMapping::OffsetTransitionDuration,			offsetInterpDurationSecs)
+	IMPL_GETTER(ConfigStringMapping::ZoomTransitionDuration,			zoomInterpDurationSecs)
 
 	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXMin,			cameraDistanceClampXMin)
 	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXMax,			cameraDistanceClampXMax)
@@ -174,27 +186,11 @@ const std::unordered_map<ConfigStringMapping, std::function<float(void)>> floatG
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<void(BSFixedString)>> stringSetters = {
-	{ ConfigStringMapping::InterpolationMethod, [](BSFixedString str) {
-		const auto it = Config::scalarMethods.find(str.c_str());
-		if (it != Config::scalarMethods.end()) {
-			Config::GetCurrentConfig()->currentScalar = it->second;
-			Config::SaveCurrentConfig();
-		}
-	} },
-	{ ConfigStringMapping::SepZInterpMethod, [](BSFixedString str) {
-		const auto it = Config::scalarMethods.find(str.c_str());
-		if (it != Config::scalarMethods.end()) {
-			Config::GetCurrentConfig()->separateZScalar = it->second;
-			Config::SaveCurrentConfig();
-		}
-	} },
-	{ ConfigStringMapping::SepLocalInterpMethod, [](BSFixedString str) {
-		const auto it = Config::scalarMethods.find(str.c_str());
-		if (it != Config::scalarMethods.end()) {
-			Config::GetCurrentConfig()->separateLocalScalar = it->second;
-			Config::SaveCurrentConfig();
-		}
-	} },
+	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::InterpolationMethod, currentScalar)
+	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::SepZInterpMethod, separateZScalar)
+	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::SepLocalInterpMethod, separateLocalScalar)
+	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::OffsetTransitionMethod, offsetScalar)
+	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::ZoomTransitionMethod, zoomScalar)
 };
 
 const std::unordered_map<ConfigStringMapping, std::function<void(bool)>> boolSetters = {
@@ -206,9 +202,12 @@ const std::unordered_map<ConfigStringMapping, std::function<void(bool)>> boolSet
 	IMPL_SETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime, bool)
 	IMPL_SETTER(ConfigStringMapping::DisableDuringDialog,				disableDuringDialog, bool)
 	IMPL_SETTER(ConfigStringMapping::Crosshair3DEnabled,				enable3DCrosshair, bool)
+	IMPL_SETTER(ConfigStringMapping::AlwaysUse3DCrosshair,              alwaysUse3DCrosshair, bool)
 	IMPL_SETTER(ConfigStringMapping::HideCrosshairOutOfCombat,			hideNonCombatCrosshair, bool)
 	IMPL_SETTER(ConfigStringMapping::HideCrosshairMeleeCombat,			hideCrosshairMeleeCombat, bool)
 	IMPL_SETTER(ConfigStringMapping::SepZInterpEnabled,					separateZInterp, bool)
+	IMPL_SETTER(ConfigStringMapping::OffsetTransitionEnabled,			enableOffsetInterpolation, bool)
+	IMPL_SETTER(ConfigStringMapping::ZoomTransitionEnabled,				enableZoomInterpolation, bool)
 
 	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXEnable,		cameraDistanceClampXEnable, bool)
 	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYEnable,		cameraDistanceClampYEnable, bool)
@@ -251,10 +250,17 @@ const std::unordered_map<ConfigStringMapping, std::function<void(float)>> floatS
 	IMPL_SETTER(ConfigStringMapping::MaxSmoothingInterpDistance,		zoomMaxSmoothingDistance, float)
 	IMPL_SETTER(ConfigStringMapping::ZoomMul,							zoomMul, float)
 
+	IMPL_SETTER(ConfigStringMapping::CrosshairNPCGrowSize,              crosshairNPCHitGrowSize, float)
+	IMPL_SETTER(ConfigStringMapping::CrosshairMinDistSize,              crosshairMinDistSize, float)
+	IMPL_SETTER(ConfigStringMapping::CrosshairMaxDistSize,              crosshairMaxDistSize, float)
+
 	IMPL_SETTER(ConfigStringMapping::SepZMaxInterpDistance,				separateZMaxSmoothingDistance, float)
 	IMPL_SETTER(ConfigStringMapping::SepZMinFollowRate,					separateZMinFollowRate, float)
 	IMPL_SETTER(ConfigStringMapping::SepZMaxFollowRate,					separateZMaxFollowRate, float)
 	IMPL_SETTER(ConfigStringMapping::SepLocalInterpRate,                localScalarRate, float)
+
+	IMPL_SETTER(ConfigStringMapping::OffsetTransitionDuration,			offsetInterpDurationSecs, float)
+	IMPL_SETTER(ConfigStringMapping::ZoomTransitionDuration,			zoomInterpDurationSecs, float)
 
 	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXMin,			cameraDistanceClampXMin, float)
 	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXMax,			cameraDistanceClampXMax, float)
@@ -433,6 +439,39 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 					return it->second();
 				else
 					return 0.0f;
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction2<StaticFunctionTag, BSFixedString, SInt32, BSFixedString>(
+			"SmoothCam_SaveAsPreset",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput, SInt32 index, BSFixedString name) {
+				return Config::SaveConfigAsPreset(index, name);
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction1<StaticFunctionTag, bool, SInt32>(
+			"SmoothCam_LoadPreset",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput, SInt32 index) {
+				return Config::LoadPreset(index);
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction1<StaticFunctionTag, BSFixedString, SInt32>(
+			"SmoothCam_GetPresetNameAtIndex",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput, SInt32 index) {
+				return Config::GetPresetSlotName(index);
 			},
 			registry
 		)

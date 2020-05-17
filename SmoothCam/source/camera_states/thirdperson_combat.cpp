@@ -10,7 +10,7 @@ void Camera::State::ThirdpersonCombatState::OnBegin(const PlayerCharacter* playe
 }
 
 void Camera::State::ThirdpersonCombatState::OnEnd(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
-	SetCrosshairPosition({ 0, 0 });
+
 }
 
 void Camera::State::ThirdpersonCombatState::Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
@@ -55,10 +55,5 @@ void Camera::State::ThirdpersonCombatState::Update(PlayerCharacter* player, cons
 	SetCameraPosition(finalPos, camera);
 
 	// Update the crosshair
-	if (GetConfig()->hideCrosshairMeleeCombat && IsMeleeWeaponDrawn(player)) {
-		SetCrosshairEnabled(false);
-	} else {
-		SetCrosshairEnabled(true);
-		UpdateCrosshairPosition(player, camera);
-	}
+	UpdateCrosshair(player, camera);
 }

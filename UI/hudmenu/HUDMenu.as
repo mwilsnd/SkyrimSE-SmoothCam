@@ -443,7 +443,6 @@ class HUDMenu extends Shared.PlatformChangeUser
 		GameDelegate.addCallBack("SetLocationName", this, "SetLocationName");
 		GameDelegate.addCallBack("ShowTutorialHintText", this, "ShowTutorialHintText");
 		GameDelegate.addCallBack("ValidateCrosshair", this, "ValidateCrosshair");
-		GameDelegate.addCallBack("SetCrosshairPosition", this, "SetCrosshairPosition");
 	}
 
 	function InitCompass(): Void
@@ -801,13 +800,6 @@ class HUDMenu extends Shared.PlatformChangeUser
 		bCrosshairEnabled = abFlag;
 		var crosshairMode: MovieClip = _currentframe == 1 ? CrosshairInstance : CrosshairAlert;
 		crosshairMode._alpha = bCrosshairEnabled ? 100 : 0;
-	}
-
-	function SetCrosshairPosition(x: Number, y: Number): Void
-	{
-		var crosshairMode: MovieClip = _currentframe == 1 ? CrosshairInstance : CrosshairAlert;
-		crosshairMode._x = x;
-		crosshairMode._y = y;
 	}
 
 	function ValidateCrosshair(): Void

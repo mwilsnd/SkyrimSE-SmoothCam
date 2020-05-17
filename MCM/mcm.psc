@@ -4,6 +4,7 @@ Import SKSE
 ; This used to be way worse until I wrote the code generation tools
 
 string[] interpMethods
+string[] presets
 
 Function SmoothCam_SetStringConfig(string member, string value) global native
 Function SmoothCam_SetBoolConfig(string member, bool value) global native
@@ -12,6 +13,10 @@ Function SmoothCam_SetFloatConfig(string member, float value) global native
 string Function SmoothCam_GetStringConfig(string member) global native
 bool Function SmoothCam_GetBoolConfig(string member) global native
 float Function SmoothCam_GetFloatConfig(string member) global native
+
+string Function SmoothCam_SaveAsPreset(int index, string name) global native
+bool Function SmoothCam_LoadPreset(int index) global native
+string Function SmoothCam_GetPresetNameAtIndex(int index) global native
 
 int Function GetCurrentInterpIndex(string setting)
 	string value = SmoothCam_GetStringConfig(setting)
@@ -109,8 +114,116 @@ endFunction
 	}
 }
 
+#constexpr_struct SavePresetSetting {
+	real_int ref = 0
+	int presetIndex = 0
+	string displayName = ""
+	string desc = "Save your current settings to this preset slot"
+
+	MACRO implControl = {
+		this->ref = AddInputOption(this->displayName + " " + SmoothCam_GetPresetNameAtIndex(this->presetIndex), SmoothCam_GetPresetNameAtIndex(this->presetIndex))
+	}
+
+	MACRO implOpenHandler = {
+		string value = SmoothCam_GetPresetNameAtIndex(this->presetIndex)
+		if (value == "Empty")
+			SetInputDialogStartText("Enter a preset name")
+		else
+			SetInputDialogStartText(value)
+		endIf
+	}
+
+	MACRO implAcceptHandler = {
+		if (SmoothCam_SaveAsPreset(this->presetIndex, a_input) == "")
+			ShowMessage("Preset saved.", false)
+		else
+			ShowMessage("Failed to save preset!", false)
+		endIf
+		ForcePageReset()
+	}
+
+	MACRO implDesc = {
+		SetInfoText(this->desc)
+	}
+}
+
+#constexpr_struct LoadPresetSetting {
+	real_int ref = 0
+	int presetIndex = 0
+	string displayName = ""
+	string desc = "Load this preset"
+
+	MACRO implControl = {
+		this->ref = AddToggleOption(this->displayName + " " + SmoothCam_GetPresetNameAtIndex(this->presetIndex), false)
+	}
+
+	MACRO implSelectHandler = {
+		if (!SmoothCam_LoadPreset(this->presetIndex))
+			ShowMessage("Failed to load preset! Have you saved this slot yet?", false)
+		else
+			ShowMessage("Preset loaded.", false)
+			ForcePageReset()
+		endIf
+	}
+
+	MACRO implDesc = {
+		SetInfoText(this->desc)
+	}
+}
+
 ScriptMeta scriptMetaInfo -> {
-	version: 4
+	version: 5
+}
+
+; Presets
+SavePresetSetting savePresetSlot1 -> {
+	presetIndex: 0
+	displayName: "Slot 1:"
+}
+SavePresetSetting savePresetSlot2 -> {
+	presetIndex: 1
+	displayName: "Slot 2:"
+}
+SavePresetSetting savePresetSlot3 -> {
+	presetIndex: 2
+	displayName: "Slot 3:"
+}
+SavePresetSetting savePresetSlot4 -> {
+	presetIndex: 3
+	displayName: "Slot 4:"
+}
+SavePresetSetting savePresetSlot5 -> {
+	presetIndex: 4
+	displayName: "Slot 5:"
+}
+SavePresetSetting savePresetSlot6 -> {
+	presetIndex: 5
+	displayName: "Slot 6:"
+}
+
+LoadPresetSetting loadPresetSlot1 -> {
+	presetIndex: 0
+	displayName: "Slot 1:"
+}
+LoadPresetSetting loadPresetSlot2 -> {
+	presetIndex: 1
+	displayName: "Slot 2:"
+}
+LoadPresetSetting loadPresetSlot3 -> {
+	presetIndex: 2
+	displayName: "Slot 3:"
+}
+LoadPresetSetting loadPresetSlot4 -> {
+	presetIndex: 3
+	displayName: "Slot 4:"
+}
+LoadPresetSetting loadPresetSlot5 -> {
+	presetIndex: 4
+	displayName: "Slot 5:"
+}
+LoadPresetSetting loadPresetSlot6 -> {
+	presetIndex: 5
+	displayName: "Slot 6:"
 }
 
 ; Compat
@@ -151,6 +264,16 @@ ToggleSetting sepLocalInterpEnabled -> {
 	displayName: "Local-Space Interpolation Enabled"
 	desc: "Enable separate local-space camera smoothing (Camera rotation)."
 }
+ToggleSetting offsetInterpEnabled -> {
+	settingName: "OffsetTransitionEnabled"
+	displayName: "Offset Interpolation Enabled"
+	desc: "Enable smoothing of camera offset state transitions."
+}
+ToggleSetting zoomInterpEnabled -> {
+	settingName: "ZoomTransitionEnabled"
+	displayName: "Zoom Interpolation Enabled"
+	desc: "Enable smoothing of camera zoom state transitions."
+}
 ToggleSetting disableDeltaTime -> {
 	settingName: "DisableDeltaTime"
 	displayName: "Disable Delta Time Factoring"
@@ -186,6 +309,16 @@ ListSetting sepLocalInterpMethod -> {
 	settingName: "SepLocalInterpMethod"
 	displayName: "Local-Space Interpolation Method"
 	desc: "The scalar method to use for local-space smoothing (If enabled)."
+}
+ListSetting offsetInterpMethod -> {
+	settingName: "OffsetTransitionMethod"
+	displayName: "Offset Interpolation Method"
+	desc: "The scalar method to use for offset transition smoothing (If enabled)."
+}
+ListSetting zoomInterpMethod -> {
+	settingName: "ZoomTransitionMethod"
+	displayName: "Zoom Interpolation Method"
+	desc: "The scalar method to use for zoom transition smoothing (If enabled)."
 }
 
 SliderSetting minCameraFollowRate -> {
@@ -266,6 +399,26 @@ SliderSetting maxSepZSmoothingDistance -> {
 	max: 300.0
 	displayFormat: "{0}"
 }
+SliderSetting offsetTransitionDuration -> {
+	settingName: "OffsetTransitionDuration"
+	displayName: "Offset Interpolation Duration"
+	desc: "The smoothing duration to use when the camera changes offsets (In seconds)."
+	defaultValue: 1.0
+	interval: 0.01
+	min: 0.01
+	max: 5.0
+	displayFormat: "{2}"
+}
+SliderSetting zoomTransitionDuration -> {
+	settingName: "ZoomTransitionDuration"
+	displayName: "Zoom Interpolation Duration"
+	desc: "The smoothing duration to use when the camera changes zoom distance (In seconds)."
+	defaultValue: 0.2
+	interval: 0.01
+	min: 0.01
+	max: 1.0
+	displayFormat: "{2}"
+}
 SliderSetting cameraDistanceClampXMin -> {
 	settingName: "CameraDistanceClampXMin"
 	displayName: "Distance Clamp X Min"
@@ -343,6 +496,11 @@ ToggleSetting crosshair3DEnabled -> {
 	displayName: "3D Crosshair Enabled"
 	desc: "Enable the raycasted 3D crosshair when in combat."
 }
+ToggleSetting alwaysUse3DCrosshair -> {
+	settingName: "AlwaysUse3DCrosshair"
+	displayName: "Always Use 3D Crosshair"
+	desc: "Always use the 3D crosshair, even when not in a combat stance."
+}
 ToggleSetting hideCrosshairOutOfCombat -> {
 	settingName: "HideCrosshairOutOfCombat"
 	displayName: "Hide Non-Combat Crosshair"
@@ -352,6 +510,33 @@ ToggleSetting hideCrosshairMeleeCombat -> {
 	settingName: "HideCrosshairMeleeCombat"
 	displayName: "Hide Melee Combat Crosshair"
 	desc: "Hide the crosshair when in melee combat."
+}
+SliderSetting crosshairNPCGrowSize -> {
+	settingName: "CrosshairNPCGrowSize"
+	displayName: "NPC Hit Size"
+	desc: "When the 3D crosshair is over an NPC, grow the size of the crosshair by this amount."
+	defaultValue: 16
+	interval: 1
+	min: 0
+	max: 32
+}
+SliderSetting crosshairMinDistSize -> {
+	settingName: "CrosshairMinDistSize"
+	displayName: "Min Crosshair Size"
+	desc: "Sets the size of the 3D crosshair when the player's aim ray is at the maximum distance."
+	defaultValue: 16
+	interval: 1
+	min: 8
+	max: 32
+}
+SliderSetting crosshairMaxDistSize -> {
+	settingName: "CrosshairMaxDistSize"
+	displayName: "Max Crosshair Size"
+	desc: "Sets the size of the 3D crosshair when the player's aim ray is at the minimum distance."
+	defaultValue: 24
+	interval: 1
+	min: 8
+	max: 32
 }
 
 ; Standing
@@ -842,7 +1027,7 @@ event OnConfigInit()
 		" Info", " Compatibility", " Following", " Crosshair", " Standing",
 		" Walking", " Running", " Sprinting", " Sneaking",
 		" Swimming", " Bow Aiming", " Sitting", " Horseback",
-		" Dragon"
+		" Dragon", " Presets"
 	}
 	interpMethods = new string[] -> {
 		"linear", "quadraticEaseIn", "quadraticEaseOut",
@@ -886,6 +1071,16 @@ event OnPageReset(string a_page)
 			sepLocalInterpEnabled, sepLocalInterpMethod, sepLocalSpaceInterpRate
 		})
 
+		AddHeaderOption("Offset Interpolation")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			offsetInterpEnabled, offsetInterpMethod, offsetTransitionDuration
+		})
+
+		AddHeaderOption("Zoom Interpolation")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			zoomInterpEnabled, zoomInterpMethod, zoomTransitionDuration
+		})
+
 		SetCursorPosition(1)
 		AddHeaderOption("Distance Clamping")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
@@ -899,8 +1094,15 @@ event OnPageReset(string a_page)
 			zoomMul, disableDeltaTime
 		})
 	elseIf (a_page == " Crosshair")
+		AddHeaderOption("3D Crosshair Settings")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			crosshair3DEnabled, hideCrosshairOutOfCombat, hideCrosshairMeleeCombat
+			crosshair3DEnabled, alwaysUse3DCrosshair, crosshairNPCGrowSize,
+			crosshairMinDistSize, crosshairMaxDistSize
+		})
+
+		AddHeaderOption("Crosshair Hiding")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			hideCrosshairOutOfCombat, hideCrosshairMeleeCombat,
 		})
 	elseIf (a_page == " Standing")
 		AddHeaderOption("Standing Offsets")
@@ -1052,11 +1254,35 @@ event OnPageReset(string a_page)
 			dragon_sideOffset,
 			dragon_upOffset
 		})
+	elseIf (a_page == " Presets")
+		AddHeaderOption("Save Preset")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			savePresetSlot1,
+			savePresetSlot2,
+			savePresetSlot3,
+			savePresetSlot4,
+			savePresetSlot5,
+			savePresetSlot6
+		})
+
+		SetCursorPosition(1)
+		AddHeaderOption("Load Preset")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			loadPresetSlot1,
+			loadPresetSlot2,
+			loadPresetSlot3,
+			loadPresetSlot4,
+			loadPresetSlot5,
+			loadPresetSlot6
+		})
 	endIf
 endEvent
 
 event OnOptionSelect(int a_option)
-	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implSelectHandler, {IMPL_ALL_IMPLS_OF_STRUCT(ToggleSetting)})
+	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implSelectHandler, {
+		IMPL_ALL_IMPLS_OF_STRUCT(ToggleSetting),
+		IMPL_ALL_IMPLS_OF_STRUCT(LoadPresetSetting)
+	})
 endEvent
 
 event OnOptionSliderOpen(int a_option)
@@ -1075,10 +1301,20 @@ event OnOptionMenuAccept(int a_option, int a_index)
 	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implAcceptHandler, {IMPL_ALL_IMPLS_OF_STRUCT(ListSetting)})
 endEvent
 
+event OnOptionInputOpen(int a_option)
+	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implOpenHandler, {IMPL_ALL_IMPLS_OF_STRUCT(SavePresetSetting)})
+endEvent
+
+event OnOptionInputAccept(int a_option, string a_input)
+	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implAcceptHandler, {IMPL_ALL_IMPLS_OF_STRUCT(SavePresetSetting)})
+endEvent
+
 event OnOptionHighlight(int a_option)
 	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implDesc, {
 		IMPL_ALL_IMPLS_OF_STRUCT(SliderSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(ToggleSetting),
-		IMPL_ALL_IMPLS_OF_STRUCT(ListSetting)
+		IMPL_ALL_IMPLS_OF_STRUCT(ListSetting),
+		IMPL_ALL_IMPLS_OF_STRUCT(SavePresetSetting),
+		IMPL_ALL_IMPLS_OF_STRUCT(LoadPresetSetting)
 	})
 endEvent

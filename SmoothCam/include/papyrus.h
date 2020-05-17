@@ -14,8 +14,9 @@ namespace PapyrusBindings {
 		FirstPersonHorse, FirstPersonDragon, FirstPersonSitting,
 		InterpolationEnabled, InterpolationMethod,
 		DisableDeltaTime,
-		Crosshair3DEnabled,
-		HideCrosshairOutOfCombat, HideCrosshairMeleeCombat,
+		Crosshair3DEnabled, AlwaysUse3DCrosshair,
+		HideCrosshairOutOfCombat, HideCrosshairMeleeCombat, CrosshairNPCGrowSize,
+		CrosshairMinDistSize, CrosshairMaxDistSize,
 		DisableDuringDialog,
 		MinFollowDistance, MinCameraFollowRate, MaxCameraFollowRate, MaxSmoothingInterpDistance,
 		ZoomMul,
@@ -24,6 +25,8 @@ namespace PapyrusBindings {
 		CameraDistanceClampZEnable, CameraDistanceClampZMin, CameraDistanceClampZMax,
 		SepZInterpEnabled, SepZMaxInterpDistance, SepZMinFollowRate, SepZMaxFollowRate, SepZInterpMethod,
 		SeparateLocalInterpolation, SepLocalInterpMethod, SepLocalInterpRate,
+		OffsetTransitionEnabled, OffsetTransitionMethod, OffsetTransitionDuration,
+		ZoomTransitionEnabled, ZoomTransitionMethod, ZoomTransitionDuration,
 
 		// Offsets
 		StandingSideOffset, StandingUpOffset, StandingCombatRangedSideOffset, StandingCombatRangedUpOffset,
@@ -89,9 +92,21 @@ namespace PapyrusBindings {
 		{ "SepLocalInterpMethod",				{ConfigStringMapping::SepLocalInterpMethod, ConfigType::STRING} },
 		{ "SepLocalInterpRate",					{ConfigStringMapping::SepLocalInterpRate, ConfigType::FLOAT} },
 
+		{ "OffsetTransitionEnabled",			{ConfigStringMapping::OffsetTransitionEnabled, ConfigType::BOOL} },
+		{ "OffsetTransitionMethod",				{ConfigStringMapping::OffsetTransitionMethod, ConfigType::STRING} },
+		{ "OffsetTransitionDuration",			{ConfigStringMapping::OffsetTransitionDuration, ConfigType::FLOAT} },
+
+		{ "ZoomTransitionEnabled",				{ConfigStringMapping::ZoomTransitionEnabled, ConfigType::BOOL} },
+		{ "ZoomTransitionMethod",				{ConfigStringMapping::ZoomTransitionMethod, ConfigType::STRING} },
+		{ "ZoomTransitionDuration",				{ConfigStringMapping::ZoomTransitionDuration, ConfigType::FLOAT} },
+
 		{ "Enable3DCrosshair",					{ConfigStringMapping::Crosshair3DEnabled, ConfigType::BOOL} },
+		{ "AlwaysUse3DCrosshair",				{ConfigStringMapping::AlwaysUse3DCrosshair, ConfigType::BOOL} },
 		{ "HideCrosshairOutOfCombat",			{ConfigStringMapping::HideCrosshairOutOfCombat, ConfigType::BOOL} },
 		{ "HideCrosshairMeleeCombat",			{ConfigStringMapping::HideCrosshairMeleeCombat, ConfigType::BOOL} },
+		{ "CrosshairNPCGrowSize",				{ConfigStringMapping::CrosshairNPCGrowSize, ConfigType::FLOAT} },
+		{ "CrosshairMinDistSize",				{ConfigStringMapping::CrosshairMinDistSize, ConfigType::FLOAT} },
+		{ "CrosshairMaxDistSize",				{ConfigStringMapping::CrosshairMaxDistSize, ConfigType::FLOAT} },
 
 		{ "MinFollowDistance",					{ConfigStringMapping::MinFollowDistance, ConfigType::FLOAT} },
 		{ "MinCameraFollowRate",				{ConfigStringMapping::MinCameraFollowRate, ConfigType::FLOAT} },

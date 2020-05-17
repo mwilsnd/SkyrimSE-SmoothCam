@@ -151,6 +151,9 @@ do class "ConstexprStructToVars" : namespace "papyrus.preproc" {
 		for indent, decl, member in self.m_strSource:gmatch("(%s*)([%a%d_]+)%->!([%a%d_]+)") do
 			if self.m_tblStructImpls[decl] and not self.m_tblStructMacroUsage[decl.. "->!".. member] then
 				local code = self.m_tblStructTypes[self.m_tblStructImpls[decl].type].macros[member]
+				if not code then
+					error("Missing code impl for macro ".. member.. " (decltype ".. decl.. ")")
+				end
 				code = code:replace( "this->", decl.."." )
 
 				indent = indent:gsub( "\n", "" )

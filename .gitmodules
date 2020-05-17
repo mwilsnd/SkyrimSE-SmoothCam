@@ -16,3 +16,6 @@
 [submodule "Deps/cereal"]
 	path = Deps/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "Deps/json"]
+	path = Deps/json
+	url = https://github.com/nlohmann/json.git

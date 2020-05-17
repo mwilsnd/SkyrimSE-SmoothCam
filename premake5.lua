@@ -191,7 +191,7 @@ project "SmoothCam"
 		"Deps/glm",
 		"Deps/PolyHook_2_0",
 		"Deps/eternal/include",
-		"Deps/cereal/include",
+		"Deps/json/single_include",
 	}
 
 	filter "system:windows"

@@ -1,6 +1,17 @@
 #pragma once
+#include "nlohmann/json.hpp"
+
+#define CREATE_JSON_VALUE(obj, member) {#member, obj.member}
+#define VALUE_FROM_JSON(obj, member)	\
+{										\
+	const auto def = obj.##member##;	\
+	obj.member = j.value(#member, def);	\
+}
 
 namespace Config {
+	using json = nlohmann::json;
+	constexpr auto MaxPresetSlots = 6;
+
 	enum class ScalarMethods {
 		LINEAR,
 		QUAD_IN, QUAD_OUT, QUAD_INOUT,
@@ -10,6 +21,12 @@ namespace Config {
 		SINE_IN, SINE_OUT, SINE_INOUT,
 		CIRC_IN, CIRC_OUT, CIRC_INOUT,
 		EXP_IN, EXP_OUT, EXP_INOUT,
+	};
+
+	enum class LoadStatus {
+		OK,
+		MISSING,
+		FAILED
 	};
 
 	constexpr auto scalarMethods = mapbox::eternal::hash_map<mapbox::eternal::string, ScalarMethods>({
@@ -62,7 +79,7 @@ namespace Config {
 		{ ScalarMethods::EXP_INOUT, 	"exponentialEaseInOut" },
 	});
 
-	typedef struct {
+	typedef struct offsetGroup {
 		float sideOffset = 25.0;
 		float upOffset = 0.0;
 
@@ -83,34 +100,19 @@ namespace Config {
 		bool interpMagicCombat = true;
 		bool interpMeleeCombat = true;
 		bool interpHorseback = true;
-
-		template <class Archive>
-		void serialize(Archive& ar) {
-			ar(
-				CEREAL_NVP(sideOffset),
-				CEREAL_NVP(upOffset),
-				CEREAL_NVP(combatRangedSideOffset),
-				CEREAL_NVP(combatRangedUpOffset),
-				CEREAL_NVP(combatMagicSideOffset),
-				CEREAL_NVP(combatMagicUpOffset),
-				CEREAL_NVP(combatMeleeSideOffset),
-				CEREAL_NVP(combatMeleeUpOffset),
-				CEREAL_NVP(horseSideOffset),
-				CEREAL_NVP(horseUpOffset),
-				CEREAL_NVP(interp),
-				CEREAL_NVP(interpRangedCombat),
-				CEREAL_NVP(interpMagicCombat),
-				CEREAL_NVP(interpMeleeCombat),
-				CEREAL_NVP(interpHorseback)
-			);
-		}
 	} OffsetGroup;
+	void to_json(json& j, const OffsetGroup& obj);
+	void from_json(const json& j, OffsetGroup& obj);
 
 	typedef struct parsedConfig {
 		// Crosshair
 		bool enable3DCrosshair = true;
-		bool hideNonCombatCrosshair = true;
-		bool hideCrosshairMeleeCombat = true;
+		bool alwaysUse3DCrosshair = false;
+		bool hideNonCombatCrosshair = false;
+		bool hideCrosshairMeleeCombat = false;
+		float crosshairNPCHitGrowSize = 16.0f;
+		float crosshairMinDistSize = 16.0f;
+		float crosshairMaxDistSize = 24.0f;
 
 		// Misc
 		bool disableDeltaTime = false;
@@ -123,7 +125,7 @@ namespace Config {
 
 		// Primary interpolation
 		bool enableInterp = true;
-		ScalarMethods currentScalar = ScalarMethods::CIRC_IN;
+		ScalarMethods currentScalar = ScalarMethods::SINE_IN;
 		float minCameraFollowDistance = 64.0f;
 		float minCameraFollowRate = 0.2f;
 		float maxCameraFollowRate = 0.5f;
@@ -137,21 +139,31 @@ namespace Config {
 
 		// Separate Z
 		bool separateZInterp = false;
-		ScalarMethods separateZScalar = ScalarMethods::CIRC_IN;
-		float separateZMaxSmoothingDistance = 80.0f;
-		float separateZMinFollowRate = 0.15f;
-		float separateZMaxFollowRate = 0.3f;
+		ScalarMethods separateZScalar = ScalarMethods::SINE_IN;
+		float separateZMaxSmoothingDistance = 60.0f;
+		float separateZMinFollowRate = 0.25f;
+		float separateZMaxFollowRate = 0.4f;
+
+		// Offset interpolation
+		bool enableOffsetInterpolation = true;
+		ScalarMethods offsetScalar = ScalarMethods::SINE_INOUT;
+		float offsetInterpDurationSecs = 0.25f;
+
+		// Zoom interpolation
+		bool enableZoomInterpolation = true;
+		ScalarMethods zoomScalar = ScalarMethods::LINEAR;
+		float zoomInterpDurationSecs = 0.1f;
 
 		// Distance clamping
 		bool cameraDistanceClampXEnable = true;
 		float cameraDistanceClampXMin = -75.0f;
-		float cameraDistanceClampXMax = 75.0f;
+		float cameraDistanceClampXMax = 35.0f;
 		bool cameraDistanceClampYEnable = true;
 		float cameraDistanceClampYMin = -100.0f;
-		float cameraDistanceClampYMax = 100.0f;
+		float cameraDistanceClampYMax = 20.0f;
 		bool cameraDistanceClampZEnable = true;
-		float cameraDistanceClampZMin = -80.0f;
-		float cameraDistanceClampZMax = 80.0f;
+		float cameraDistanceClampZMin = -60.0f;
+		float cameraDistanceClampZMax = 60.0f;
 
 		// Per state positions
 		OffsetGroup standing;
@@ -164,57 +176,29 @@ namespace Config {
 		OffsetGroup sitting;
 		OffsetGroup horseback;
 		OffsetGroup dragon; // @TODO
-
-		template <class Archive>
-		void serialize(Archive& ar) {
-			ar(
-				CEREAL_NVP(enableInterp),
-				CEREAL_NVP(enable3DCrosshair),
-				CEREAL_NVP(hideNonCombatCrosshair),
-				CEREAL_NVP(hideCrosshairMeleeCombat),
-				CEREAL_NVP(disableDeltaTime),
-				CEREAL_NVP(disableDuringDialog),
-				CEREAL_NVP(currentScalar),
-				CEREAL_NVP(comaptIC_FirstPersonHorse),
-				CEREAL_NVP(comaptIC_FirstPersonDragon),
-				CEREAL_NVP(compatIC_FirstPersonSitting),
-				CEREAL_NVP(minCameraFollowDistance),
-				CEREAL_NVP(minCameraFollowRate),
-				CEREAL_NVP(maxCameraFollowRate),
-				CEREAL_NVP(zoomMul),
-				CEREAL_NVP(zoomMaxSmoothingDistance),
-				CEREAL_NVP(separateLocalInterp),
-				CEREAL_NVP(separateLocalScalar),
-				CEREAL_NVP(localScalarRate),
-				CEREAL_NVP(cameraDistanceClampXEnable),
-				CEREAL_NVP(cameraDistanceClampXMin),
-				CEREAL_NVP(cameraDistanceClampXMax),
-				CEREAL_NVP(cameraDistanceClampYEnable),
-				CEREAL_NVP(cameraDistanceClampYMin),
-				CEREAL_NVP(cameraDistanceClampYMax),
-				CEREAL_NVP(cameraDistanceClampZEnable),
-				CEREAL_NVP(cameraDistanceClampZMin),
-				CEREAL_NVP(cameraDistanceClampZMax),
-				CEREAL_NVP(separateZInterp),
-				CEREAL_NVP(separateZMaxSmoothingDistance),
-				CEREAL_NVP(separateZMinFollowRate),
-				CEREAL_NVP(separateZMaxFollowRate),
-				CEREAL_NVP(separateZScalar),
-				CEREAL_NVP(standing),
-				CEREAL_NVP(walking),
-				CEREAL_NVP(running),
-				CEREAL_NVP(sprinting),
-				CEREAL_NVP(sneaking),
-				CEREAL_NVP(swimming),
-				CEREAL_NVP(bowAim),
-				CEREAL_NVP(sitting),
-				CEREAL_NVP(horseback),
-				CEREAL_NVP(dragon)
-			);
-		}
 	} UserConfig;
+	void to_json(json& j, const UserConfig& obj);
+	void from_json(const json& j, UserConfig& obj);
+
+	typedef struct {
+		std::string name;
+		UserConfig config;
+	} Preset;
+	void to_json(json& j, const Preset& obj);
+	void from_json(const json& j, Preset& obj);
 
 	void ReadConfigFile();
 	void SaveCurrentConfig();
 	UserConfig* GetCurrentConfig() noexcept;
+
+	// Returns "" if ok, otherwise has an error message
+	BSFixedString SaveConfigAsPreset(int slot, const BSFixedString& name);
+	// Returns true if ok, otherwise does nothing
+	bool LoadPreset(int slot);
+	// Returns true if ok, otherwise does nothing
+	LoadStatus LoadPresetName(int slot, std::string& name);
+	// Returns the name of the saved preset or "Slot <N>" if no preset is found
+	BSFixedString GetPresetSlotName(int slot);
+	// Get the file path for the given preset slot
+	std::wstring GetPresetPath(int slot);
 }

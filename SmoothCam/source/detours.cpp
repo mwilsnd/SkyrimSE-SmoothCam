@@ -21,8 +21,8 @@ void StepFrameTime() noexcept {
 	curFrame = GetTime();
 }
 
-float GetFrameDelta() noexcept {
-	return glm::max(static_cast<float>(curFrame - lastFrame), 0.000001f);
+double GetFrameDelta() noexcept {
+	return static_cast<float>(curFrame - lastFrame);
 }
 
 #define CAMERA_UPDATE_DETOUR_IMPL(name)															\

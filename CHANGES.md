@@ -1,3 +1,20 @@
+## Alpha 1.4
+* Bumped module and MCM version number to 5
+* Fixed the camera position not continuing to update while in other camera states like firstperson, causing a sudden jump when entering thirdperson.
+* Added preset support with 6 save slots.
+* Added a new smoothing option for transitioning between different side & up offsets.
+* Added a new smoothing option for transitioning between different zoom levels.
+* Added a new option to always use the 3D crosshair.
+* Added a new option to grow the 3D crosshair by a set amount when intersecting with an NPC.
+* Added new options to scale the crosshair based on ray-hit distance.
+* Fixed choppy yaw rotation updates, most noticable when interpolation is disabled.
+* Removed pitch singularity guards.
+* Massive 3D crosshair improvements - much more accurate, basic ray-actor intersection (ray-AABB). Currently there are issues with AABB position and rotation with non-human NPCs and human NPCs which are not standing upright, but works for the most part. This is more of a hold-over for the moment until I can find a better raycasting method in the engine.
+* Changed how the 3D crosshair works in the hudmenu, now using a separate crosshair object from the hud base instance, added new scaling methods. I'm now including the flash project (fla) due to these changes.
+* Added a line and box drawing system for debug builds to help visualize ray casts and actor AABBs, toggled using the insert key.
+* Switched to a different JSON library, new one should tolerate version upgrades much better.
+* Tweaked some of the default config values.
+
 ## Alpha 1.3
 * Bumped module and MCM version number to 4
 * Fixed issue #11 causing the player to teleport when using Skyrim Souls RE and the HUD patch.

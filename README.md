@@ -46,8 +46,12 @@ Setting | Description
 --- | ---
 enableInterp | Enables camera smoothing globally
 enable3DCrosshair | Enables the raycasted crosshair
+alwaysUse3DCrosshair | Always use the 3D crosshair, even when not in a combat stance
 hideNonCombatCrosshair | Hides the crosshair when no weapon is drawn
 hideCrosshairMeleeCombat | Hides the crosshair when melee weapons are drawn
+crosshairNPCHitGrowSize | When the 3D crosshair is over an NPC, grow the size of the crosshair by this amount
+crosshairMinDistSize | Sets the size of the 3D crosshair when the player's aim ray is at the maximum distance
+crosshairMaxDistSize | Sets the size of the 3D crosshair when the player's aim ray is at the minimum distance
 disableDeltaTime | Disables frame time factoring in the smoothing math
 disableDuringDialog | Disables SmoothCam during character-NPC conversations
 comaptIC_FirstPersonHorse | Enables compat code for dealing with issue when running the Improved Camera mod
@@ -67,6 +71,12 @@ separateZMaxSmoothingDistance | The distance from camera to player at which sepa
 separateZMinFollowRate | The amount of camera latency when the camera is close to the player (lower = more latency)
 separateZMaxFollowRate | The amount of camera latency when the camera is far from the player (higher = less latency)
 separateZScalar | A value from 0 - 21: The scalar function to use for Z interpolation
+enableOffsetInterpolation | Enable smoothing of camera offset state transitions
+offsetScalar | A value from 0 - 21: The scalar method to use for offset transition smoothing
+offsetInterpDurationSecs | The smoothing duration to use when the camera changes offsets (In seconds)
+enableZoomInterpolation | Enable smoothing of camera zoom state transitions
+zoomScalar | A value from 0 - 21: The scalar method to use for zoom transition smoothing
+zoomInterpDurationSecs | The smoothing duration to use when the camera changes zoom distance (In seconds)
 cameraDistanceClampXEnable | Enable distance clamping on the local X axis
 cameraDistanceClampXMin | The minimum value the camera position may reach on the X axis
 cameraDistanceClampXMax | The maximum value the camera position may reach on the X axis

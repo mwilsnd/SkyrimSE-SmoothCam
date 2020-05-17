@@ -92,12 +92,39 @@ glm::vec3 Camera::State::BaseCameraState::ComputeOffsetClamping(PlayerCharacter*
 	return (forward * coef.x) + (right * coef.y) + (up * coef.z) + cameraWorldTarget/* + expectedPosition*/;
 }
 
+void Camera::State::BaseCameraState::UpdateCrosshair(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
+	const auto use3D = GetConfig()->enable3DCrosshair;
+	const auto always3D = use3D && GetConfig()->alwaysUse3DCrosshair;
+	
+	if (IsWeaponDrawn(player)) {
+		if (GetConfig()->hideCrosshairMeleeCombat && IsMeleeWeaponDrawn(player)) {
+			SetCrosshairEnabled(false);
+			SetCrosshair3DEnabled(false);
+		} else {
+			if (use3D) {
+				SetCrosshairEnabled(false);
+				SetCrosshair3DEnabled(true);
+				UpdateCrosshairPosition(player, playerCamera);
+			} else {
+				SetCrosshairEnabled(true);
+				SetCrosshair3DEnabled(false);
+			}
+		}
+	} else {
+		if (GetConfig()->hideNonCombatCrosshair) {
+			SetCrosshairEnabled(false);
+			SetCrosshair3DEnabled(false);
+		} else {
+			SetCrosshairEnabled(!always3D);
+			SetCrosshair3DEnabled(always3D);
+			if (always3D) UpdateCrosshairPosition(player, playerCamera);
+		}
+	}
+}
+
 // Updates the 3D crosshair position, performing all logic internally
 void Camera::State::BaseCameraState::UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
-	if (camera->config->enable3DCrosshair)
-		camera->UpdateCrosshairPosition(player, playerCamera);
-	else
-		camera->SetCrosshairPosition({ 0.0f, 0.0f });
+	camera->UpdateCrosshairPosition(player, playerCamera);
 }
 
 // Directly sets the crosshair position
@@ -108,6 +135,10 @@ void Camera::State::BaseCameraState::SetCrosshairPosition(const glm::vec2& pos) 
 // Toggles visibility of the crosshair
 void Camera::State::BaseCameraState::SetCrosshairEnabled(bool enabled) const {
 	camera->SetCrosshairEnabled(enabled);
+}
+
+void Camera::State::BaseCameraState::SetCrosshair3DEnabled(bool enabled) const {
+	camera->SetCrosshair3DEnabled(enabled);
 }
 
 // Returns a rotation matrix to use with rotating the camera
@@ -125,7 +156,8 @@ glm::vec2 Camera::State::BaseCameraState::GetCameraRotation(const CorrectedPlaye
 
 // Returns the local offsets to apply to the camera
 glm::vec3 Camera::State::BaseCameraState::GetCameraLocalPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const noexcept {
-	return camera->GetCurrentCameraOffset(player, playerCamera);
+	//return camera->GetCurrentCameraOffset(player, playerCamera);
+	return camera->offsetState.position;
 }
 
 // Returns the world position to apply local offsets to

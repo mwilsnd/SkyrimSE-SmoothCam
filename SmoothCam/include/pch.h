@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <array>
+#include <mutex>
 
 #include <codeanalysis\warnings.h>
 #pragma warning( push )
@@ -68,11 +69,8 @@
 #   include <../Detours/include/detours.h>
 #   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 #   include <mapbox/eternal.hpp>
-#   include <cereal/cereal.hpp>
-#   include <cereal/archives/json.hpp>
 
-#   include <addrlib/versiondb.h>
-#   include <addrlib/offsets.h>
+#   include "addrlib/versiondb.h"
 
 #   define GLM_FORCE_LEFT_HANDED
 #   define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -84,6 +82,7 @@
 #   include <glm/gtc/constants.hpp>
 #   include <glm/gtx/easing.hpp>
 #   include <glm/gtx/spline.hpp>
+#   include <glm/gtx/norm.hpp>
 #pragma warning( pop )
 
 // Trying to use code analysis on a project like this is like thinking a high-visibility vest
@@ -101,6 +100,13 @@
 #pragma warning( disable : 26426 ) // no global init calls - globals are initialized before use, turned off
 #pragma warning( disable : 26409 ) // avoid naked new and delete - required for papyrus registration
 #pragma warning( disable : 26486 ) // invalid pointer passing - also busted?
+
+#include "addrlib/offsets.h"
+
+#ifdef _DEBUG
+#   include "profile.h"
+#   include "debug_drawing.h"
+#endif
 
 #include "basicdetour.h"
 #include "havok/hkp3AxisSweep.h"

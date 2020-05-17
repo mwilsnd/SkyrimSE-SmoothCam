@@ -1,10 +1,33 @@
-#pragma once
+﻿#pragma once
 
 namespace Config {
 	enum class ScalarMethods;
 }
 
 namespace mmath {
+	typedef struct {
+		float data[4][4];
+	} NiMatrix44;
+
+	typedef struct aabb {
+		glm::vec3 mins;
+		glm::vec3 maxs;
+
+		aabb aabb::operator+ (const glm::vec3& rhs) {
+			return {
+				mins + rhs,
+				maxs + rhs
+			};
+		}
+
+		aabb aabb::operator+ (const NiPoint3& rhs) {
+			return {
+				mins + glm::vec3{ rhs.x, rhs.y, rhs.z },
+				maxs + glm::vec3{ rhs.x, rhs.y, rhs.z }
+			};
+		}
+	} AABB;
+
 	bool IsInf(const float& f) noexcept;
 	bool IsInf(const glm::vec3& v) noexcept;
 	bool IsInf(const glm::vec4& v) noexcept;
@@ -18,14 +41,28 @@ namespace mmath {
 	bool IsValid(const glm::vec4& v) noexcept;
 
 	// Return the forward view vector
-	glm::vec3 GetViewVector(const glm::vec3& forwardRefer, float pitch, float yaw);
-
+	glm::vec3 GetViewVector(const glm::vec3& forwardRefer, float pitch, float yaw) noexcept;
+	// Extracts pitch and yaw from a rotation matrix
+	glm::vec3 NiMatrixToEuler(const NiMatrix33& m) noexcept;
+	// Creates a rotation matrix for NiCameras to compute a proper world to screen matrix for scaleform
+	NiMatrix33 ToddHowardTransform(const float pitch, const float yaw) noexcept;
 	// Decompose a position to 3 basis vectors and the coefficients, given an euler rotation
 	void DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
-		glm::vec3& forward, glm::vec3& right, glm::vec3& up, glm::vec3& coef);
+		glm::vec3& forward, glm::vec3& right, glm::vec3& up, glm::vec3& coef) noexcept;
+
+	// Construct an AABB for an actor
+	AABB GetReferAABB(TESObjectREFR* ref);
+	AABB RotateAABB(const AABB& axisAligned, const NiMatrix33& mat) noexcept;
+	AABB GetActorAABB(Actor* actor);
+
+	// Ray-AABB intersect
+	bool IntersectRayAABB(const glm::vec3& start, const glm::vec3& dir, const AABB& aabb,
+		glm::vec3& hitPos) noexcept;
+
+	glm::vec2 PointToScreen(const glm::vec3& point);
 
 	template<typename T, typename S>
-	T Interpolate(T from, T to, S scalar) noexcept {
+	T Interpolate(const T from, const T to, const S scalar) noexcept {
 		if (scalar > 1.0) return to;
 		if (scalar < 0.0) return from;
 		return from + (to - from) * scalar;
@@ -37,7 +74,7 @@ namespace mmath {
 	};
 
 	template<typename T>
-	T RunScalarFunction(Config::ScalarMethods scalarMethod, T interpValue) {
+	T RunScalarFunction(Config::ScalarMethods scalarMethod, T interpValue) noexcept {
 		switch (scalarMethod) {
 			case Config::ScalarMethods::LINEAR:
 				return glm::linearInterpolation(interpValue);

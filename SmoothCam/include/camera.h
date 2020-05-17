@@ -6,6 +6,8 @@
 #include "camera_states/thirdperson_horse.h"
 
 namespace Camera {
+	typedef void(*UpdateWorldToScreenMtx)(NiCamera*);
+
 	// Helps describe more about the current camera and player state
 	// Used for selecting camera offsets
 	enum class CameraActionState {
@@ -62,6 +64,8 @@ namespace Camera {
 			void SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept;
 
 		private:
+			void UpdateInternalWorldToScreenMatrix(NiCamera* camera, float pitch, float yaw) noexcept;
+
 			// Updates our POV state to the true value the game expects for each state
 			const bool UpdateCameraPOVState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
 
@@ -85,11 +89,11 @@ namespace Camera {
 			// Returns the zoom value set from the given camera state
 			float GetCurrentCameraZoom(const CorrectedPlayerCamera* camera, const GameState::CameraState currentState) const noexcept;
 			// Returns an offset group for the current player movement state
-			const Config::OffsetGroup GetOffsetForState(const CameraActionState state) const noexcept;
+			const Config::OffsetGroup* GetOffsetForState(const CameraActionState state) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateUpOffset(PlayerCharacter* player, const Config::OffsetGroup& group) const noexcept;
+			float GetActiveWeaponStateUpOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateSideOffset(PlayerCharacter* player, const Config::OffsetGroup& group) const noexcept;
+			float GetActiveWeaponStateSideOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
 			// Returns the camera height for the current player state
 			float GetCurrentCameraHeight(PlayerCharacter* player) const noexcept;
 			// Returns the ideal camera distance for the current zoom level
@@ -107,9 +111,15 @@ namespace Camera {
 
 			/// Crosshair stuff
 			// Updates the screen position of the crosshair for correct aiming
-			void UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const;
+			void UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* camera);
+			// Set the 3D crosshair position
 			void SetCrosshairPosition(const glm::vec2& pos) const;
+			// Set the size of the 3D crosshair
+			void SetCrosshairSize(const glm::vec2& size) const;
+			// Show or hide the normal crosshair
 			void SetCrosshairEnabled(bool enabled) const;
+			// Show or hide the 3D crosshair
+			void SetCrosshair3DEnabled(bool enabled) const;
 
 			/// Camera getters
 			// Returns the camera's yaw
@@ -119,6 +129,53 @@ namespace Camera {
 			// Returns the camera's current zoom level - Camera must extend ThirdPersonState
 			float GetCameraZoomScalar(const CorrectedPlayerCamera* camera, uint16_t cameraState) const noexcept;
 
+			// Run a transition state
+			template<typename T, typename S>
+			void UpdateTransitionState(double curTime, bool enabled, float duration, Config::ScalarMethods method,
+				S& transitionState, const T& currentValue)
+			{
+				// Check our current offset and see if we need to run a transition 
+				if (enabled) {
+					if (currentValue != transitionState.targetPosition) {
+						// Start the task
+						if (transitionState.running)
+							transitionState.lastPosition = transitionState.currentPosition;
+
+						transitionState.running = true;
+						transitionState.startTime = curTime;
+						transitionState.targetPosition = currentValue;
+					}
+
+					if (transitionState.running) {
+						// Update the transition smoothing
+						const auto scalar = glm::clamp(
+							static_cast<float>(curTime - transitionState.startTime) / glm::max(duration, 0.01f),
+							0.0f, 1.0f
+						);
+
+						if (scalar < 1.0f) {
+							transitionState.currentPosition = mmath::Interpolate<T, float>(
+								transitionState.lastPosition,
+								transitionState.targetPosition,
+								mmath::RunScalarFunction<float>(method, scalar)
+							);
+						} else {
+							transitionState.currentPosition = transitionState.targetPosition;
+							transitionState.running = false;
+							transitionState.lastPosition = transitionState.currentPosition;
+						}
+					} else {
+						transitionState.lastPosition = transitionState.targetPosition =
+							transitionState.currentPosition = currentValue;
+					}
+				} else {
+					// Disabled
+					transitionState.running = false;
+					transitionState.lastPosition = transitionState.targetPosition =
+						transitionState.currentPosition = currentValue;
+				}
+			}
+			
 		private:
 			std::array<std::unique_ptr<State::BaseCameraState>, static_cast<size_t>(GameState::CameraState::MAX_STATE)> cameraStates;
 
@@ -127,11 +184,32 @@ namespace Camera {
 			GameState::CameraState lastState = GameState::CameraState::Unknown;
 			CameraActionState currentActionState = CameraActionState::Unknown;
 			CameraActionState lastActionState = CameraActionState::Unknown;
+			mmath::NiMatrix44 worldToScreen = {};
 
 			glm::vec3 lastPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 currentPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastLocalPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastWorldPosition = { 0.0f, 0.0f, 0.0f };
+
+			template<typename T>
+			struct TransitionGroup {
+				T lastPosition = {};
+				T targetPosition = {};
+				T currentPosition = {};
+				bool running = false;
+				double startTime = 0.0;
+			};
+
+			using OffsetTransition = TransitionGroup<glm::vec2>;
+			using ZoomTransition = TransitionGroup<float>;
+			OffsetTransition offsetTransitionState;
+			ZoomTransition zoomTransitionState;
+
+			struct {
+				const Config::OffsetGroup* currentGroup = nullptr;
+				glm::vec3 position = { 0.0f, 0.0f, 0.0f };
+			} offsetState;
+
 			bool firstFrame = false;
 			bool povIsThird = false;
 			bool povWasPressed = false;

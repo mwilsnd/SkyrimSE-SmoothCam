@@ -10,7 +10,7 @@ Camera::State::ThirdpersonState::ThirdpersonState(Camera::SmoothCamera* camera) 
 }
 
 void Camera::State::ThirdpersonState::OnBegin(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
-	SetCrosshairPosition({ 0, 0 });
+
 }
 
 void Camera::State::ThirdpersonState::OnEnd(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
@@ -59,5 +59,5 @@ void Camera::State::ThirdpersonState::Update(PlayerCharacter* player, const Corr
 	SetCameraPosition(finalPos, camera);
 
 	// Update crosshair visibility
-	SetCrosshairEnabled(!GetConfig()->hideNonCombatCrosshair);
+	UpdateCrosshair(player, camera);
 }
