@@ -77,7 +77,8 @@ uint8_t Raycast::IntersectRayAABBAllActorsIn(const tArray<UInt32>& list, ActorRa
 							res.rayLength = glm::length(hit - start);
 							res.hitCharacter = reinterpret_cast<Character*>(actor);
 							const auto old = counter.fetch_add(1, std::memory_order::memory_order_relaxed);
-							results[old] = res;
+							if (old < ThreadActorIntersectionAtCount)
+								results[old] = res;
 #ifdef _DEBUG
 							DrawAABB(aabb, true);
 #endif

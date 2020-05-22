@@ -106,8 +106,9 @@ namespace Config {
 
 	typedef struct parsedConfig {
 		// Crosshair
-		bool enable3DCrosshair = true;
-		bool alwaysUse3DCrosshair = false;
+		bool use3DBowAimCrosshair = true;
+		bool use3DMagicCrosshair = true;
+
 		bool hideNonCombatCrosshair = false;
 		bool hideCrosshairMeleeCombat = false;
 		float crosshairNPCHitGrowSize = 16.0f;

@@ -42,8 +42,8 @@ void Config::from_json(const json& j, OffsetGroup& obj) {
 void Config::to_json(json& j, const UserConfig& obj) {
 	j = json{
 		CREATE_JSON_VALUE(obj, enableInterp),
-		CREATE_JSON_VALUE(obj, enable3DCrosshair),
-		CREATE_JSON_VALUE(obj, alwaysUse3DCrosshair),
+		CREATE_JSON_VALUE(obj, use3DBowAimCrosshair),
+		CREATE_JSON_VALUE(obj, use3DMagicCrosshair),
 		CREATE_JSON_VALUE(obj, hideNonCombatCrosshair),
 		CREATE_JSON_VALUE(obj, hideCrosshairMeleeCombat),
 		CREATE_JSON_VALUE(obj, crosshairNPCHitGrowSize),
@@ -98,8 +98,8 @@ void Config::to_json(json& j, const UserConfig& obj) {
 
 void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, enableInterp)
-	VALUE_FROM_JSON(obj, enable3DCrosshair)
-	VALUE_FROM_JSON(obj, alwaysUse3DCrosshair)
+	VALUE_FROM_JSON(obj, use3DBowAimCrosshair)
+	VALUE_FROM_JSON(obj, use3DMagicCrosshair)
 	VALUE_FROM_JSON(obj, hideNonCombatCrosshair)
 	VALUE_FROM_JSON(obj, hideCrosshairMeleeCombat)
 	VALUE_FROM_JSON(obj, crosshairNPCHitGrowSize)

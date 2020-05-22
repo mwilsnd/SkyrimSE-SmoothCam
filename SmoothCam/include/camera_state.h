@@ -68,6 +68,7 @@ namespace Camera {
 				// Interpolates the given position, stores last interpolated position
 				glm::vec3 UpdateInterpolatedWorldPosition(PlayerCharacter* player, const glm::vec3& pos, const float distance);
 
+				void ApplyLocalSpaceGameOffsets(const glm::vec3& pos, const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera);
 				void StoreLastLocalPosition(const glm::vec3& pos);
 				void StoreLastWorldPosition(const glm::vec3& pos);
 				glm::vec3 GetLastLocalPosition();

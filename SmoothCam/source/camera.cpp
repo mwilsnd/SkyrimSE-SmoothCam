@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "arrow_fixes.h"
 #ifdef _DEBUG
 #include "debug_drawing.h"
 #endif
@@ -400,8 +401,15 @@ glm::vec3 Camera::SmoothCamera::GetCurrentCameraTargetWorldPosition(const Player
 	const CorrectedPlayerCamera* camera) const
 {
 	if (player->loadedState && player->loadedState->node) {
-		BSFixedString nodeName = currentState == GameState::CameraState::Horseback ? "HorseSpine2" : "Camera3rd [Cam3]";
-		const NiAVObject* node = player->loadedState->node->GetObjectByName(&nodeName.data);
+		NiAVObject* node;
+		if (currentState == GameState::CameraState::Horseback) {
+			BSFixedString nodeName = "NPC Spine1 [Spn1]";
+			node = player->loadedState->node->GetObjectByName(&nodeName.data);
+		} else {
+			BSFixedString nodeName = "Camera3rd [Cam3]";
+			node = player->loadedState->node->GetObjectByName(&nodeName.data);
+		}
+
 		if (node) {
 			return glm::vec3(
 				player->pos.x,
@@ -446,6 +454,11 @@ void Camera::SmoothCamera::SetPosition(const glm::vec3& pos, const CorrectedPlay
 	cameraNode->m_localTransform.pos = niPos;
 	cameraNode->m_worldTransform.pos = niPos;
 	cameraNi->m_worldTransform.pos = niPos;
+
+	if (currentState == GameState::CameraState::ThirdPerson || currentState == GameState::CameraState::ThirdPersonCombat) {
+		auto state = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
+		state->translation = niPos;
+	}
 
 	// Update world to screen matrices
 	UpdateInternalWorldToScreenMatrix(cameraNi, GetCameraPitchRotation(camera), GetCameraYawRotation(camera));
@@ -562,27 +575,34 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 		if (handNode && handNode->m_children.m_size > 0) {
 			const auto arrow = static_cast<NiNode*>(handNode->m_children.m_data[0]);
 			niOrigin = arrow->m_worldTransform.pos;
-
+			// @Note: I'm sure there is some way to make this perfect, but this is close enough
+			constexpr auto fac = ArrowFixes::arrowPitchModFactor * 0.5f;
 			const auto n = mmath::GetViewVector(
 				glm::vec3(0.0, 1.0, 0.0),
-				GetCameraPitchRotation(camera) - 0.03f,
-				GetCameraYawRotation(camera) + 0.015f
+				GetCameraPitchRotation(camera) - fac,
+				GetCameraYawRotation(camera)
 			);
 			niNormal = NiPoint3(n.x, n.y, n.z);
 		}
-	} else if (!GameState::IsWalking(player)) {
+	} else if (GameState::IsMagicDrawn(player)) {
+		BSFixedString nodeName = "MagicEffectsNode";
+		const auto node = player->loadedState->node->GetObjectByName(&nodeName.data);
+		if (node) {
+			niOrigin = NiPoint3(player->pos.x, player->pos.y, node->m_worldTransform.pos.z);
+		}
+
 		const auto n = mmath::GetViewVector(
 			glm::vec3(0.0, 1.0, 0.0),
-			GetCameraPitchRotation(camera) - 0.03f,
-			GetCameraYawRotation(camera) + 0.015f
+			GetCameraPitchRotation(camera),
+			GetCameraYawRotation(camera)
 		);
 		niNormal = NiPoint3(n.x, n.y, n.z);
 	}
 
 	// Cast the aim ray
-	constexpr auto rayLength = 4096.0f;
-	const auto origin = glm::vec4(niOrigin.x, niOrigin.y, niOrigin.z, 0.0f);
-	const auto ray = glm::vec4(niNormal.x, niNormal.y, niNormal.z, 0.0f) * rayLength;
+	constexpr auto rayLength = 6000.0f; // Range of most (all?) arrows
+	auto origin = glm::vec4(niOrigin.x, niOrigin.y, niOrigin.z, 0.0f);
+	auto ray = glm::vec4(niNormal.x, niNormal.y, niNormal.z, 0.0f) * rayLength;
 	const auto result = Raycast::CastRay(origin, origin + ray, 0.1f, true);
 
 	auto port = NiRect<float>();

@@ -36,7 +36,12 @@ public:
 	float                   somethingElseSprintRelated;
 	float                   yaw;
 	float					pitch;						// D8
-	UInt8					unkDC[7];					// DC 
-	UInt8					padE3[5];					// E3
+	bool					freeRotationEnabled;		// DC
+	bool					stateNotActive;				// DD
+	UInt16					unkDC;						// DE
+	bool					toggleAnimCam;				// E0
+	bool					applyOffsets;				// E1
+	UInt16					unkE2;						// E2
+	UInt32					unkE4;						// E4
 };
 static_assert(sizeof(CorrectedThirdPersonState) == sizeof(ThirdPersonState));

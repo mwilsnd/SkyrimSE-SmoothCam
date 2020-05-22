@@ -1,5 +1,6 @@
 #include "detours.h"
 #include "camera.h"
+#include "arrow_fixes.h"
 
 static PLH::VFuncMap origVFuncs_PlayerInput;
 static PLH::VFuncMap origVFuncs_MenuOpenClose;
@@ -19,6 +20,10 @@ double GetTime() noexcept {
 void StepFrameTime() noexcept {
 	lastFrame = curFrame;
 	curFrame = GetTime();
+
+#ifdef _DEBUG
+	ArrowFixes::Draw();
+#endif
 }
 
 double GetFrameDelta() noexcept {
@@ -142,5 +147,5 @@ bool Detours::Attach(std::shared_ptr<Camera::SmoothCamera> theCamera) {
 	DO_CAMERA_UPDATE_DETOUR_IMPL(Bleedout, CorrectedPlayerCamera::kCameraState_Bleedout);
 	DO_CAMERA_UPDATE_DETOUR_IMPL(Transition, CorrectedPlayerCamera::kCameraState_Transition);
 
-	return true;
+	return ArrowFixes::Attach();
 }

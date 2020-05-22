@@ -116,6 +116,7 @@
 #include "skyrimSE/bhkWorld.h"
 #include "skyrimSE/PlayerCamera.h"
 #include "skyrimSE/ThirdPersonState.h"
+#include "skyrimSE/ArrowProjectile.h"
 
 #include "mmath.h"
 #include "physics.h"

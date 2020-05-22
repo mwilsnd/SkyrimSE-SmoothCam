@@ -172,7 +172,7 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 5
+	version: 6
 }
 
 ; Presets
@@ -491,15 +491,15 @@ SliderSetting sepLocalSpaceInterpRate -> {
 }
 
 ; Crosshair
-ToggleSetting crosshair3DEnabled -> {
-	settingName: "Enable3DCrosshair"
-	displayName: "3D Crosshair Enabled"
-	desc: "Enable the raycasted 3D crosshair when in combat."
+ToggleSetting crosshair3DBowEnabled -> {
+	settingName: "Enable3DBowCrosshair"
+	displayName: "3D Bow Crosshair Enabled"
+	desc: "Enable the raycasted 3D crosshair when aiming with the bow."
 }
-ToggleSetting alwaysUse3DCrosshair -> {
-	settingName: "AlwaysUse3DCrosshair"
-	displayName: "Always Use 3D Crosshair"
-	desc: "Always use the 3D crosshair, even when not in a combat stance."
+ToggleSetting crosshair3DMagicEnabled -> {
+	settingName: "Enable3DMagicCrosshair"
+	displayName: "3D Magic Crosshair Enabled"
+	desc: "Enable the raycasted 3D crosshair when using magic."
 }
 ToggleSetting hideCrosshairOutOfCombat -> {
 	settingName: "HideCrosshairOutOfCombat"
@@ -1096,7 +1096,7 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Crosshair")
 		AddHeaderOption("3D Crosshair Settings")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			crosshair3DEnabled, alwaysUse3DCrosshair, crosshairNPCGrowSize,
+			crosshair3DBowEnabled, crosshair3DMagicEnabled, crosshairNPCGrowSize,
 			crosshairMinDistSize, crosshairMaxDistSize
 		})
 

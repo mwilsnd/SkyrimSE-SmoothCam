@@ -45,8 +45,8 @@ The easiest way to configure the camera is by using the SmoothCam MCM menu. If y
 Setting | Description
 --- | ---
 enableInterp | Enables camera smoothing globally
-enable3DCrosshair | Enables the raycasted crosshair
-alwaysUse3DCrosshair | Always use the 3D crosshair, even when not in a combat stance
+use3DBowAimCrosshair | Enables the raycasted crosshair while aiming with a bow
+use3DMagicCrosshair | Enables the raycasted crosshair when magic is equiped
 hideNonCombatCrosshair | Hides the crosshair when no weapon is drawn
 hideCrosshairMeleeCombat | Hides the crosshair when melee weapons are drawn
 crosshairNPCHitGrowSize | When the 3D crosshair is over an NPC, grow the size of the crosshair by this amount

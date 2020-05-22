@@ -1,3 +1,12 @@
+## Alpha 1.5
+* Bumped module and MCM version number to 6
+* Fixed smoothcam not starting during a new game until first saving and reloading.
+* Fixed the game's crosshair reference raycasting being off - text prompting you to pick up/activate/talk now correctly lines up with the vanilla crosshair.
+* Fixed an oversight in the threaded version of Raycast::IntersectRayAABBAllActorsIn which could cause a crash in extreme cases.
+* Changed options for the 3D crosshair, now allowing it to be enabled for magic combat and aiming with the bow separately, removed other options as they aren't really helpful anymore.
+* Reverse engineered arrow flight code and patched the game's attempts to try and skew arrows towards the crosshair - this was super broken with custom camera positions and made the 3D crosshair impossible to line up correctly. The crosshair works much better with bows now, though you still need to lead targets accounting for gravity. Arrow flight patch also helps with magic projectiles.
+* Changed the bone used for camera positioning on horseback.
+
 ## Alpha 1.4
 * Bumped module and MCM version number to 5
 * Fixed the camera position not continuing to update while in other camera states like firstperson, causing a sudden jump when entering thirdperson.

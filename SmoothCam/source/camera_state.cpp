@@ -93,9 +93,13 @@ glm::vec3 Camera::State::BaseCameraState::ComputeOffsetClamping(PlayerCharacter*
 }
 
 void Camera::State::BaseCameraState::UpdateCrosshair(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
-	const auto use3D = GetConfig()->enable3DCrosshair;
-	const auto always3D = use3D && GetConfig()->alwaysUse3DCrosshair;
-	
+	auto use3D = false;
+	if (GameState::IsRangedWeaponDrawn(player)) {
+		use3D = GameState::IsBowDrawn(player) && GetConfig()->use3DBowAimCrosshair;
+	} else if (GameState::IsMagicDrawn(player)) {
+		use3D = GetConfig()->use3DMagicCrosshair;
+	}
+
 	if (IsWeaponDrawn(player)) {
 		if (GetConfig()->hideCrosshairMeleeCombat && IsMeleeWeaponDrawn(player)) {
 			SetCrosshairEnabled(false);
@@ -115,9 +119,8 @@ void Camera::State::BaseCameraState::UpdateCrosshair(PlayerCharacter* player, co
 			SetCrosshairEnabled(false);
 			SetCrosshair3DEnabled(false);
 		} else {
-			SetCrosshairEnabled(!always3D);
-			SetCrosshair3DEnabled(always3D);
-			if (always3D) UpdateCrosshairPosition(player, playerCamera);
+			SetCrosshairEnabled(true);
+			SetCrosshair3DEnabled(false);
 		}
 	}
 }
@@ -225,6 +228,41 @@ glm::vec3 Camera::State::BaseCameraState::UpdateInterpolatedWorldPosition(Player
 		);
 		return ret;
 	}
+}
+
+void Camera::State::BaseCameraState::ApplyLocalSpaceGameOffsets(const glm::vec3& pos, const PlayerCharacter* player,
+	const CorrectedPlayerCamera* playerCamera)
+{
+	auto state = reinterpret_cast<CorrectedThirdPersonState*>(playerCamera->cameraState);
+	const auto rot = GetCameraRotation(playerCamera);
+	glm::vec3 forward, right, up, coef;
+	mmath::DecomposeToBasis(
+		pos,
+		{ rot.x, 0.0f, rot.y },
+		forward, right, up, coef
+	);
+
+	auto view = glm::quat_cast(GetViewMatrix(player, playerCamera));
+	state->rotation.m_fW = view.w;
+	state->rotation.m_fX = view.x;
+	state->rotation.m_fY = view.y;
+	state->rotation.m_fZ = view.z;
+	state->yaw1 = rot.y;
+	state->yaw2 = rot.y;
+
+	if (GetCameraState() == GameState::CameraState::ThirdPersonCombat && GameState::IsBowDrawn(player)) {
+		state->fOverShoulderPosX = 0.0f;
+		state->fOverShoulderCombatAddY = 0.0f;
+		state->fOverShoulderPosZ = 0.0f;
+	} else {
+		state->fOverShoulderPosX = coef.x;
+		state->fOverShoulderCombatAddY = coef.y;
+		state->fOverShoulderPosZ = coef.z;
+	}
+
+	state->offsetVector.x = state->fOverShoulderPosX;
+	state->offsetVector.y = state->fOverShoulderCombatAddY;
+	state->offsetVector.z = state->fOverShoulderPosZ;
 }
 
 void Camera::State::BaseCameraState::StoreLastLocalPosition(const glm::vec3& pos) {

@@ -23,12 +23,13 @@ void Camera::State::ThirdpersonCombatState::Update(PlayerCharacter* player, cons
 	// Define the starting point for our raycast
 	const auto start = worldTarget + glm::vec3(0.0f, 0.0f, cameraLocal.z);
 
+	glm::vec3 localPos;
 	glm::vec3 preFinalPos;
 	if (GetConfig()->separateLocalInterp) {
 		// Handle separate local-space interpolation
 
 		// Interpolate the local position (rotation and translation offsets)
-		const auto lerpedLocalPos = UpdateInterpolatedLocalPosition(player, transformedLocalPos);
+		localPos = UpdateInterpolatedLocalPosition(player, transformedLocalPos);
 		// And the world target
 		const auto lerpedWorldPos = UpdateInterpolatedWorldPosition(player, worldTarget, glm::length(GetLastWorldPosition() - worldTarget));
 		// Compute offset clamping if enabled
@@ -36,7 +37,7 @@ void Camera::State::ThirdpersonCombatState::Update(PlayerCharacter* player, cons
 		StoreLastWorldPosition(clampedWorldPos);
 
 		// Construct the final position
-		preFinalPos = clampedWorldPos + lerpedLocalPos;
+		preFinalPos = clampedWorldPos + localPos;
 	} else {
 		// Combined case
 
@@ -47,12 +48,16 @@ void Camera::State::ThirdpersonCombatState::Update(PlayerCharacter* player, cons
 		// Compute offset clamping if enabled
 		preFinalPos = ComputeOffsetClamping(player, camera, transformedLocalPos, worldTarget, lerpedWorldPos);
 		StoreLastWorldPosition(preFinalPos);
+		localPos = lerpedWorldPos - worldTarget;
 	}
 
 	// Cast our ray and update the camera position
 	const auto finalPos = ComputeRaycast(start, preFinalPos);
 	// Set the position
 	SetCameraPosition(finalPos, camera);
+
+	// Feed our local position offsets to the game camera state for correct crosshair alignment
+	ApplyLocalSpaceGameOffsets(localPos, player, camera);
 
 	// Update the crosshair
 	UpdateCrosshair(player, camera);

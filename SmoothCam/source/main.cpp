@@ -16,6 +16,7 @@ bool hooked = false;
 #pragma warning( disable : 26461 ) // skse function pointer is not const
 void SKSEMessageHandler(SKSEMessagingInterface::Message* message) {
 	switch (message->type) {
+		case SKSEMessagingInterface::kMessage_NewGame:
 		case SKSEMessagingInterface::kMessage_PostLoadGame: {
 			// The game has loaded, go ahead and hook the camera now
 			if (!hooked && g_theCamera) {
@@ -56,7 +57,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 5;
+		info->version = 6;
 
 		g_pluginHandle = skse->GetPluginHandle();
 

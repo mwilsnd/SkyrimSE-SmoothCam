@@ -22,7 +22,8 @@ namespace GameState {
 							// bits 18, 19, 20 are unknown - yet to observe them being set
 			{ 21, true },   // actor is about to die? could also be the death spin animation
 			{ 22, true },   // actor is dead - could also be player is a ragdoll
-							// bit 23, 24 unknown - yet to observe being set 
+			{ 23, true },	// Set when on the chopping block during intro - playing a cutsceen?
+							// bit 24 unknown - yet to observe being set 
 			{ 25, true },	// player knocked down
 			{ 26, true },	// player knocked down, is a ragdoll?
 			{ 27, true },	// player getting up
