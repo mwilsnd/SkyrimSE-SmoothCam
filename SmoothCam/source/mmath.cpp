@@ -55,7 +55,7 @@ glm::vec3 mmath::NiMatrixToEuler(const NiMatrix33& m) noexcept {
 	float yaw = 0.0f;
 	if (m.data[0][0] <= 0.0000001f || m.data[2][2] <= 0.0000001f) {
 		const auto ab = glm::atan(m.data[0][2], m.data[1][2]);
-		yaw = ab - (glm::pi<float>() * 0.5f);
+		yaw = ab - half_pi;
 	} else {
 		yaw = glm::atan(m.data[0][0], m.data[1][0]);
 	}
@@ -70,7 +70,6 @@ glm::vec3 mmath::NiMatrixToEuler(const NiMatrix33& m) noexcept {
 NiMatrix33 mmath::ToddHowardTransform(const float pitch, const float yaw) noexcept {
 	// Create a matrix to flip coords from D3D NDC space to scaleform
 	// ¯\_(ツ)_/¯
-	constexpr const auto half_pi = glm::pi<float>() * 0.5f;
 	auto m = glm::identity<glm::mat4>();
 	m = glm::rotate(m, -half_pi, { 1.0f, 0.0f, 0.0f });
 	m = glm::rotate(m, -pitch, { 0.0f, 1.0f, 0.0f });

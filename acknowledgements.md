@@ -3,9 +3,6 @@
 ## skse64
 ### https://skse.silverlock.org/
 
-## skyrimui
-### https://github.com/Mardoxx/skyrimui
-
 ##  nlohmann/json
 ### https://github.com/nlohmann/json
 

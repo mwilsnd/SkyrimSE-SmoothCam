@@ -1,3 +1,8 @@
+## Alpha 1.6
+* Removed the need for a custom hudmenu.swf for the 3D crosshair.
+* Removed the UI folder and skyrimui dependency.
+* Enabled GLM's use of hardware intrinsics rather than let the auto vectorizer deal with it.
+
 ## Alpha 1.5
 * Bumped module and MCM version number to 6
 * Fixed smoothcam not starting during a new game until first saving and reloading.

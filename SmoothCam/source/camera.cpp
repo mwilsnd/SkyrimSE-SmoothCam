@@ -615,7 +615,7 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 		port.m_bottom = rect.top;
 	}
 
-	glm::vec2 crosshairSize(config->crosshairMinDistSize, config->crosshairMinDistSize);
+	glm::vec2 crosshairSize(baseCrosshairData.xScale, baseCrosshairData.yScale);
 	glm::vec2 crosshairPos(port.m_right * 0.5f, port.m_top * 0.5f);
 	if (result.hit) {
 		auto pt = NiPoint3(
@@ -654,27 +654,52 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 	SetCrosshairSize(crosshairSize);
 }
 
+void Camera::SmoothCamera::ReadInitialCrosshairInfo() {
+	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
+	if (!menu || !menu->view) return;
+	
+	GFxValue va;
+	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._x");
+	baseCrosshairData.xOff = va.GetNumber();
+
+	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._y");
+	baseCrosshairData.yOff = va.GetNumber();
+
+	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._width");
+	baseCrosshairData.xScale = va.GetNumber();
+
+	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._height");
+	baseCrosshairData.yScale = va.GetNumber();
+
+	baseCrosshairData.captured = true;
+}
+
 void Camera::SmoothCamera::SetCrosshairPosition(const glm::vec2& pos) const {
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
 	if (menu && menu->view) {
-		GFxValue result;
-		GFxValue args[3];
-		args[0].SetString("SetCrosshairPosition");
-		args[1].SetNumber(static_cast<double>(pos.x));
-		args[2].SetNumber(static_cast<double>(pos.y));
-		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 3);
+		auto rect = menu->view->GetVisibleFrameRect();
+		auto half_x = pos.x - (rect.right * 0.5f);
+		auto half_y = pos.y - (rect.bottom * 0.5f);
+		
+		auto x = static_cast<double>(half_x) + baseCrosshairData.xOff;
+		auto y = static_cast<double>(half_y) + baseCrosshairData.yOff;
+
+		GFxValue va;
+		va.SetNumber(x);
+		menu->view->SetVariable("_root.HUDMovieBaseInstance.CrosshairInstance._x", &va, 0);
+		va.SetNumber(y);
+		menu->view->SetVariable("_root.HUDMovieBaseInstance.CrosshairInstance._y", &va, 0);
 	}
 }
 
 void Camera::SmoothCamera::SetCrosshairSize(const glm::vec2& size) const {
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
 	if (menu && menu->view) {
-		GFxValue result;
-		GFxValue args[3];
-		args[0].SetString("SetCrosshairSize");
-		args[1].SetNumber(static_cast<double>(size.x));
-		args[2].SetNumber(static_cast<double>(size.y));
-		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 3);
+		GFxValue va;
+		va.SetNumber(static_cast<double>(size.x));
+		menu->view->SetVariable("_root.HUDMovieBaseInstance.Crosshair._width", &va, 0);
+		va.SetNumber(static_cast<double>(size.y));
+		menu->view->SetVariable("_root.HUDMovieBaseInstance.Crosshair._height", &va, 0);
 	}
 }
 
@@ -684,17 +709,6 @@ void Camera::SmoothCamera::SetCrosshairEnabled(bool enabled) const {
 		GFxValue result;
 		GFxValue args[2];
 		args[0].SetString("SetCrosshairEnabled");
-		args[1].SetBool(enabled);
-		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 2);
-	}
-}
-
-void Camera::SmoothCamera::SetCrosshair3DEnabled(bool enabled) const {
-	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-	if (menu && menu->view) {
-		GFxValue result;
-		GFxValue args[2];
-		args[0].SetString("ShowCrosshair3D");
 		args[1].SetBool(enabled);
 		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 2);
 	}
@@ -714,7 +728,7 @@ float Camera::SmoothCamera::GetCameraYawRotation(const CorrectedPlayerCamera* ca
 	const auto mtx = reinterpret_cast<NiCamera*>(camera->cameraNode->m_children.m_data[0])->m_worldTransform.rot;
 	if (mtx.data[0][0] <= 0.0000001f || mtx.data[2][2] <= 0.0000001f) {
 		auto ab = glm::atan(mtx.data[0][2], mtx.data[1][2]);
-		return ab - (glm::pi<float>() * 0.5f);
+		return ab - mmath::half_pi;
 	}
 
 	return glm::atan(mtx.data[0][0], mtx.data[1][0]);
@@ -734,6 +748,10 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 #ifdef _DEBUG
 	Profiler prof;
 #endif;
+
+	if (!baseCrosshairData.captured) {
+		ReadInitialCrosshairInfo();
+	}
 
 	auto cameraNode = camera->cameraNode;
 	config = Config::GetCurrentConfig();
@@ -836,7 +854,8 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 			case GameState::CameraState::Unknown:
 			default: {
 				SetCrosshairEnabled(true);
-				SetCrosshair3DEnabled(false);
+				SetCrosshairPosition({ 640.0f, 360.0f });
+				SetCrosshairSize({ baseCrosshairData.xScale, baseCrosshairData.yScale });
 				lastPosition = lastWorldPosition = currentPosition = {
 					cameraNode->m_worldTransform.pos.x,
 					cameraNode->m_worldTransform.pos.y,

@@ -50,8 +50,6 @@ namespace Camera {
 				void SetCrosshairPosition(const glm::vec2& pos) const;
 				// Toggles visibility of the crosshair
 				void SetCrosshairEnabled(bool enabled) const;
-				// Toggles visibility of the 3D crosshair
-				void SetCrosshair3DEnabled(bool enabled) const;
 
 				// Returns a rotation matrix to use with rotating the camera
 				glm::mat4 GetViewMatrix(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const noexcept;

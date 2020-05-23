@@ -103,24 +103,23 @@ void Camera::State::BaseCameraState::UpdateCrosshair(PlayerCharacter* player, co
 	if (IsWeaponDrawn(player)) {
 		if (GetConfig()->hideCrosshairMeleeCombat && IsMeleeWeaponDrawn(player)) {
 			SetCrosshairEnabled(false);
-			SetCrosshair3DEnabled(false);
 		} else {
+			SetCrosshairEnabled(true);
+
 			if (use3D) {
-				SetCrosshairEnabled(false);
-				SetCrosshair3DEnabled(true);
 				UpdateCrosshairPosition(player, playerCamera);
 			} else {
-				SetCrosshairEnabled(true);
-				SetCrosshair3DEnabled(false);
+				SetCrosshairPosition({ 640.0f, 360.0f });
+				camera->SetCrosshairSize({ camera->baseCrosshairData.xScale, camera->baseCrosshairData.yScale });
 			}
 		}
 	} else {
 		if (GetConfig()->hideNonCombatCrosshair) {
 			SetCrosshairEnabled(false);
-			SetCrosshair3DEnabled(false);
 		} else {
 			SetCrosshairEnabled(true);
-			SetCrosshair3DEnabled(false);
+			SetCrosshairPosition({ 640.0f, 360.0f });
+			camera->SetCrosshairSize({ camera->baseCrosshairData.xScale, camera->baseCrosshairData.yScale });
 		}
 	}
 }
@@ -138,10 +137,6 @@ void Camera::State::BaseCameraState::SetCrosshairPosition(const glm::vec2& pos) 
 // Toggles visibility of the crosshair
 void Camera::State::BaseCameraState::SetCrosshairEnabled(bool enabled) const {
 	camera->SetCrosshairEnabled(enabled);
-}
-
-void Camera::State::BaseCameraState::SetCrosshair3DEnabled(bool enabled) const {
-	camera->SetCrosshair3DEnabled(enabled);
 }
 
 // Returns a rotation matrix to use with rotating the camera

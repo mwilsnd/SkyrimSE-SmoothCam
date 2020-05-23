@@ -10,9 +10,6 @@
 [submodule "Deps/Detours"]
 	path = Deps/Detours
 	url = https://github.com/microsoft/Detours.git
-[submodule "Deps/skyrimui"]
-	path = Deps/skyrimui
-	url = https://github.com/Mardoxx/skyrimui.git
 [submodule "Deps/json"]
 	path = Deps/json
 	url = https://github.com/nlohmann/json.git

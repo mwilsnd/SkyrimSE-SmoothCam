@@ -172,7 +172,7 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 6
+	version: 7
 }
 
 ; Presets

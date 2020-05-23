@@ -112,14 +112,14 @@ namespace Camera {
 			/// Crosshair stuff
 			// Updates the screen position of the crosshair for correct aiming
 			void UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* camera);
+			// Read initial values for the crosshair during startup
+			void ReadInitialCrosshairInfo();
 			// Set the 3D crosshair position
 			void SetCrosshairPosition(const glm::vec2& pos) const;
 			// Set the size of the 3D crosshair
 			void SetCrosshairSize(const glm::vec2& size) const;
-			// Show or hide the normal crosshair
+			// Show or hide the crosshair
 			void SetCrosshairEnabled(bool enabled) const;
-			// Show or hide the 3D crosshair
-			void SetCrosshair3DEnabled(bool enabled) const;
 
 			/// Camera getters
 			// Returns the camera's yaw
@@ -209,6 +209,14 @@ namespace Camera {
 				const Config::OffsetGroup* currentGroup = nullptr;
 				glm::vec3 position = { 0.0f, 0.0f, 0.0f };
 			} offsetState;
+
+			struct {
+				bool captured = false;
+				double xOff = 0.0f;
+				double yOff = 0.0f;
+				double xScale = 0.0f;
+				double yScale = 0.0f;
+			} baseCrosshairData;
 
 			bool firstFrame = false;
 			bool povIsThird = false;

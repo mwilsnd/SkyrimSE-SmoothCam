@@ -72,6 +72,7 @@
 
 #   include "addrlib/versiondb.h"
 
+#   define GLM_FORCE_INTRINSICS
 #   define GLM_FORCE_LEFT_HANDED
 #   define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #   define GLM_FORCE_QUAT_DATA_WXYZ

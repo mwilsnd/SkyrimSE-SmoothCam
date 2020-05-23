@@ -4,9 +4,6 @@ SmoothCam adds a frame-interpolated third-person camera to Skyrim Special Editio
 ## Compatibility
 * SmoothCam is going to have issues with any other mod that tries to position the third-person camera (Other third-person mods, likely some lock-on mods, etc).
 
-* For the raycasting 3D crosshair, __SmoothCam replaces__ `hudmenu.swf`, meaning any other mod that changes the hud will likely have issues. (If you have issues but still want to use this mod you can simply omit `hudmenu.swf` when installing - the mod will still function, just without the 3D crosshair).
-Mod authors of conflicting mods can add support for the crosshair by adding a `SetCrosshairPosition` method inside `hudmenu/HUDMenu.as` (Refer to the changes I've made to `hudmenu` inside the UI folder).
-
 * As I use ImprovedCamera myself, I've been slowly adding some compatibility patches for it over time. Note that currently interactions between both mods aren't perfect.
 
 * Alternate Conversation Camera is supported, just make sure "Disable During Dialog" is selected in the MCM.

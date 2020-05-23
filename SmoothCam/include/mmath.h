@@ -5,6 +5,8 @@ namespace Config {
 }
 
 namespace mmath {
+	constexpr const float half_pi = 1.57079632679485f;
+
 	typedef struct {
 		float data[4][4];
 	} NiMatrix44;
