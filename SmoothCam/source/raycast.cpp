@@ -11,8 +11,8 @@ namespace {
 
 #ifdef _DEBUG
 void DrawAABB(const mmath::AABB& aabb, bool hit) {
-	constexpr const auto hitColor = glm::vec3{ 0.0f, 1.0f, 0.0f };
-	constexpr const auto missColor = glm::vec3{ 1.0f, 0.0f, 0.0f };
+	const auto hitColor = glm::vec3{ 0.0f, 1.0f, 0.0f };
+	const auto missColor = glm::vec3{ 1.0f, 0.0f, 0.0f };
 	const auto color = hit ? hitColor : missColor;
 	const auto blf = mmath::PointToScreen(aabb.mins);
 	const auto brf = mmath::PointToScreen({ aabb.maxs.x, aabb.mins.y, aabb.mins.z });
