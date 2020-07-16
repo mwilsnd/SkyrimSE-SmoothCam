@@ -286,6 +286,17 @@ const Config::OffsetGroup* Camera::SmoothCamera::GetOffsetForState(const CameraA
 	}
 }
 
+float Camera::SmoothCamera::GetActiveWeaponStateZoomOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept {
+	if (!GameState::IsWeaponDrawn(player)) return group->zoomOffset;
+	if (GameState::IsRangedWeaponDrawn(player)) {
+		return group->combatRangedZoomOffset;
+	}
+	if (GameState::IsMagicDrawn(player)) {
+		return group->combatMagicZoomOffset;
+	}
+	return group->combatMeleeZoomOffset;
+}
+
 // Selects the right offset from an offset group for the player's weapon state
 float Camera::SmoothCamera::GetActiveWeaponStateUpOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return group->upOffset;
@@ -308,6 +319,41 @@ float Camera::SmoothCamera::GetActiveWeaponStateSideOffset(PlayerCharacter* play
 		return group->combatMagicSideOffset;
 	}
 	return group->combatMeleeSideOffset;
+}
+
+float Camera::SmoothCamera::GetCurrentCameraZoomOffset(PlayerCharacter* player) const noexcept {
+	switch (currentState) {
+		case GameState::CameraState::Horseback: {
+			if (GameState::IsBowDrawn(player)) {
+				return config->bowAim.horseZoomOffset;
+			} else {
+				return GetActiveWeaponStateUpOffset(player, &config->horseback);
+			}
+		}
+		default:
+			break;
+	}
+
+	switch (currentActionState) {
+		case CameraActionState::DisMounting:
+		case CameraActionState::Sleeping:
+		case CameraActionState::Sitting:
+		case CameraActionState::Aiming:
+		case CameraActionState::Swimming: {
+			return offsetState.currentGroup->zoomOffset;
+		}
+		case CameraActionState::Sneaking:
+		case CameraActionState::Sprinting:
+		case CameraActionState::Walking:
+		case CameraActionState::Running:
+		case CameraActionState::Standing: {
+			return GetActiveWeaponStateZoomOffset(player, offsetState.currentGroup);
+		}
+		default: {
+			break;
+		}
+	}
+	return 0.0f;
 }
 
 // Returns the camera height for the current player state
@@ -391,7 +437,7 @@ float Camera::SmoothCamera::GetCurrentCameraDistance(const CorrectedPlayerCamera
 glm::vec3 Camera::SmoothCamera::GetCurrentCameraOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept {
 	return {
 		GetCurrentCameraSideOffset(player, camera),
-		GetCurrentCameraDistance(camera),
+		GetCurrentCameraDistance(camera) + GetCurrentCameraZoomOffset(player),
 		GetCurrentCameraHeight(player)
 	};
 }
@@ -575,8 +621,15 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 		if (handNode && handNode->m_children.m_size > 0) {
 			const auto arrow = static_cast<NiNode*>(handNode->m_children.m_data[0]);
 			niOrigin = arrow->m_worldTransform.pos;
+
 			// @Note: I'm sure there is some way to make this perfect, but this is close enough
-			constexpr auto fac = ArrowFixes::arrowPitchModFactor * 0.5f;
+			float fac = 0.0f;
+			if (GameState::IsUsingCrossbow(*g_thePlayer)) {
+				fac = glm::radians(Config::GetGameConfig()->f3PBoltTiltUpAngle) * 0.5f;
+			} else if (GameState::IsUsingBow(*g_thePlayer)) {
+				fac = glm::radians(Config::GetGameConfig()->f3PArrowTiltUpAngle) * 0.5f;
+			}
+			
 			const auto n = mmath::GetViewVector(
 				glm::vec3(0.0, 1.0, 0.0),
 				GetCameraPitchRotation(camera) - fac,
@@ -616,7 +669,7 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 	}
 
 	glm::vec2 crosshairSize(baseCrosshairData.xScale, baseCrosshairData.yScale);
-	glm::vec2 crosshairPos(port.m_right * 0.5f, port.m_top * 0.5f);
+	glm::vec2 crosshairPos(baseCrosshairData.xCenter, baseCrosshairData.yCenter);
 	if (result.hit) {
 		auto pt = NiPoint3(
 			result.hitPos.x,
@@ -671,6 +724,10 @@ void Camera::SmoothCamera::ReadInitialCrosshairInfo() {
 	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._height");
 	baseCrosshairData.yScale = va.GetNumber();
 
+	auto rect = menu->view->GetVisibleFrameRect();
+	baseCrosshairData.xCenter = mmath::Remap(0.5f, 0.0f, 1.0f, rect.left, rect.right);
+	baseCrosshairData.yCenter = mmath::Remap(0.5f, 0.0f, 1.0f, rect.top, rect.bottom);
+
 	baseCrosshairData.captured = true;
 }
 
@@ -678,8 +735,8 @@ void Camera::SmoothCamera::SetCrosshairPosition(const glm::vec2& pos) const {
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
 	if (menu && menu->view) {
 		auto rect = menu->view->GetVisibleFrameRect();
-		auto half_x = pos.x - (rect.right * 0.5f);
-		auto half_y = pos.y - (rect.bottom * 0.5f);
+		auto half_x = pos.x - ((rect.right + rect.left) * 0.5f);
+		auto half_y = pos.y - ((rect.bottom + rect.top) * 0.5f);
 		
 		auto x = static_cast<double>(half_x) + baseCrosshairData.xOff;
 		auto y = static_cast<double>(half_y) + baseCrosshairData.yOff;
@@ -692,7 +749,16 @@ void Camera::SmoothCamera::SetCrosshairPosition(const glm::vec2& pos) const {
 	}
 }
 
+void Camera::SmoothCamera::CenterCrosshair() const {
+	SetCrosshairPosition({
+		baseCrosshairData.xCenter,
+		baseCrosshairData.yCenter
+	});
+}
+
 void Camera::SmoothCamera::SetCrosshairSize(const glm::vec2& size) const {
+	if (!config->enableCrosshairSizeManip) return;
+
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
 	if (menu && menu->view) {
 		GFxValue va;
@@ -854,7 +920,7 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 			case GameState::CameraState::Unknown:
 			default: {
 				SetCrosshairEnabled(true);
-				SetCrosshairPosition({ 640.0f, 360.0f });
+				CenterCrosshair();
 				SetCrosshairSize({ baseCrosshairData.xScale, baseCrosshairData.yScale });
 				lastPosition = lastWorldPosition = currentPosition = {
 					cameraNode->m_worldTransform.pos.x,

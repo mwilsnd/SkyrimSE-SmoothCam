@@ -1,17 +1,30 @@
 Config::UserConfig currentConfig;
+Config::GameConfig gameConfig;
+
+#define CREATE_JSON_VALUE(obj, member) {#member, obj.member}
+#define VALUE_FROM_JSON(obj, member)	\
+{										\
+	const auto def = obj.##member##;	\
+	obj.member = j.value(#member, def);	\
+}
 
 void Config::to_json(json& j, const OffsetGroup& obj) {
 	j = json{
 		CREATE_JSON_VALUE(obj, sideOffset),
 		CREATE_JSON_VALUE(obj, upOffset),
+		CREATE_JSON_VALUE(obj, zoomOffset),
 		CREATE_JSON_VALUE(obj, combatRangedSideOffset),
 		CREATE_JSON_VALUE(obj, combatRangedUpOffset),
+		CREATE_JSON_VALUE(obj, combatRangedZoomOffset),
 		CREATE_JSON_VALUE(obj, combatMagicSideOffset),
 		CREATE_JSON_VALUE(obj, combatMagicUpOffset),
+		CREATE_JSON_VALUE(obj, combatMagicZoomOffset),
 		CREATE_JSON_VALUE(obj, combatMeleeSideOffset),
 		CREATE_JSON_VALUE(obj, combatMeleeUpOffset),
+		CREATE_JSON_VALUE(obj, combatMeleeZoomOffset),
 		CREATE_JSON_VALUE(obj, horseSideOffset),
 		CREATE_JSON_VALUE(obj, horseUpOffset),
+		CREATE_JSON_VALUE(obj, horseZoomOffset),
 		CREATE_JSON_VALUE(obj, interp),
 		CREATE_JSON_VALUE(obj, interpRangedCombat),
 		CREATE_JSON_VALUE(obj, interpMagicCombat),
@@ -23,21 +36,25 @@ void Config::to_json(json& j, const OffsetGroup& obj) {
 void Config::from_json(const json& j, OffsetGroup& obj) {
 	VALUE_FROM_JSON(obj, sideOffset)
 	VALUE_FROM_JSON(obj, upOffset)
+	VALUE_FROM_JSON(obj, zoomOffset)
 	VALUE_FROM_JSON(obj, combatRangedSideOffset)
 	VALUE_FROM_JSON(obj, combatRangedUpOffset)
+	VALUE_FROM_JSON(obj, combatRangedZoomOffset)
 	VALUE_FROM_JSON(obj, combatMagicSideOffset)
 	VALUE_FROM_JSON(obj, combatMagicUpOffset)
+	VALUE_FROM_JSON(obj, combatMagicZoomOffset)
 	VALUE_FROM_JSON(obj, combatMeleeSideOffset)
 	VALUE_FROM_JSON(obj, combatMeleeUpOffset)
+	VALUE_FROM_JSON(obj, combatMeleeZoomOffset)
 	VALUE_FROM_JSON(obj, horseSideOffset)
 	VALUE_FROM_JSON(obj, horseUpOffset)
+	VALUE_FROM_JSON(obj, horseZoomOffset)
 	VALUE_FROM_JSON(obj, interp)
 	VALUE_FROM_JSON(obj, interpRangedCombat)
 	VALUE_FROM_JSON(obj, interpMagicCombat)
 	VALUE_FROM_JSON(obj, interpMeleeCombat)
 	VALUE_FROM_JSON(obj, interpHorseback)
 }
-
 
 void Config::to_json(json& j, const UserConfig& obj) {
 	j = json{
@@ -46,6 +63,7 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, use3DMagicCrosshair),
 		CREATE_JSON_VALUE(obj, hideNonCombatCrosshair),
 		CREATE_JSON_VALUE(obj, hideCrosshairMeleeCombat),
+		CREATE_JSON_VALUE(obj, enableCrosshairSizeManip),
 		CREATE_JSON_VALUE(obj, crosshairNPCHitGrowSize),
 		CREATE_JSON_VALUE(obj, crosshairMinDistSize),
 		CREATE_JSON_VALUE(obj, crosshairMaxDistSize),
@@ -102,6 +120,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, use3DMagicCrosshair)
 	VALUE_FROM_JSON(obj, hideNonCombatCrosshair)
 	VALUE_FROM_JSON(obj, hideCrosshairMeleeCombat)
+	VALUE_FROM_JSON(obj, enableCrosshairSizeManip)
 	VALUE_FROM_JSON(obj, crosshairNPCHitGrowSize)
 	VALUE_FROM_JSON(obj, crosshairMinDistSize)
 	VALUE_FROM_JSON(obj, crosshairMaxDistSize)
@@ -181,6 +200,23 @@ void Config::ReadConfigFile() {
 	} else {
 		// File not found? save our defaults
 		SaveCurrentConfig();
+	}
+
+	wchar_t path[MAX_PATH];
+	if (!SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, path))) {
+		_WARNING("Failed to locate My Documents folder, using defualt game config values.");
+	} else {
+		wchar_t buf[16];
+		const auto inipath = std::wstring(path) + L"\\My Games\\Skyrim Special Edition\\Skyrim.ini";
+		if (GetPrivateProfileString(L"Combat", L"f3PArrowTiltUpAngle", L"2.5", buf, 16, inipath.c_str()) != 0) {
+			wchar_t* end;
+			gameConfig.f3PArrowTiltUpAngle = std::wcstof(buf, &end);
+		}
+
+		if (GetPrivateProfileString(L"Combat", L"f3PBoltTiltUpAngle", L"2.5", buf, 16, inipath.c_str()) != 0) {
+			wchar_t* end;
+			gameConfig.f3PBoltTiltUpAngle = std::wcstof(buf, &end);
+		}
 	}
 
 	currentConfig = cfg;
@@ -280,4 +316,8 @@ std::wstring Config::GetPresetPath(int slot) {
 	slotName.append(std::to_wstring(slot));
 	slotName.append(L".json");
 	return slotName;
+}
+
+const Config::GameConfig* const Config::GetGameConfig() {
+	return &gameConfig;
 }

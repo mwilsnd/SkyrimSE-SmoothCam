@@ -40,7 +40,7 @@ class CorrectedPlayerCamera : public TESCamera {
 		};
 
 		uint32_t unk;
-		uint32_t magicNumber;
+		uint32_t playerRef;
 		UInt8 unk38[120];								    // 028
 
 		TESCameraState* cameraStates[kNumCameraStates];	    // 0B8

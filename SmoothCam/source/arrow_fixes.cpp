@@ -1,4 +1,5 @@
 #include "arrow_fixes.h"
+#include "game_state.h"
 
 #ifdef _DEBUG
 SkyrimSE::ArrowProjectile* current;
@@ -55,7 +56,7 @@ UpdateArrowFlightPath fnUpdateArrowFlightPath;
 std::unique_ptr<BasicDetour> detArrowFlightPath;
 void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 	auto camera = CorrectedPlayerCamera::GetSingleton();
-	if (arrow->shooter != 0x00100000 || camera->cameraState == camera->cameraStates[CorrectedPlayerCamera::kCameraState_FirstPerson])
+	if (arrow->shooter != camera->playerRef || camera->cameraState == camera->cameraStates[CorrectedPlayerCamera::kCameraState_FirstPerson])
 		return fnUpdateArrowFlightPath(arrow);
 
 	//578 - 1407320a0 - 42536
@@ -72,9 +73,16 @@ void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 
 		if (gravity == 1.0f) // assume this is a magic projectile
 			arrPitch = glm::asin(glm::clamp(-mat.data[2][1], -1.0f, 1.0f));
-		else
-			arrPitch = glm::asin(glm::clamp(-mat.data[2][1], -1.0f, 1.0f)) - ArrowFixes::arrowPitchModFactor;
-		
+		else {
+			if (GameState::IsUsingCrossbow(*g_thePlayer)) {
+				arrPitch = glm::asin(glm::clamp(-mat.data[2][1], -1.0f, 1.0f)) - glm::radians(Config::GetGameConfig()->f3PBoltTiltUpAngle);
+			} else if (GameState::IsUsingBow(*g_thePlayer)) {
+				arrPitch = glm::asin(glm::clamp(-mat.data[2][1], -1.0f, 1.0f)) - glm::radians(Config::GetGameConfig()->f3PArrowTiltUpAngle);
+			} else {
+				arrPitch = glm::asin(glm::clamp(-mat.data[2][1], -1.0f, 1.0f));
+			}
+		}
+
 		arrRotation = camera->lookYaw;
 	} else {
 		arrPitch = arrow->rot.x;

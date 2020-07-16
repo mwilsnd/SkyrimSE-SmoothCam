@@ -114,6 +114,10 @@ namespace GameState {
 	const bool IsMagicDrawn(PlayerCharacter* player) noexcept;
 	// Returns true if the player has a ranged weapon drawn
 	const bool IsRangedWeaponDrawn(PlayerCharacter* player) noexcept;
+	// Returns true if a crossbow is drawn
+	const bool IsUsingCrossbow(PlayerCharacter* player) noexcept;
+	// Returns true if a bow is drawn
+	const bool IsUsingBow(PlayerCharacter* player) noexcept;
 	// Returns true if the player is sneaking
 	const bool IsSneaking(const PlayerCharacter* player) noexcept;
 	// Returns true if the player is sprinting

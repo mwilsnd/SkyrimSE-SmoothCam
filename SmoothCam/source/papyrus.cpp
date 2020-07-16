@@ -1,351 +1,430 @@
 #include "papyrus.h"
 
-/* I kind of turned my brain off for all of this */
-
 using namespace PapyrusBindings;
-#define IMPL_GETTER(Mapping, Var)                   \
-	{ Mapping, []() noexcept {                      \
-		return Config::GetCurrentConfig()->Var;     \
-	} },
+#define IMPL_GETTER(VarName, Var)                   \
+    { VarName, []() noexcept {                      \
+        return Config::GetCurrentConfig()->Var;     \
+    } },
 
-#define IMPL_SETTER(Mapping, Var, Type)             \
-	{ Mapping, [](Type arg) {                       \
-		Config::GetCurrentConfig()->Var = arg;      \
-		Config::SaveCurrentConfig();                \
-	} },
+#define IMPL_SETTER(VarName, Var, Type)         \
+    { VarName, [](Type arg) {                   \
+        Config::GetCurrentConfig()->Var = arg;  \
+        Config::SaveCurrentConfig();            \
+    } },
 
-#define IMPL_SCALAR_METHOD_GETTER(Mapping, Var)													\
-	{ Mapping, []() {																			\
-		const auto it = Config::scalarMethodRevLookup.find(Config::GetCurrentConfig()->Var);	\
-		if (it != Config::scalarMethodRevLookup.end())											\
-			return BSFixedString(it->second.c_str());											\
-		else																					\
-			return BSFixedString("linear");														\
-	} },
+#define IMPL_SCALAR_METHOD_GETTER(VarName, Var)             \
+    { VarName, []() {                                       \
+        const auto it = Config::scalarMethodRevLookup.find( \
+            Config::GetCurrentConfig()->Var                 \
+        );                                                  \
+        if (it != Config::scalarMethodRevLookup.end())      \
+            return BSFixedString(it->second.c_str());       \
+        else                                                \
+            return BSFixedString("linear");                 \
+    } },
 
-#define IMPL_SCALAR_METHOD_SETTER(Mapping, Var)						\
-	{ Mapping, [](BSFixedString str) {								\
-		const auto it = Config::scalarMethods.find(str.c_str());	\
-		if (it != Config::scalarMethods.end()) {					\
-			Config::GetCurrentConfig()->Var = it->second;			\
-			Config::SaveCurrentConfig();							\
-		}															\
-	} },
+#define IMPL_SCALAR_METHOD_SETTER(VarName, Var)                     \
+    { VarName, [](BSFixedString& str) {                             \
+        const auto it = Config::scalarMethods.find(str.c_str());    \
+        if (it != Config::scalarMethods.end()) {                    \
+            Config::GetCurrentConfig()->Var = it->second;           \
+            Config::SaveCurrentConfig();                            \
+        }                                                           \
+    } },
 
-const std::unordered_map<ConfigStringMapping, std::function<BSFixedString(void)>> stringGetters = {
-	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::InterpolationMethod, currentScalar)
-	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::SepZInterpMethod, separateZScalar)
-	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::SepLocalInterpMethod, separateLocalScalar)
-	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::OffsetTransitionMethod, offsetScalar)
-	IMPL_SCALAR_METHOD_GETTER(ConfigStringMapping::ZoomTransitionMethod, zoomScalar)
+#define IMPL_GROUP_SETTER(VarName, Var, Type)   \
+    { VarName, [](Type arg) {                   \
+        auto cfg = Config::GetCurrentConfig();  \
+        cfg->standing.Var = arg;                \
+        cfg->walking.Var = arg;                 \
+        cfg->running.Var = arg;                 \
+        cfg->sprinting.Var = arg;               \
+        cfg->sneaking.Var = arg;                \
+        cfg->swimming.Var = arg;                \
+        cfg->bowAim.Var = arg;                  \
+        cfg->sitting.Var = arg;                 \
+        cfg->horseback.Var = arg;               \
+        cfg->dragon.Var = arg;                  \
+        Config::SaveCurrentConfig();            \
+    } },
+
+const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> stringGetters = {
+	IMPL_SCALAR_METHOD_GETTER("InterpolationMethod", currentScalar)
+	IMPL_SCALAR_METHOD_GETTER("SeparateZInterpMethod", separateZScalar)
+	IMPL_SCALAR_METHOD_GETTER("SepLocalInterpMethod", separateLocalScalar)
+	IMPL_SCALAR_METHOD_GETTER("OffsetTransitionMethod", offsetScalar)
+	IMPL_SCALAR_METHOD_GETTER("ZoomTransitionMethod", zoomScalar)
 };
 
-const std::unordered_map<ConfigStringMapping, std::function<bool(void)>> boolGetters = {
-	IMPL_GETTER(ConfigStringMapping::FirstPersonHorse,					comaptIC_FirstPersonHorse)
-	IMPL_GETTER(ConfigStringMapping::FirstPersonDragon,					comaptIC_FirstPersonDragon)
-	IMPL_GETTER(ConfigStringMapping::FirstPersonSitting,				compatIC_FirstPersonSitting)
-	IMPL_GETTER(ConfigStringMapping::InterpolationEnabled,				enableInterp)
-	IMPL_GETTER(ConfigStringMapping::SeparateLocalInterpolation,		separateLocalInterp)
-	IMPL_GETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime)
-	IMPL_GETTER(ConfigStringMapping::DisableDuringDialog,				disableDuringDialog)
-	IMPL_GETTER(ConfigStringMapping::Crosshair3DBowEnabled,				use3DBowAimCrosshair)
-	IMPL_GETTER(ConfigStringMapping::Crosshair3DMagicEnabled,			use3DMagicCrosshair)
-	IMPL_GETTER(ConfigStringMapping::HideCrosshairOutOfCombat,			hideNonCombatCrosshair)
-	IMPL_GETTER(ConfigStringMapping::HideCrosshairMeleeCombat,			hideCrosshairMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::SepZInterpEnabled,					separateZInterp)
-	IMPL_GETTER(ConfigStringMapping::OffsetTransitionEnabled,			enableOffsetInterpolation)
-	IMPL_GETTER(ConfigStringMapping::ZoomTransitionEnabled,				enableZoomInterpolation)
+const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetters = {
+	IMPL_GETTER("FirstPersonHorse",					comaptIC_FirstPersonHorse)
+	IMPL_GETTER("FirstPersonDragon",				comaptIC_FirstPersonDragon)
+	IMPL_GETTER("FirstPersonSitting",				compatIC_FirstPersonSitting)
+	IMPL_GETTER("InterpolationEnabled",				enableInterp)
+	IMPL_GETTER("SeparateLocalInterpolation",		separateLocalInterp)
+	IMPL_GETTER("DisableDeltaTime",					disableDeltaTime)
+	IMPL_GETTER("DisableDuringDialog",				disableDuringDialog)
+	IMPL_GETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair)
+	IMPL_GETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair)
+	IMPL_GETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip)
+	IMPL_GETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair)
+	IMPL_GETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat)
+	IMPL_GETTER("SeparateZInterpEnabled",			separateZInterp)
+	IMPL_GETTER("OffsetTransitionEnabled",			enableOffsetInterpolation)
+	IMPL_GETTER("ZoomTransitionEnabled",			enableZoomInterpolation)
 
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXEnable,		cameraDistanceClampXEnable)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYEnable,		cameraDistanceClampYEnable)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampZEnable,		cameraDistanceClampZEnable)
+	IMPL_GETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable)
+	IMPL_GETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable)
+	IMPL_GETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable)
 
-	IMPL_GETTER(ConfigStringMapping::InterpStanding,					standing.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpStandingRangedCombat,		standing.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpStandingMagicCombat,			standing.interpMagicCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpStandingMeleeCombat,			standing.interpMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpWalking,						walking.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpWalkingRangedCombat,			walking.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpWalkingMagicCombat,			walking.interpMagicCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpWalkingMeleeCombat,			walking.interpMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpRunning,						running.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpRunningRangedCombat,			running.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpRunningMagicCombat,			running.interpMagicCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpRunningMeleeCombat,			running.interpMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSprinting,					sprinting.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpSprintingRangedCombat,		sprinting.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSprintingMagicCombat,		sprinting.interpMagicCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSprintingMeleeCombat,		sprinting.interpMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSneaking,					sneaking.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpSneakingRangedCombat,		sneaking.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSneakingMagicCombat,			sneaking.interpMagicCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSneakingMeleeCombat,			sneaking.interpMeleeCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpSwimming,					swimming.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpBowAim,						bowAim.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpBowAimHorseback,				bowAim.interpHorseback)
-	IMPL_GETTER(ConfigStringMapping::InterpSitting,						sitting.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpHorseback,					horseback.interp)
-	IMPL_GETTER(ConfigStringMapping::InterpHorsebackRangedCombat,		horseback.interpRangedCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpHorsebackMagicCombat,		horseback.interpMagicCombat)
-	IMPL_GETTER(ConfigStringMapping::InterpHorsebackMeleeCombat,		horseback.interpMeleeCombat)
+	IMPL_GETTER("InterpStanding",					standing.interp)
+	IMPL_GETTER("InterpStandingRangedCombat",		standing.interpRangedCombat)
+	IMPL_GETTER("InterpStandingMagicCombat",		standing.interpMagicCombat)
+	IMPL_GETTER("InterpStandingMeleeCombat",		standing.interpMeleeCombat)
+	IMPL_GETTER("InterpWalking",					walking.interp)
+	IMPL_GETTER("InterpWalkingRangedCombat",		walking.interpRangedCombat)
+	IMPL_GETTER("InterpWalkingMagicCombat",			walking.interpMagicCombat)
+	IMPL_GETTER("InterpWalkingMeleeCombat",			walking.interpMeleeCombat)
+	IMPL_GETTER("InterpRunning",					running.interp)
+	IMPL_GETTER("InterpRunningRangedCombat",		running.interpRangedCombat)
+	IMPL_GETTER("InterpRunningMagicCombat",			running.interpMagicCombat)
+	IMPL_GETTER("InterpRunningMeleeCombat",			running.interpMeleeCombat)
+	IMPL_GETTER("InterpSprinting",					sprinting.interp)
+	IMPL_GETTER("InterpSprintingRangedCombat",		sprinting.interpRangedCombat)
+	IMPL_GETTER("InterpSprintingMagicCombat",		sprinting.interpMagicCombat)
+	IMPL_GETTER("InterpSprintingMeleeCombat",		sprinting.interpMeleeCombat)
+	IMPL_GETTER("InterpSneaking",					sneaking.interp)
+	IMPL_GETTER("InterpSneakingRangedCombat",		sneaking.interpRangedCombat)
+	IMPL_GETTER("InterpSneakingMagicCombat",		sneaking.interpMagicCombat)
+	IMPL_GETTER("InterpSneakingMeleeCombat",		sneaking.interpMeleeCombat)
+	IMPL_GETTER("InterpSwimming",					swimming.interp)
+	IMPL_GETTER("InterpBowAim",						bowAim.interpRangedCombat)
+	IMPL_GETTER("InterpBowAimHorseback",			bowAim.interpHorseback)
+	IMPL_GETTER("InterpSitting",					sitting.interp)
+	IMPL_GETTER("InterpHorseback",					horseback.interp)
+	IMPL_GETTER("InterpHorsebackRangedCombat",		horseback.interpRangedCombat)
+	IMPL_GETTER("InterpHorsebackMagicCombat",		horseback.interpMagicCombat)
+	IMPL_GETTER("InterpHorsebackMeleeCombat",		horseback.interpMeleeCombat)
 };
 
-const std::unordered_map<ConfigStringMapping, std::function<float(void)>> floatGetters = {
-	IMPL_GETTER(ConfigStringMapping::MinFollowDistance,					minCameraFollowDistance)
-	IMPL_GETTER(ConfigStringMapping::MinCameraFollowRate,				minCameraFollowRate)
-	IMPL_GETTER(ConfigStringMapping::MaxCameraFollowRate,				maxCameraFollowRate)
-	IMPL_GETTER(ConfigStringMapping::MaxSmoothingInterpDistance,		zoomMaxSmoothingDistance)
-	IMPL_GETTER(ConfigStringMapping::ZoomMul,							zoomMul)
+const std::unordered_map<std::string_view, std::function<float(void)>> floatGetters = {
+	IMPL_GETTER("MinFollowDistance",					minCameraFollowDistance)
+	IMPL_GETTER("MinCameraFollowRate",					minCameraFollowRate)
+	IMPL_GETTER("MaxCameraFollowRate",					maxCameraFollowRate)
+	IMPL_GETTER("MaxSmoothingInterpDistance",			zoomMaxSmoothingDistance)
+	IMPL_GETTER("ZoomMul",								zoomMul)
 
-	IMPL_GETTER(ConfigStringMapping::CrosshairNPCGrowSize,              crosshairNPCHitGrowSize)
-	IMPL_GETTER(ConfigStringMapping::CrosshairMinDistSize,              crosshairMinDistSize)
-	IMPL_GETTER(ConfigStringMapping::CrosshairMaxDistSize,              crosshairMaxDistSize)
+	IMPL_GETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize)
+	IMPL_GETTER("CrosshairMinDistSize",					crosshairMinDistSize)
+	IMPL_GETTER("CrosshairMaxDistSize",					crosshairMaxDistSize)
 
-	IMPL_GETTER(ConfigStringMapping::SepZMaxInterpDistance,				separateZMaxSmoothingDistance)
-	IMPL_GETTER(ConfigStringMapping::SepZMinFollowRate,					separateZMinFollowRate)
-	IMPL_GETTER(ConfigStringMapping::SepZMaxFollowRate,					separateZMaxFollowRate)
-	IMPL_GETTER(ConfigStringMapping::SepLocalInterpRate,                localScalarRate)
+	IMPL_GETTER("SepZMaxInterpDistance",				separateZMaxSmoothingDistance)
+	IMPL_GETTER("SepZMinFollowRate",					separateZMinFollowRate)
+	IMPL_GETTER("SepZMaxFollowRate",					separateZMaxFollowRate)
+	IMPL_GETTER("SepLocalInterpRate",					localScalarRate)
 
-	IMPL_GETTER(ConfigStringMapping::OffsetTransitionDuration,			offsetInterpDurationSecs)
-	IMPL_GETTER(ConfigStringMapping::ZoomTransitionDuration,			zoomInterpDurationSecs)
+	IMPL_GETTER("OffsetTransitionDuration",				offsetInterpDurationSecs)
+	IMPL_GETTER("ZoomTransitionDuration",				zoomInterpDurationSecs)
 
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXMin,			cameraDistanceClampXMin)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampXMax,			cameraDistanceClampXMax)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYMin,			cameraDistanceClampYMin)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampYMax,			cameraDistanceClampYMax)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampZMin,			cameraDistanceClampZMin)
-	IMPL_GETTER(ConfigStringMapping::CameraDistanceClampZMax,			cameraDistanceClampZMax)
+	IMPL_GETTER("CameraDistanceClampXMin",				cameraDistanceClampXMin)
+	IMPL_GETTER("CameraDistanceClampXMax",				cameraDistanceClampXMax)
+	IMPL_GETTER("CameraDistanceClampYMin",				cameraDistanceClampYMin)
+	IMPL_GETTER("CameraDistanceClampYMax",				cameraDistanceClampYMax)
+	IMPL_GETTER("CameraDistanceClampZMin",				cameraDistanceClampZMin)
+	IMPL_GETTER("CameraDistanceClampZMax",				cameraDistanceClampZMax)
 
-	IMPL_GETTER(ConfigStringMapping::StandingSideOffset, 				standing.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingUpOffset, 					standing.upOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingCombatRangedSideOffset, 	standing.combatRangedSideOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingCombatRangedUpOffset, 		standing.combatRangedUpOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingCombatMagicSideOffset, 	standing.combatMagicSideOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingCombatMagicUpOffset, 		standing.combatMagicUpOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingCombatMeleeSideOffset,		standing.combatMeleeSideOffset)
-	IMPL_GETTER(ConfigStringMapping::StandingCombatMeleeUpOffset, 		standing.combatMeleeUpOffset)
+	IMPL_GETTER("Standing:SideOffset", 					standing.sideOffset)
+	IMPL_GETTER("Standing:UpOffset", 					standing.upOffset)
+	IMPL_GETTER("Standing:ZoomOffset", 					standing.zoomOffset)
+	IMPL_GETTER("StandingCombat:Ranged:SideOffset",		standing.combatRangedSideOffset)
+	IMPL_GETTER("StandingCombat:Ranged:UpOffset", 		standing.combatRangedUpOffset)
+	IMPL_GETTER("StandingCombat:Ranged:ZoomOffset",		standing.combatRangedZoomOffset)
+	IMPL_GETTER("StandingCombat:Magic:SideOffset", 		standing.combatMagicSideOffset)
+	IMPL_GETTER("StandingCombat:Magic:UpOffset", 		standing.combatMagicUpOffset)
+	IMPL_GETTER("StandingCombat:Magic:ZoomOffset", 		standing.combatMagicZoomOffset)
+	IMPL_GETTER("StandingCombat:Melee:SideOffset",		standing.combatMeleeSideOffset)
+	IMPL_GETTER("StandingCombat:Melee:UpOffset", 		standing.combatMeleeUpOffset)
+	IMPL_GETTER("StandingCombat:Melee:ZoomOffset", 		standing.combatMeleeZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::WalkingSideOffset, 				walking.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingUpOffset, 					walking.upOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingCombatRangedSideOffset, 	walking.combatRangedSideOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingCombatRangedUpOffset, 		walking.combatRangedUpOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingCombatMagicSideOffset, 		walking.combatMagicSideOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingCombatMagicUpOffset, 		walking.combatMagicUpOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingCombatMeleeSideOffset, 		walking.combatMeleeSideOffset)
-	IMPL_GETTER(ConfigStringMapping::WalkingCombatMeleeUpOffset, 		walking.combatMeleeUpOffset)
+	IMPL_GETTER("Walking:SideOffset", 					walking.sideOffset)
+	IMPL_GETTER("Walking:UpOffset", 					walking.upOffset)
+	IMPL_GETTER("Walking:ZoomOffset", 					walking.zoomOffset)
+	IMPL_GETTER("WalkingCombat:Ranged:SideOffset",		walking.combatRangedSideOffset)
+	IMPL_GETTER("WalkingCombat:Ranged:UpOffset",		walking.combatRangedUpOffset)
+	IMPL_GETTER("WalkingCombat:Ranged:ZoomOffset",		walking.combatRangedZoomOffset)
+	IMPL_GETTER("WalkingCombat:Magic:SideOffset",		walking.combatMagicSideOffset)
+	IMPL_GETTER("WalkingCombat:Magic:UpOffset",			walking.combatMagicUpOffset)
+	IMPL_GETTER("WalkingCombat:Magic:ZoomOffset",		walking.combatMagicZoomOffset)
+	IMPL_GETTER("WalkingCombat:Melee:SideOffset",		walking.combatMeleeSideOffset)
+	IMPL_GETTER("WalkingCombat:Melee:UpOffset",			walking.combatMeleeUpOffset)
+	IMPL_GETTER("WalkingCombat:Melee:ZoomOffset",		walking.combatMeleeZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::RunningSideOffset, 				running.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningUpOffset, 					running.upOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningCombatRangedSideOffset, 	running.combatRangedSideOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningCombatRangedUpOffset, 		running.combatRangedUpOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningCombatMagicSideOffset, 		running.combatMagicSideOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningCombatMagicUpOffset, 		running.combatMagicUpOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningCombatMeleeSideOffset, 		running.combatMeleeSideOffset)
-	IMPL_GETTER(ConfigStringMapping::RunningCombatMeleeUpOffset, 		running.combatMeleeUpOffset)
+	IMPL_GETTER("Running:SideOffset",					running.sideOffset)
+	IMPL_GETTER("Running:UpOffset",						running.upOffset)
+	IMPL_GETTER("Running:ZoomOffset",					running.zoomOffset)
+	IMPL_GETTER("RunningCombat:Ranged:SideOffset",		running.combatRangedSideOffset)
+	IMPL_GETTER("RunningCombat:Ranged:UpOffset",		running.combatRangedUpOffset)
+	IMPL_GETTER("RunningCombat:Ranged:ZoomOffset",		running.combatRangedZoomOffset)
+	IMPL_GETTER("RunningCombat:Magic:SideOffset",		running.combatMagicSideOffset)
+	IMPL_GETTER("RunningCombat:Magic:UpOffset",			running.combatMagicUpOffset)
+	IMPL_GETTER("RunningCombat:Magic:ZoomOffset",		running.combatMagicZoomOffset)
+	IMPL_GETTER("RunningCombat:Melee:SideOffset",		running.combatMeleeSideOffset)
+	IMPL_GETTER("RunningCombat:Melee:UpOffset",			running.combatMeleeUpOffset)
+	IMPL_GETTER("RunningCombat:Melee:ZoomOffset",		running.combatMeleeZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::SprintingSideOffest, 				sprinting.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingUpOffset, 				sprinting.upOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingCombatRangedSideOffset, 	sprinting.combatRangedSideOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingCombatRangedUpOffset, 	sprinting.combatRangedUpOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingCombatMagicSideOffset, 	sprinting.combatMagicSideOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingCombatMagicUpOffset, 		sprinting.combatMagicUpOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingCombatMeleeSideOffset, 	sprinting.combatMeleeSideOffset)
-	IMPL_GETTER(ConfigStringMapping::SprintingCombatMeleeUpOffset, 		sprinting.combatMeleeUpOffset)
+	IMPL_GETTER("Sprinting:SideOffset",					sprinting.sideOffset)
+	IMPL_GETTER("Sprinting:UpOffset",					sprinting.upOffset)
+	IMPL_GETTER("Sprinting:ZoomOffset",					sprinting.zoomOffset)
+	IMPL_GETTER("SprintingCombat:Ranged:SideOffset",	sprinting.combatRangedSideOffset)
+	IMPL_GETTER("SprintingCombat:Ranged:UpOffset",		sprinting.combatRangedUpOffset)
+	IMPL_GETTER("SprintingCombat:Ranged:ZoomOffset",	sprinting.combatRangedZoomOffset)
+	IMPL_GETTER("SprintingCombat:Magic:SideOffset",		sprinting.combatMagicSideOffset)
+	IMPL_GETTER("SprintingCombat:Magic:UpOffset",		sprinting.combatMagicUpOffset)
+	IMPL_GETTER("SprintingCombat:Magic:ZoomOffset",		sprinting.combatMagicZoomOffset)
+	IMPL_GETTER("SprintingCombat:Melee:SideOffset",		sprinting.combatMeleeSideOffset)
+	IMPL_GETTER("SprintingCombat:Melee:UpOffset",		sprinting.combatMeleeUpOffset)
+	IMPL_GETTER("SprintingCombat:Melee:ZoomOffset",		sprinting.combatMeleeZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::SneakingSideOffset, 				sneaking.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingUpOffset, 					sneaking.upOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingCombatRangedSideOffset, 	sneaking.combatRangedSideOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingCombatRangedUpOffset, 		sneaking.combatRangedUpOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingCombatMagicSideOffset, 	sneaking.combatMagicSideOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingCombatMagicUpOffset, 		sneaking.combatMagicUpOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingCombatMeleeSideOffset, 	sneaking.combatMeleeSideOffset)
-	IMPL_GETTER(ConfigStringMapping::SneakingCombatMeleeUpOffset, 		sneaking.combatMeleeUpOffset)
+	IMPL_GETTER("Sneaking:SideOffset",					sneaking.sideOffset)
+	IMPL_GETTER("Sneaking:UpOffset",					sneaking.upOffset)
+	IMPL_GETTER("Sneaking:ZoomOffset",					sneaking.zoomOffset)
+	IMPL_GETTER("SneakingCombat:Ranged:SideOffset",		sneaking.combatRangedSideOffset)
+	IMPL_GETTER("SneakingCombat:Ranged:UpOffset",		sneaking.combatRangedUpOffset)
+	IMPL_GETTER("SneakingCombat:Ranged:ZoomOffset",		sneaking.combatRangedZoomOffset)
+	IMPL_GETTER("SneakingCombat:Magic:SideOffset",		sneaking.combatMagicSideOffset)
+	IMPL_GETTER("SneakingCombat:Magic:UpOffset",		sneaking.combatMagicUpOffset)
+	IMPL_GETTER("SneakingCombat:Magic:ZoomOffset",		sneaking.combatMagicZoomOffset)
+	IMPL_GETTER("SneakingCombat:Melee:SideOffset",		sneaking.combatMeleeSideOffset)
+	IMPL_GETTER("SneakingCombat:Melee:UpOffset",		sneaking.combatMeleeUpOffset)
+	IMPL_GETTER("SneakingCombat:Melee:ZoomOffset",		sneaking.combatMeleeZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::SwimmingSideOffset,				swimming.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::SwimmingUpOffset,					swimming.upOffset)
+	IMPL_GETTER("Swimming:SideOffset",					swimming.sideOffset)
+	IMPL_GETTER("Swimming:UpOffset",					swimming.upOffset)
+	IMPL_GETTER("Swimming:ZoomOffset",					swimming.zoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::BowAimSideOffset,					bowAim.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::BowAimUpOffset,					bowAim.upOffset)
-	IMPL_GETTER(ConfigStringMapping::BowAimHorseSideOffset,				bowAim.horseSideOffset)
-	IMPL_GETTER(ConfigStringMapping::BowAimHorseUpOffset,				bowAim.horseUpOffset)
+	IMPL_GETTER("Bowaim:SideOffset",					bowAim.sideOffset)
+	IMPL_GETTER("Bowaim:UpOffset",						bowAim.upOffset)
+	IMPL_GETTER("Bowaim:ZoomOffset",					bowAim.zoomOffset)
+	IMPL_GETTER("BowaimHorse:SideOffset",				bowAim.horseSideOffset)
+	IMPL_GETTER("BowaimHorse:UpOffset",					bowAim.horseUpOffset)
+	IMPL_GETTER("BowaimHorse:ZoomOffset",				bowAim.horseZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::SittingSideOffset,					sitting.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::SittingUpOffset,					sitting.upOffset)
+	IMPL_GETTER("Sitting:SideOffset",					sitting.sideOffset)
+	IMPL_GETTER("Sitting:UpOffset",						sitting.upOffset)
+	IMPL_GETTER("Sitting:ZoomOffset",					sitting.zoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::HorseSideOffset,					horseback.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseUpOffset,						horseback.upOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseCombatRangedSideOffset,		horseback.combatRangedSideOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseCombatRangedUpOffset,			horseback.combatRangedUpOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseCombatMagicSideOffset,		horseback.combatMagicSideOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseCombatMagicUpOffset,			horseback.combatMagicUpOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseCombatMeleeSideOffset,		horseback.combatMeleeSideOffset)
-	IMPL_GETTER(ConfigStringMapping::HorseCombatMeleeUpOffset,			horseback.combatMeleeUpOffset)
+	IMPL_GETTER("Horseback:SideOffset",					horseback.sideOffset)
+	IMPL_GETTER("Horseback:UpOffset",					horseback.upOffset)
+	IMPL_GETTER("Horseback:ZoomOffset",					horseback.zoomOffset)
+	IMPL_GETTER("HorsebackCombat:Ranged:SideOffset",	horseback.combatRangedSideOffset)
+	IMPL_GETTER("HorsebackCombat:Ranged:UpOffset",		horseback.combatRangedUpOffset)
+	IMPL_GETTER("HorsebackCombat:Ranged:ZoomOffset",	horseback.combatRangedZoomOffset)
+	IMPL_GETTER("HorsebackCombat:Magic:SideOffset",		horseback.combatMagicSideOffset)
+	IMPL_GETTER("HorsebackCombat:Magic:UpOffset",		horseback.combatMagicUpOffset)
+	IMPL_GETTER("HorsebackCombat:Magic:ZoomOffset",		horseback.combatMagicZoomOffset)
+	IMPL_GETTER("HorsebackCombat:Melee:SideOffset",		horseback.combatMeleeSideOffset)
+	IMPL_GETTER("HorsebackCombat:Melee:UpOffset",		horseback.combatMeleeUpOffset)
+	IMPL_GETTER("HorsebackCombat:Melee:ZoomOffset",		horseback.combatMeleeZoomOffset)
 
-	IMPL_GETTER(ConfigStringMapping::DragonSideOffset,					dragon.sideOffset)
-	IMPL_GETTER(ConfigStringMapping::DragonUpOffset,					dragon.upOffset)
+	IMPL_GETTER("Dragon:SideOffset",					dragon.sideOffset)
+	IMPL_GETTER("Dragon:UpOffset",						dragon.upOffset)
 };
 
-const std::unordered_map<ConfigStringMapping, std::function<void(BSFixedString)>> stringSetters = {
-	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::InterpolationMethod, currentScalar)
-	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::SepZInterpMethod, separateZScalar)
-	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::SepLocalInterpMethod, separateLocalScalar)
-	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::OffsetTransitionMethod, offsetScalar)
-	IMPL_SCALAR_METHOD_SETTER(ConfigStringMapping::ZoomTransitionMethod, zoomScalar)
+const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> stringSetters = {
+	IMPL_SCALAR_METHOD_SETTER("InterpolationMethod", currentScalar)
+	IMPL_SCALAR_METHOD_SETTER("SeparateZInterpMethod", separateZScalar)
+	IMPL_SCALAR_METHOD_SETTER("SepLocalInterpMethod", separateLocalScalar)
+	IMPL_SCALAR_METHOD_SETTER("OffsetTransitionMethod", offsetScalar)
+	IMPL_SCALAR_METHOD_SETTER("ZoomTransitionMethod", zoomScalar)
 };
 
-const std::unordered_map<ConfigStringMapping, std::function<void(bool)>> boolSetters = {
-	IMPL_SETTER(ConfigStringMapping::FirstPersonHorse,					comaptIC_FirstPersonHorse, bool)
-	IMPL_SETTER(ConfigStringMapping::FirstPersonDragon,					comaptIC_FirstPersonDragon, bool)
-	IMPL_SETTER(ConfigStringMapping::FirstPersonSitting,				compatIC_FirstPersonSitting, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpolationEnabled,				enableInterp, bool)
-	IMPL_SETTER(ConfigStringMapping::SeparateLocalInterpolation,		separateLocalInterp, bool)
-	IMPL_SETTER(ConfigStringMapping::DisableDeltaTime,					disableDeltaTime, bool)
-	IMPL_SETTER(ConfigStringMapping::DisableDuringDialog,				disableDuringDialog, bool)
-	IMPL_SETTER(ConfigStringMapping::Crosshair3DBowEnabled,				use3DBowAimCrosshair, bool)
-	IMPL_SETTER(ConfigStringMapping::Crosshair3DMagicEnabled,			use3DMagicCrosshair, bool)
-	IMPL_SETTER(ConfigStringMapping::HideCrosshairOutOfCombat,			hideNonCombatCrosshair, bool)
-	IMPL_SETTER(ConfigStringMapping::HideCrosshairMeleeCombat,			hideCrosshairMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::SepZInterpEnabled,					separateZInterp, bool)
-	IMPL_SETTER(ConfigStringMapping::OffsetTransitionEnabled,			enableOffsetInterpolation, bool)
-	IMPL_SETTER(ConfigStringMapping::ZoomTransitionEnabled,				enableZoomInterpolation, bool)
+const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetters = {
+	IMPL_SETTER("FirstPersonHorse",					comaptIC_FirstPersonHorse, bool)
+	IMPL_SETTER("FirstPersonDragon",				comaptIC_FirstPersonDragon, bool)
+	IMPL_SETTER("FirstPersonSitting",				compatIC_FirstPersonSitting, bool)
+	IMPL_SETTER("InterpolationEnabled",				enableInterp, bool)
+	IMPL_SETTER("SeparateLocalInterpolation",		separateLocalInterp, bool)
+	IMPL_SETTER("DisableDeltaTime",					disableDeltaTime, bool)
+	IMPL_SETTER("DisableDuringDialog",				disableDuringDialog, bool)
+	IMPL_SETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair, bool)
+	IMPL_SETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair, bool)
+	IMPL_SETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip, bool)
+	IMPL_SETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair, bool)
+	IMPL_SETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat, bool)
+	IMPL_SETTER("SeparateZInterpEnabled",			separateZInterp, bool)
+	IMPL_SETTER("OffsetTransitionEnabled",			enableOffsetInterpolation, bool)
+	IMPL_SETTER("ZoomTransitionEnabled",			enableZoomInterpolation, bool)
 
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXEnable,		cameraDistanceClampXEnable, bool)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYEnable,		cameraDistanceClampYEnable, bool)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampZEnable,		cameraDistanceClampZEnable, bool)
+	IMPL_SETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable, bool)
+	IMPL_SETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable, bool)
+	IMPL_SETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable, bool)
 
-	IMPL_SETTER(ConfigStringMapping::InterpStanding,					standing.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpStandingRangedCombat,		standing.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpStandingMagicCombat,			standing.interpMagicCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpStandingMeleeCombat,			standing.interpMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpWalking,						walking.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpWalkingRangedCombat,			walking.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpWalkingMagicCombat,			walking.interpMagicCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpWalkingMeleeCombat,			walking.interpMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpRunning,						running.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpRunningRangedCombat,			running.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpRunningMagicCombat,			running.interpMagicCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpRunningMeleeCombat,			running.interpMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSprinting,					sprinting.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSprintingRangedCombat,		sprinting.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSprintingMagicCombat,		sprinting.interpMagicCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSprintingMeleeCombat,		sprinting.interpMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSneaking,					sneaking.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSneakingRangedCombat,		sneaking.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSneakingMagicCombat,			sneaking.interpMagicCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSneakingMeleeCombat,			sneaking.interpMeleeCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSwimming,					swimming.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpBowAim,						bowAim.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpBowAimHorseback,				bowAim.interpHorseback, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpSitting,						sitting.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpHorseback,					horseback.interp, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpHorsebackRangedCombat,		horseback.interpRangedCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpHorsebackMagicCombat,		horseback.interpMagicCombat, bool)
-	IMPL_SETTER(ConfigStringMapping::InterpHorsebackMeleeCombat,		horseback.interpMeleeCombat, bool)
+	IMPL_SETTER("InterpStanding",					standing.interp, bool)
+	IMPL_SETTER("InterpStandingRangedCombat",		standing.interpRangedCombat, bool)
+	IMPL_SETTER("InterpStandingMagicCombat",		standing.interpMagicCombat, bool)
+	IMPL_SETTER("InterpStandingMeleeCombat",		standing.interpMeleeCombat, bool)
+	IMPL_SETTER("InterpWalking",					walking.interp, bool)
+	IMPL_SETTER("InterpWalkingRangedCombat",		walking.interpRangedCombat, bool)
+	IMPL_SETTER("InterpWalkingMagicCombat",			walking.interpMagicCombat, bool)
+	IMPL_SETTER("InterpWalkingMeleeCombat",			walking.interpMeleeCombat, bool)
+	IMPL_SETTER("InterpRunning",					running.interp, bool)
+	IMPL_SETTER("InterpRunningRangedCombat",		running.interpRangedCombat, bool)
+	IMPL_SETTER("InterpRunningMagicCombat",			running.interpMagicCombat, bool)
+	IMPL_SETTER("InterpRunningMeleeCombat",			running.interpMeleeCombat, bool)
+	IMPL_SETTER("InterpSprinting",					sprinting.interp, bool)
+	IMPL_SETTER("InterpSprintingRangedCombat",		sprinting.interpRangedCombat, bool)
+	IMPL_SETTER("InterpSprintingMagicCombat",		sprinting.interpMagicCombat, bool)
+	IMPL_SETTER("InterpSprintingMeleeCombat",		sprinting.interpMeleeCombat, bool)
+	IMPL_SETTER("InterpSneaking",					sneaking.interp, bool)
+	IMPL_SETTER("InterpSneakingRangedCombat",		sneaking.interpRangedCombat, bool)
+	IMPL_SETTER("InterpSneakingMagicCombat",		sneaking.interpMagicCombat, bool)
+	IMPL_SETTER("InterpSneakingMeleeCombat",		sneaking.interpMeleeCombat, bool)
+	IMPL_SETTER("InterpSwimming",					swimming.interp, bool)
+	IMPL_SETTER("InterpBowAim",						bowAim.interpRangedCombat, bool)
+	IMPL_SETTER("InterpBowAimHorseback",			bowAim.interpHorseback, bool)
+	IMPL_SETTER("InterpSitting",					sitting.interp, bool)
+	IMPL_SETTER("InterpHorseback",					horseback.interp, bool)
+	IMPL_SETTER("InterpHorsebackRangedCombat",		horseback.interpRangedCombat, bool)
+	IMPL_SETTER("InterpHorsebackMagicCombat",		horseback.interpMagicCombat, bool)
+	IMPL_SETTER("InterpHorsebackMeleeCombat",		horseback.interpMeleeCombat, bool)
 };
 
-const std::unordered_map<ConfigStringMapping, std::function<void(float)>> floatSetters = {
-	IMPL_SETTER(ConfigStringMapping::MinFollowDistance,					minCameraFollowDistance, float)
-	IMPL_SETTER(ConfigStringMapping::MinCameraFollowRate,				minCameraFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::MaxCameraFollowRate,				maxCameraFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::MaxSmoothingInterpDistance,		zoomMaxSmoothingDistance, float)
-	IMPL_SETTER(ConfigStringMapping::ZoomMul,							zoomMul, float)
+const std::unordered_map<std::string_view, std::function<void(float)>> floatSetters = {
+	IMPL_SETTER("MinFollowDistance",					minCameraFollowDistance, float)
+	IMPL_SETTER("MinCameraFollowRate",					minCameraFollowRate, float)
+	IMPL_SETTER("MaxCameraFollowRate",					maxCameraFollowRate, float)
+	IMPL_SETTER("MaxSmoothingInterpDistance",			zoomMaxSmoothingDistance, float)
+	IMPL_SETTER("ZoomMul",								zoomMul, float)
 
-	IMPL_SETTER(ConfigStringMapping::CrosshairNPCGrowSize,              crosshairNPCHitGrowSize, float)
-	IMPL_SETTER(ConfigStringMapping::CrosshairMinDistSize,              crosshairMinDistSize, float)
-	IMPL_SETTER(ConfigStringMapping::CrosshairMaxDistSize,              crosshairMaxDistSize, float)
+	IMPL_SETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize, float)
+	IMPL_SETTER("CrosshairMinDistSize",					crosshairMinDistSize, float)
+	IMPL_SETTER("CrosshairMaxDistSize",					crosshairMaxDistSize, float)
 
-	IMPL_SETTER(ConfigStringMapping::SepZMaxInterpDistance,				separateZMaxSmoothingDistance, float)
-	IMPL_SETTER(ConfigStringMapping::SepZMinFollowRate,					separateZMinFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::SepZMaxFollowRate,					separateZMaxFollowRate, float)
-	IMPL_SETTER(ConfigStringMapping::SepLocalInterpRate,                localScalarRate, float)
+	IMPL_SETTER("SepZMaxInterpDistance",				separateZMaxSmoothingDistance, float)
+	IMPL_SETTER("SepZMinFollowRate",					separateZMinFollowRate, float)
+	IMPL_SETTER("SepZMaxFollowRate",					separateZMaxFollowRate, float)
+	IMPL_SETTER("SepLocalInterpRate",					localScalarRate, float)
 
-	IMPL_SETTER(ConfigStringMapping::OffsetTransitionDuration,			offsetInterpDurationSecs, float)
-	IMPL_SETTER(ConfigStringMapping::ZoomTransitionDuration,			zoomInterpDurationSecs, float)
+	IMPL_SETTER("OffsetTransitionDuration",				offsetInterpDurationSecs, float)
+	IMPL_SETTER("ZoomTransitionDuration",				zoomInterpDurationSecs, float)
 
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXMin,			cameraDistanceClampXMin, float)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampXMax,			cameraDistanceClampXMax, float)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYMin,			cameraDistanceClampYMin, float)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampYMax,			cameraDistanceClampYMax, float)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampZMin,			cameraDistanceClampZMin, float)
-	IMPL_SETTER(ConfigStringMapping::CameraDistanceClampZMax,			cameraDistanceClampZMax, float)
+	IMPL_SETTER("CameraDistanceClampXMin",				cameraDistanceClampXMin, float)
+	IMPL_SETTER("CameraDistanceClampXMax",				cameraDistanceClampXMax, float)
+	IMPL_SETTER("CameraDistanceClampYMin",				cameraDistanceClampYMin, float)
+	IMPL_SETTER("CameraDistanceClampYMax",				cameraDistanceClampYMax, float)
+	IMPL_SETTER("CameraDistanceClampZMin",				cameraDistanceClampZMin, float)
+	IMPL_SETTER("CameraDistanceClampZMax",				cameraDistanceClampZMax, float)
 
-	IMPL_SETTER(ConfigStringMapping::StandingSideOffset, 				standing.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingUpOffset, 					standing.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingCombatRangedSideOffset, 	standing.combatRangedSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingCombatRangedUpOffset, 		standing.combatRangedUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingCombatMagicSideOffset, 	standing.combatMagicSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingCombatMagicUpOffset, 		standing.combatMagicUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingCombatMeleeSideOffset,		standing.combatMeleeSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::StandingCombatMeleeUpOffset, 		standing.combatMeleeUpOffset, float)
+	IMPL_SETTER("Standing:SideOffset", 					standing.sideOffset, float)
+	IMPL_SETTER("Standing:UpOffset", 					standing.upOffset, float)
+	IMPL_SETTER("Standing:ZoomOffset", 					standing.zoomOffset, float)
+	IMPL_SETTER("StandingCombat:Ranged:SideOffset",		standing.combatRangedSideOffset, float)
+	IMPL_SETTER("StandingCombat:Ranged:UpOffset", 		standing.combatRangedUpOffset, float)
+	IMPL_SETTER("StandingCombat:Ranged:ZoomOffset",		standing.combatRangedZoomOffset, float)
+	IMPL_SETTER("StandingCombat:Magic:SideOffset", 		standing.combatMagicSideOffset, float)
+	IMPL_SETTER("StandingCombat:Magic:UpOffset", 		standing.combatMagicUpOffset, float)
+	IMPL_SETTER("StandingCombat:Magic:ZoomOffset", 		standing.combatMagicZoomOffset, float)
+	IMPL_SETTER("StandingCombat:Melee:SideOffset",		standing.combatMeleeSideOffset, float)
+	IMPL_SETTER("StandingCombat:Melee:UpOffset", 		standing.combatMeleeUpOffset, float)
+	IMPL_SETTER("StandingCombat:Melee:ZoomOffset", 		standing.combatMeleeZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::WalkingSideOffset, 				walking.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingUpOffset, 					walking.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingCombatRangedSideOffset, 	walking.combatRangedSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingCombatRangedUpOffset, 		walking.combatRangedUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingCombatMagicSideOffset, 		walking.combatMagicSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingCombatMagicUpOffset, 		walking.combatMagicUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingCombatMeleeSideOffset, 		walking.combatMeleeSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::WalkingCombatMeleeUpOffset, 		walking.combatMeleeUpOffset, float)
+	IMPL_SETTER("Walking:SideOffset", 					walking.sideOffset, float)
+	IMPL_SETTER("Walking:UpOffset", 					walking.upOffset, float)
+	IMPL_SETTER("Walking:ZoomOffset", 					walking.zoomOffset, float)
+	IMPL_SETTER("WalkingCombat:Ranged:SideOffset",		walking.combatRangedSideOffset, float)
+	IMPL_SETTER("WalkingCombat:Ranged:UpOffset",		walking.combatRangedUpOffset, float)
+	IMPL_SETTER("WalkingCombat:Ranged:ZoomOffset",		walking.combatRangedZoomOffset, float)
+	IMPL_SETTER("WalkingCombat:Magic:SideOffset",		walking.combatMagicSideOffset, float)
+	IMPL_SETTER("WalkingCombat:Magic:UpOffset",			walking.combatMagicUpOffset, float)
+	IMPL_SETTER("WalkingCombat:Magic:ZoomOffset",		walking.combatMagicZoomOffset, float)
+	IMPL_SETTER("WalkingCombat:Melee:SideOffset",		walking.combatMeleeSideOffset, float)
+	IMPL_SETTER("WalkingCombat:Melee:UpOffset",			walking.combatMeleeUpOffset, float)
+	IMPL_SETTER("WalkingCombat:Melee:ZoomOffset",		walking.combatMeleeZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::RunningSideOffset, 				running.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningUpOffset, 					running.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningCombatRangedSideOffset, 	running.combatRangedSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningCombatRangedUpOffset, 		running.combatRangedUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningCombatMagicSideOffset, 		running.combatMagicSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningCombatMagicUpOffset, 		running.combatMagicUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningCombatMeleeSideOffset, 		running.combatMeleeSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::RunningCombatMeleeUpOffset, 		running.combatMeleeUpOffset, float)
+	IMPL_SETTER("Running:SideOffset",					running.sideOffset, float)
+	IMPL_SETTER("Running:UpOffset",						running.upOffset, float)
+	IMPL_SETTER("Running:ZoomOffset",					running.zoomOffset, float)
+	IMPL_SETTER("RunningCombat:Ranged:SideOffset",		running.combatRangedSideOffset, float)
+	IMPL_SETTER("RunningCombat:Ranged:UpOffset",		running.combatRangedUpOffset, float)
+	IMPL_SETTER("RunningCombat:Ranged:ZoomOffset",		running.combatRangedZoomOffset, float)
+	IMPL_SETTER("RunningCombat:Magic:SideOffset",		running.combatMagicSideOffset, float)
+	IMPL_SETTER("RunningCombat:Magic:UpOffset",			running.combatMagicUpOffset, float)
+	IMPL_SETTER("RunningCombat:Magic:ZoomOffset",		running.combatMagicZoomOffset, float)
+	IMPL_SETTER("RunningCombat:Melee:SideOffset",		running.combatMeleeSideOffset, float)
+	IMPL_SETTER("RunningCombat:Melee:UpOffset",			running.combatMeleeUpOffset, float)
+	IMPL_SETTER("RunningCombat:Melee:ZoomOffset",		running.combatMeleeZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::SprintingSideOffest, 				sprinting.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingUpOffset, 				sprinting.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingCombatRangedSideOffset, 	sprinting.combatRangedSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingCombatRangedUpOffset, 	sprinting.combatRangedUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingCombatMagicSideOffset, 	sprinting.combatMagicSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingCombatMagicUpOffset, 		sprinting.combatMagicUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingCombatMeleeSideOffset, 	sprinting.combatMeleeSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SprintingCombatMeleeUpOffset, 		sprinting.combatMeleeUpOffset, float)
+	IMPL_SETTER("Sprinting:SideOffset",					sprinting.sideOffset, float)
+	IMPL_SETTER("Sprinting:UpOffset",					sprinting.upOffset, float)
+	IMPL_SETTER("Sprinting:ZoomOffset",					sprinting.zoomOffset, float)
+	IMPL_SETTER("SprintingCombat:Ranged:SideOffset",	sprinting.combatRangedSideOffset, float)
+	IMPL_SETTER("SprintingCombat:Ranged:UpOffset",		sprinting.combatRangedUpOffset, float)
+	IMPL_SETTER("SprintingCombat:Ranged:ZoomOffset",	sprinting.combatRangedZoomOffset, float)
+	IMPL_SETTER("SprintingCombat:Magic:SideOffset",		sprinting.combatMagicSideOffset, float)
+	IMPL_SETTER("SprintingCombat:Magic:UpOffset",		sprinting.combatMagicUpOffset, float)
+	IMPL_SETTER("SprintingCombat:Magic:ZoomOffset",		sprinting.combatMagicZoomOffset, float)
+	IMPL_SETTER("SprintingCombat:Melee:SideOffset",		sprinting.combatMeleeSideOffset, float)
+	IMPL_SETTER("SprintingCombat:Melee:UpOffset",		sprinting.combatMeleeUpOffset, float)
+	IMPL_SETTER("SprintingCombat:Melee:ZoomOffset",		sprinting.combatMeleeZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::SneakingSideOffset, 				sneaking.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingUpOffset, 					sneaking.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingCombatRangedSideOffset, 	sneaking.combatRangedSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingCombatRangedUpOffset, 		sneaking.combatRangedUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingCombatMagicSideOffset, 	sneaking.combatMagicSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingCombatMagicUpOffset, 		sneaking.combatMagicUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingCombatMeleeSideOffset, 	sneaking.combatMeleeSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SneakingCombatMeleeUpOffset, 		sneaking.combatMeleeUpOffset, float)
+	IMPL_SETTER("Sneaking:SideOffset",					sneaking.sideOffset, float)
+	IMPL_SETTER("Sneaking:UpOffset",					sneaking.upOffset, float)
+	IMPL_SETTER("Sneaking:ZoomOffset",					sneaking.zoomOffset, float)
+	IMPL_SETTER("SneakingCombat:Ranged:SideOffset",		sneaking.combatRangedSideOffset, float)
+	IMPL_SETTER("SneakingCombat:Ranged:UpOffset",		sneaking.combatRangedUpOffset, float)
+	IMPL_SETTER("SneakingCombat:Ranged:ZoomOffset",		sneaking.combatRangedZoomOffset, float)
+	IMPL_SETTER("SneakingCombat:Magic:SideOffset",		sneaking.combatMagicSideOffset, float)
+	IMPL_SETTER("SneakingCombat:Magic:UpOffset",		sneaking.combatMagicUpOffset, float)
+	IMPL_SETTER("SneakingCombat:Magic:ZoomOffset",		sneaking.combatMagicZoomOffset, float)
+	IMPL_SETTER("SneakingCombat:Melee:SideOffset",		sneaking.combatMeleeSideOffset, float)
+	IMPL_SETTER("SneakingCombat:Melee:UpOffset",		sneaking.combatMeleeUpOffset, float)
+	IMPL_SETTER("SneakingCombat:Melee:ZoomOffset",		sneaking.combatMeleeZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::SwimmingSideOffset,				swimming.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SwimmingUpOffset,					swimming.upOffset, float)
+	IMPL_SETTER("Swimming:SideOffset",					swimming.sideOffset, float)
+	IMPL_SETTER("Swimming:UpOffset",					swimming.upOffset, float)
+	IMPL_SETTER("Swimming:ZoomOffset",					swimming.zoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::BowAimSideOffset,					bowAim.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::BowAimUpOffset,					bowAim.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::BowAimHorseSideOffset,				bowAim.horseSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::BowAimHorseUpOffset,				bowAim.horseUpOffset, float)
+	IMPL_SETTER("Bowaim:SideOffset",					bowAim.sideOffset, float)
+	IMPL_SETTER("Bowaim:UpOffset",						bowAim.upOffset, float)
+	IMPL_SETTER("Bowaim:ZoomOffset",					bowAim.zoomOffset, float)
+	IMPL_SETTER("BowaimHorse:SideOffset",				bowAim.horseSideOffset, float)
+	IMPL_SETTER("BowaimHorse:UpOffset",					bowAim.horseUpOffset, float)
+	IMPL_SETTER("BowaimHorse:ZoomOffset",				bowAim.horseZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::SittingSideOffset,					sitting.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::SittingUpOffset,					sitting.upOffset, float)
+	IMPL_SETTER("Sitting:SideOffset",					sitting.sideOffset, float)
+	IMPL_SETTER("Sitting:UpOffset",						sitting.upOffset, float)
+	IMPL_SETTER("Sitting:ZoomOffset",					sitting.zoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::HorseSideOffset,					horseback.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseUpOffset,						horseback.upOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseCombatRangedSideOffset,		horseback.combatRangedSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseCombatRangedUpOffset,			horseback.combatRangedUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseCombatMagicSideOffset,		horseback.combatMagicSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseCombatMagicUpOffset,			horseback.combatMagicUpOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseCombatMeleeSideOffset,		horseback.combatMeleeSideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::HorseCombatMeleeUpOffset,			horseback.combatMeleeUpOffset, float)
+	IMPL_SETTER("Horseback:SideOffset",					horseback.sideOffset, float)
+	IMPL_SETTER("Horseback:UpOffset",					horseback.upOffset, float)
+	IMPL_SETTER("Horseback:ZoomOffset",					horseback.zoomOffset, float)
+	IMPL_SETTER("HorsebackCombat:Ranged:SideOffset",	horseback.combatRangedSideOffset, float)
+	IMPL_SETTER("HorsebackCombat:Ranged:UpOffset",		horseback.combatRangedUpOffset, float)
+	IMPL_SETTER("HorsebackCombat:Ranged:ZoomOffset",	horseback.combatRangedZoomOffset, float)
+	IMPL_SETTER("HorsebackCombat:Magic:SideOffset",		horseback.combatMagicSideOffset, float)
+	IMPL_SETTER("HorsebackCombat:Magic:UpOffset",		horseback.combatMagicUpOffset, float)
+	IMPL_SETTER("HorsebackCombat:Magic:ZoomOffset",		horseback.combatMagicZoomOffset, float)
+	IMPL_SETTER("HorsebackCombat:Melee:SideOffset",		horseback.combatMeleeSideOffset, float)
+	IMPL_SETTER("HorsebackCombat:Melee:UpOffset",		horseback.combatMeleeUpOffset, float)
+	IMPL_SETTER("HorsebackCombat:Melee:ZoomOffset",		horseback.combatMeleeZoomOffset, float)
 
-	IMPL_SETTER(ConfigStringMapping::DragonSideOffset,					dragon.sideOffset, float)
-	IMPL_SETTER(ConfigStringMapping::DragonUpOffset,					dragon.upOffset, float)
+	IMPL_SETTER("Dragon:SideOffset",					dragon.sideOffset, float)
+	IMPL_SETTER("Dragon:UpOffset",						dragon.upOffset, float)
+
+	// We can ignore getters for these as we just return 0.0f if not found, which is what we want in this case
+	IMPL_GROUP_SETTER("Group:SideOffset",				sideOffset, float)
+	IMPL_GROUP_SETTER("Group:UpOffset",					upOffset, float)
+	IMPL_GROUP_SETTER("Group:ZoomOffset",				zoomOffset, float)
+	IMPL_GROUP_SETTER("Group:Ranged:SideOffset",		combatRangedSideOffset, float)
+	IMPL_GROUP_SETTER("Group:Ranged:UpOffset",			combatRangedUpOffset, float)
+	IMPL_GROUP_SETTER("Group:Ranged:ZoomOffset",		combatRangedZoomOffset, float)
+	IMPL_GROUP_SETTER("Group:Magic:SideOffset",			combatMagicSideOffset, float)
+	IMPL_GROUP_SETTER("Group:Magic:UpOffset",			combatMagicUpOffset, float)
+	IMPL_GROUP_SETTER("Group:Magic:ZoomOffset",			combatMagicZoomOffset, float)
+	IMPL_GROUP_SETTER("Group:Melee:SideOffset",			combatMeleeSideOffset, float)
+	IMPL_GROUP_SETTER("Group:Melee:UpOffset",			combatMeleeUpOffset, float)
+	IMPL_GROUP_SETTER("Group:Melee:ZoomOffset",			combatMeleeZoomOffset, float)
 };
-
-
-ConfigVar PapyrusBindings::GetInfo(const BSFixedString& member) {
-	const auto it = stringMap.find(member.c_str());
-	if (it != stringMap.end()) {
-		return it->second;
-	}
-	return { ConfigStringMapping::INVALID, ConfigType::INVALID };
-}
 
 void PapyrusBindings::Bind(VMClassRegistry* registry) {
 	registry->RegisterFunction(
@@ -353,9 +432,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_SetStringConfig",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, BSFixedString var, BSFixedString value) {
-				const auto info = GetInfo(var);
-				if (info.type != ConfigType::STRING) return;
-				const auto it = stringSetters.find(info.mapping);
+				const auto it = stringSetters.find(var.c_str());
 				if (it != stringSetters.end())
 					it->second(value);
 			},
@@ -368,9 +445,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_SetBoolConfig",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, BSFixedString var, bool value) {
-				const auto info = GetInfo(var);
-				if (info.type != ConfigType::BOOL) return;
-				const auto it = boolSetters.find(info.mapping);
+				const auto it = boolSetters.find(var.c_str());
 				if (it != boolSetters.end())
 					it->second(value);
 			},
@@ -383,9 +458,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_SetFloatConfig",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, BSFixedString var, float value) {
-				const auto info = GetInfo(var);
-				if (info.type != ConfigType::FLOAT) return;
-				const auto it = floatSetters.find(info.mapping);
+				const auto it = floatSetters.find(var.c_str());
 				if (it != floatSetters.end())
 					it->second(value);
 			},
@@ -398,9 +471,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_GetStringConfig",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto info = GetInfo(var);
-				if (info.type != ConfigType::STRING) return BSFixedString("");
-				const auto it = stringGetters.find(info.mapping);
+				const auto it = stringGetters.find(var.c_str());
 				if (it != stringGetters.end())
 					return it->second();
 				else
@@ -415,9 +486,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_GetBoolConfig",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto info = GetInfo(var);
-				if (info.type != ConfigType::BOOL) return false;
-				const auto it = boolGetters.find(info.mapping);
+				const auto it = boolGetters.find(var.c_str());
 				if (it != boolGetters.end())
 					return it->second();
 				else
@@ -432,9 +501,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_GetFloatConfig",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto info = GetInfo(var);
-				if (info.type != ConfigType::FLOAT) return 0.0f;
-				const auto it = floatGetters.find(info.mapping);
+				const auto it = floatGetters.find(var.c_str());
 				if (it != floatGetters.end())
 					return it->second();
 				else

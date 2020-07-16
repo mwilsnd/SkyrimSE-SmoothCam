@@ -172,7 +172,7 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 7
+	version: 8
 }
 
 ; Presets
@@ -358,7 +358,7 @@ SliderSetting minCameraFollowDistance -> {
 	defaultValue: 64.0
 	interval: 0.1
 	min: 0.0
-	max: 64.0
+	max: 256.0
 }
 SliderSetting zoomMul -> {
 	settingName: "ZoomMul"
@@ -511,6 +511,11 @@ ToggleSetting hideCrosshairMeleeCombat -> {
 	displayName: "Hide Melee Combat Crosshair"
 	desc: "Hide the crosshair when in melee combat."
 }
+ToggleSetting enableCrosshairSizeManip -> {
+	settingName: "EnableCrosshairSizeManip"
+	displayName: "Enable Size Manipulation"
+	desc: "Changes the size of the crosshair, based on 'Min/Max Size' and 'NPC Hit Size'. Disable if this causes conflicts with other mods. May require a game restart."
+}
 SliderSetting crosshairNPCGrowSize -> {
 	settingName: "CrosshairNPCGrowSize"
 	displayName: "NPC Hit Size"
@@ -551,6 +556,13 @@ SliderSetting standing_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting standing_zoomOffset -> {
+	settingName: "Standing:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting standing_sideOffsetRangedCombat -> {
 	settingName: "StandingCombat:Ranged:SideOffset"
 	displayName: "Ranged Combat Side Offset"
@@ -561,6 +573,13 @@ SliderSetting standing_upOffsetRangedCombat -> {
 	settingName: "StandingCombat:Ranged:UpOffset"
 	displayName: "Ranged Combat Up Offset"
 	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting standing_zoomOffsetRangedCombat -> {
+	settingName: "StandingCombat:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
 }
 SliderSetting standing_sideOffsetMagicCombat -> {
 	settingName: "StandingCombat:Magic:SideOffset"
@@ -573,6 +592,13 @@ SliderSetting standing_upOffsetMagicCombat -> {
 	displayName: "Magic Combat Up Offset"
 	desc: "The amount to move the camera up when in magic combat."
 }
+SliderSetting standing_zoomOffsetMagicCombat -> {
+	settingName: "StandingCombat:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting standing_sideOffsetMeleeCombat -> {
 	settingName: "StandingCombat:Melee:SideOffset"
 	displayName: "Melee Combat Side Offset"
@@ -583,6 +609,13 @@ SliderSetting standing_upOffsetMeleeCombat -> {
 	settingName: "StandingCombat:Melee:UpOffset"
 	displayName: "Melee Combat Up Offset"
 	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting standing_zoomOffsetMeleeCombat -> {
+	settingName: "StandingCombat:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting standing_interp -> {
 	settingName: "InterpStanding"
@@ -617,6 +650,13 @@ SliderSetting walking_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting walking_zoomOffset -> {
+	settingName: "Walking:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting walking_sideOffsetRangedCombat -> {
 	settingName: "WalkingCombat:Ranged:SideOffset"
 	displayName: "Ranged Combat Side Offset"
@@ -627,6 +667,13 @@ SliderSetting walking_upOffsetRangedCombat -> {
 	settingName: "WalkingCombat:Ranged:UpOffset"
 	displayName: "Ranged Combat Up Offset"
 	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting walking_zoomOffsetRangedCombat -> {
+	settingName: "WalkingCombat:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
 }
 SliderSetting walking_sideOffsetMagicCombat -> {
 	settingName: "WalkingCombat:Magic:SideOffset"
@@ -639,6 +686,13 @@ SliderSetting walking_upOffsetMagicCombat -> {
 	displayName: "Magic Combat Up Offset"
 	desc: "The amount to move the camera up when in magic combat."
 }
+SliderSetting walking_zoomOffsetMagicCombat -> {
+	settingName: "WalkingCombat:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting walking_sideOffsetMeleeCombat -> {
 	settingName: "WalkingCombat:Melee:SideOffset"
 	displayName: "Melee Combat Side Offset"
@@ -649,6 +703,13 @@ SliderSetting walking_upOffsetMeleeCombat -> {
 	settingName: "WalkingCombat:Melee:UpOffset"
 	displayName: "Melee Combat Up Offset"
 	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting walking_zoomOffsetMeleeCombat -> {
+	settingName: "WalkingCombat:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting walking_interp -> {
 	settingName: "InterpWalking"
@@ -683,6 +744,13 @@ SliderSetting running_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting running_zoomOffset -> {
+	settingName: "Running:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting running_sideOffsetRangedCombat -> {
 	settingName: "RunningCombat:Ranged:SideOffset"
 	displayName: "Ranged Combat Side Offset"
@@ -693,6 +761,13 @@ SliderSetting running_upOffsetRangedCombat -> {
 	settingName: "RunningCombat:Ranged:UpOffset"
 	displayName: "Ranged Combat Up Offset"
 	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting running_zoomOffsetRangedCombat -> {
+	settingName: "RunningCombat:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
 }
 SliderSetting running_sideOffsetMagicCombat -> {
 	settingName: "RunningCombat:Magic:SideOffset"
@@ -705,6 +780,13 @@ SliderSetting running_upOffsetMagicCombat -> {
 	displayName: "Magic Combat Up Offset"
 	desc: "The amount to move the camera up when in magic combat."
 }
+SliderSetting running_zoomOffsetMagicCombat -> {
+	settingName: "RunningCombat:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting running_sideOffsetMeleeCombat -> {
 	settingName: "RunningCombat:Melee:SideOffset"
 	displayName: "Melee Combat Side Offset"
@@ -715,6 +797,13 @@ SliderSetting running_upOffsetMeleeCombat -> {
 	settingName: "RunningCombat:Melee:UpOffset"
 	displayName: "Melee Combat Up Offset"
 	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting running_zoomOffsetMeleeCombat -> {
+	settingName: "RunningCombat:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting running_interp -> {
 	settingName: "InterpRunning"
@@ -749,6 +838,13 @@ SliderSetting sprinting_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting sprinting_zoomOffset -> {
+	settingName: "Sprinting:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting sprinting_sideOffsetRangedCombat -> {
 	settingName: "SprintingCombat:Ranged:SideOffset"
 	displayName: "Ranged Combat Side Offset"
@@ -759,6 +855,13 @@ SliderSetting sprinting_upOffsetRangedCombat -> {
 	settingName: "SprintingCombat:Ranged:UpOffset"
 	displayName: "Ranged Combat Up Offset"
 	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting sprinting_zoomOffsetRangedCombat -> {
+	settingName: "SprintingCombat:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
 }
 SliderSetting sprinting_sideOffsetMagicCombat -> {
 	settingName: "SprintingCombat:Magic:SideOffset"
@@ -771,6 +874,13 @@ SliderSetting sprinting_upOffsetMagicCombat -> {
 	displayName: "Magic Combat Up Offset"
 	desc: "The amount to move the camera up when in magic combat."
 }
+SliderSetting sprinting_zoomOffsetMagicCombat -> {
+	settingName: "SprintingCombat:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting sprinting_sideOffsetMeleeCombat -> {
 	settingName: "SprintingCombat:Melee:SideOffset"
 	displayName: "Melee Combat Side Offset"
@@ -781,6 +891,13 @@ SliderSetting sprinting_upOffsetMeleeCombat -> {
 	settingName: "SprintingCombat:Melee:UpOffset"
 	displayName: "Melee Combat Up Offset"
 	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting sprinting_zoomOffsetMeleeCombat -> {
+	settingName: "SprintingCombat:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting sprinting_interp -> {
 	settingName: "InterpSprinting"
@@ -815,6 +932,13 @@ SliderSetting sneaking_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting sneaking_zoomOffset -> {
+	settingName: "Sneaking:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting sneaking_sideOffsetRangedCombat -> {
 	settingName: "SneakingCombat:Ranged:SideOffset"
 	displayName: "Ranged Combat Side Offset"
@@ -825,6 +949,13 @@ SliderSetting sneaking_upOffsetRangedCombat -> {
 	settingName: "SneakingCombat:Ranged:UpOffset"
 	displayName: "Ranged Combat Up Offset"
 	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting sneaking_zoomOffsetRangedCombat -> {
+	settingName: "SneakingCombat:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
 }
 SliderSetting sneaking_sideOffsetMagicCombat -> {
 	settingName: "SneakingCombat:Magic:SideOffset"
@@ -837,6 +968,13 @@ SliderSetting sneaking_upOffsetMagicCombat -> {
 	displayName: "Magic Combat Up Offset"
 	desc: "The amount to move the camera up when in magic combat."
 }
+SliderSetting sneaking_zoomOffsetMagicCombat -> {
+	settingName: "SneakingCombat:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting sneaking_sideOffsetMeleeCombat -> {
 	settingName: "SneakingCombat:Melee:SideOffset"
 	displayName: "Melee Combat Side Offset"
@@ -847,6 +985,13 @@ SliderSetting sneaking_upOffsetMeleeCombat -> {
 	settingName: "SneakingCombat:Melee:UpOffset"
 	displayName: "Melee Combat Up Offset"
 	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting sneaking_zoomOffsetMeleeCombat -> {
+	settingName: "SneakingCombat:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting sneaking_interp -> {
 	settingName: "InterpSneaking"
@@ -881,6 +1026,13 @@ SliderSetting swimming_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting swimming_zoomOffset -> {
+	settingName: "Swimming:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 ToggleSetting swimming_interp -> {
 	settingName: "InterpSwimming"
 	displayName: "Enable Interpolation"
@@ -899,6 +1051,13 @@ SliderSetting bowaim_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting bowaim_zoomOffset -> {
+	settingName: "Bowaim:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting bowaim_sideOffsetHorseback -> {
 	settingName: "BowaimHorse:SideOffset"
 	displayName: "Horseback Side Offset"
@@ -909,6 +1068,13 @@ SliderSetting bowaim_upOffsetHorseback -> {
 	settingName: "BowaimHorse:UpOffset"
 	displayName: "Horseback Up Offset"
 	desc: "The amount to move the camera up when on horseback."
+}
+SliderSetting bowaim_zoomOffsetHorseback -> {
+	settingName: "BowaimHorse:ZoomOffset"
+	displayName: "Horseback Zoom Offset"
+	desc: "The amount to offset the camera zoom by when on horseback."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting bowaim_interp -> {
 	settingName: "InterpBowAim"
@@ -933,6 +1099,13 @@ SliderSetting sitting_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting sitting_zoomOffset -> {
+	settingName: "Sitting:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 ToggleSetting sitting_interp -> {
 	settingName: "InterpSitting"
 	displayName: "Enable Interpolation"
@@ -951,6 +1124,13 @@ SliderSetting horseback_upOffset -> {
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 }
+SliderSetting horseback_zoomOffset -> {
+	settingName: "Horseback:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting horseback_sideOffsetRangedCombat -> {
 	settingName: "HorsebackCombat:Ranged:SideOffset"
 	displayName: "Ranged Combat Side Offset"
@@ -961,6 +1141,13 @@ SliderSetting horseback_upOffsetRangedCombat -> {
 	settingName: "HorsebackCombat:Ranged:UpOffset"
 	displayName: "Ranged Combat Up Offset"
 	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting horseback_zoomOffsetRangedCombat -> {
+	settingName: "HorsebackCombat:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
 }
 SliderSetting horseback_sideOffsetMagicCombat -> {
 	settingName: "HorsebackCombat:Magic:SideOffset"
@@ -973,6 +1160,13 @@ SliderSetting horseback_upOffsetMagicCombat -> {
 	displayName: "Magic Combat Up Offset"
 	desc: "The amount to move the camera up when in magic combat."
 }
+SliderSetting horseback_zoomOffsetMagicCombat -> {
+	settingName: "HorsebackCombat:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
 SliderSetting horseback_sideOffsetMeleeCombat -> {
 	settingName: "HorsebackCombat:Melee:SideOffset"
 	displayName: "Melee Combat Side Offset"
@@ -983,6 +1177,13 @@ SliderSetting horseback_upOffsetMeleeCombat -> {
 	settingName: "HorsebackCombat:Melee:UpOffset"
 	displayName: "Melee Combat Up Offset"
 	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting horseback_zoomOffsetMeleeCombat -> {
+	settingName: "HorsebackCombat:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
 }
 ToggleSetting horseback_interp -> {
 	settingName: "InterpHorseback"
@@ -1018,6 +1219,80 @@ SliderSetting dragon_upOffset -> {
 	desc: "The amount to move the camera up."
 }
 
+; Group edit
+SliderSetting groupEdit_sideOffset -> {
+	settingName: "Group:SideOffset"
+	displayName: "Side Offset"
+	desc: "The amount to move the camera to the right."
+	defaultValue: 25.0
+}
+SliderSetting groupEdit_upOffset -> {
+	settingName: "Group:UpOffset"
+	displayName: "Up Offset"
+	desc: "The amount to move the camera up."
+}
+SliderSetting groupEdit_zoomOffset -> {
+	settingName: "Group:ZoomOffset"
+	displayName: "Zoom Offset"
+	desc: "The amount to offset the camera zoom by."
+	min: -200.0
+	max: 200.0
+}
+SliderSetting groupEdit_sideOffsetRangedCombat -> {
+	settingName: "Group:Ranged:SideOffset"
+	displayName: "Ranged Combat Side Offset"
+	desc: "The amount to move the camera to the right when in ranged combat."
+	defaultValue: 25.0
+}
+SliderSetting groupEdit_upOffsetRangedCombat -> {
+	settingName: "Group:Ranged:UpOffset"
+	displayName: "Ranged Combat Up Offset"
+	desc: "The amount to move the camera up when in ranged combat."
+}
+SliderSetting groupEdit_zoomOffsetRangedCombat -> {
+	settingName: "Group:Ranged:ZoomOffset"
+	displayName: "Ranged Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in ranged combat."
+	min: -200.0
+	max: 200.0
+}
+SliderSetting groupEdit_sideOffsetMagicCombat -> {
+	settingName: "Group:Magic:SideOffset"
+	displayName: "Magic Combat Side Offset"
+	desc: "The amount to move the camera to the right when in magic combat."
+	defaultValue: 25.0
+}
+SliderSetting groupEdit_upOffsetMagicCombat -> {
+	settingName: "Group:Magic:UpOffset"
+	displayName: "Magic Combat Up Offset"
+	desc: "The amount to move the camera up when in magic combat."
+}
+SliderSetting groupEdit_zoomOffsetMagicCombat -> {
+	settingName: "Group:Magic:ZoomOffset"
+	displayName: "Magic Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in magic combat."
+	min: -200.0
+	max: 200.0
+}
+SliderSetting groupEdit_sideOffsetMeleeCombat -> {
+	settingName: "Group:Melee:SideOffset"
+	displayName: "Melee Combat Side Offset"
+	desc: "The amount to move the camera to the right when in melee combat."
+	defaultValue: 25.0
+}
+SliderSetting groupEdit_upOffsetMeleeCombat -> {
+	settingName: "Group:Melee:UpOffset"
+	displayName: "Melee Combat Up Offset"
+	desc: "The amount to move the camera up when in melee combat."
+}
+SliderSetting groupEdit_zoomOffsetMeleeCombat -> {
+	settingName: "Group:Melee:ZoomOffset"
+	displayName: "Melee Combat Zoom Offset"
+	desc: "The amount to offset the camera zoom by when in melee combat."
+	min: -200.0
+	max: 200.0
+}
+
 int Function GetVersion()
 	return scriptMetaInfo.version
 endFunction
@@ -1027,7 +1302,7 @@ event OnConfigInit()
 		" Info", " Compatibility", " Following", " Crosshair", " Standing",
 		" Walking", " Running", " Sprinting", " Sneaking",
 		" Swimming", " Bow Aiming", " Sitting", " Horseback",
-		" Dragon", " Presets"
+		" Dragon", " Group Edit", " Presets"
 	}
 	interpMethods = new string[] -> {
 		"linear", "quadraticEaseIn", "quadraticEaseOut",
@@ -1096,8 +1371,8 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Crosshair")
 		AddHeaderOption("3D Crosshair Settings")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			crosshair3DBowEnabled, crosshair3DMagicEnabled, crosshairNPCGrowSize,
-			crosshairMinDistSize, crosshairMaxDistSize
+			crosshair3DBowEnabled, crosshair3DMagicEnabled, enableCrosshairSizeManip,
+			crosshairNPCGrowSize, crosshairMinDistSize, crosshairMaxDistSize
 		})
 
 		AddHeaderOption("Crosshair Hiding")
@@ -1109,15 +1384,20 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			standing_sideOffset,
 			standing_upOffset,
+			standing_zoomOffset,
 			standing_sideOffsetRangedCombat,
 			standing_upOffsetRangedCombat,
+			standing_zoomOffsetRangedCombat,
 			standing_sideOffsetMagicCombat,
 			standing_upOffsetMagicCombat,
+			standing_zoomOffsetMagicCombat,
 			standing_sideOffsetMeleeCombat,
-			standing_upOffsetMeleeCombat
+			standing_upOffsetMeleeCombat,
+			standing_zoomOffsetMeleeCombat
 		})
 
 		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			standing_interp,
 			standing_interpRanged,
@@ -1129,15 +1409,20 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			walking_sideOffset,
 			walking_upOffset,
+			walking_zoomOffset,
 			walking_sideOffsetRangedCombat,
 			walking_upOffsetRangedCombat,
+			walking_zoomOffsetRangedCombat,
 			walking_sideOffsetMagicCombat,
 			walking_upOffsetMagicCombat,
+			walking_zoomOffsetMagicCombat,
 			walking_sideOffsetMeleeCombat,
-			walking_upOffsetMeleeCombat
+			walking_upOffsetMeleeCombat,
+			walking_zoomOffsetMeleeCombat
 		})
 
 		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			walking_interp,
 			walking_interpRanged,
@@ -1149,15 +1434,20 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			running_sideOffset,
 			running_upOffset,
+			running_zoomOffset,
 			running_sideOffsetRangedCombat,
 			running_upOffsetRangedCombat,
+			running_zoomOffsetRangedCombat,
 			running_sideOffsetMagicCombat,
 			running_upOffsetMagicCombat,
+			running_zoomOffsetMagicCombat,
 			running_sideOffsetMeleeCombat,
-			running_upOffsetMeleeCombat
+			running_upOffsetMeleeCombat,
+			running_zoomOffsetMeleeCombat
 		})
 
 		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			running_interp,
 			running_interpRanged,
@@ -1169,15 +1459,20 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sprinting_sideOffset,
 			sprinting_upOffset,
+			sprinting_zoomOffset,
 			sprinting_sideOffsetRangedCombat,
 			sprinting_upOffsetRangedCombat,
+			sprinting_zoomOffsetRangedCombat,
 			sprinting_sideOffsetMagicCombat,
 			sprinting_upOffsetMagicCombat,
+			sprinting_zoomOffsetMagicCombat,
 			sprinting_sideOffsetMeleeCombat,
-			sprinting_upOffsetMeleeCombat
+			sprinting_upOffsetMeleeCombat,
+			sprinting_zoomOffsetMeleeCombat
 		})
 
 		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sprinting_interp,
 			sprinting_interpRanged,
@@ -1189,15 +1484,20 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sneaking_sideOffset,
 			sneaking_upOffset,
+			sneaking_zoomOffset,
 			sneaking_sideOffsetRangedCombat,
 			sneaking_upOffsetRangedCombat,
+			sneaking_zoomOffsetRangedCombat,
 			sneaking_sideOffsetMagicCombat,
 			sneaking_upOffsetMagicCombat,
+			sneaking_zoomOffsetMagicCombat,
 			sneaking_sideOffsetMeleeCombat,
-			sneaking_upOffsetMeleeCombat
+			sneaking_upOffsetMeleeCombat,
+			sneaking_zoomOffsetMeleeCombat
 		})
 
 		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sneaking_interp,
 			sneaking_interpRanged,
@@ -1209,15 +1509,26 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			swimming_sideOffset,
 			swimming_upOffset,
-			swimming_interp
+			swimming_zoomOffset
 		})
+
+		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
+		swimming_interp->!implControl
 	elseIf (a_page == " Bow Aiming")
 		AddHeaderOption("Bow Aiming Offsets")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			bowaim_sideOffset,
 			bowaim_upOffset,
+			bowaim_zoomOffset,
 			bowaim_sideOffsetHorseback,
 			bowaim_upOffsetHorseback,
+			bowaim_zoomOffsetHorseback
+		})
+
+		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			bowaim_interp,
 			bowaim_interpHorseback
 		})
@@ -1226,22 +1537,31 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			sitting_sideOffset,
 			sitting_upOffset,
-			sitting_interp
+			sitting_zoomOffset
 		})
+
+		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
+		sitting_interp->!implControl
 	elseIf (a_page == " Horseback")
 		AddHeaderOption("Horseback Offsets")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			horseback_sideOffset,
 			horseback_upOffset,
+			horseback_zoomOffset,
 			horseback_sideOffsetRangedCombat,
 			horseback_upOffsetRangedCombat,
+			horseback_zoomOffsetRangedCombat,
 			horseback_sideOffsetMagicCombat,
 			horseback_upOffsetMagicCombat,
+			horseback_zoomOffsetMagicCombat,
 			horseback_sideOffsetMeleeCombat,
-			horseback_upOffsetMeleeCombat
+			horseback_upOffsetMeleeCombat,
+			horseback_zoomOffsetMeleeCombat
 		})
 
 		SetCursorPosition(1)
+		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			horseback_interp,
 			horseback_interpRanged,
@@ -1253,6 +1573,22 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			dragon_sideOffset,
 			dragon_upOffset
+		})
+	elseIf (a_page == " Group Edit")
+		AddHeaderOption("Edit All Offset Groups")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			groupEdit_sideOffset,
+			groupEdit_upOffset,
+			groupEdit_zoomOffset,
+			groupEdit_sideOffsetRangedCombat,
+			groupEdit_upOffsetRangedCombat,
+			groupEdit_zoomOffsetRangedCombat,
+			groupEdit_sideOffsetMagicCombat,
+			groupEdit_upOffsetMagicCombat,
+			groupEdit_zoomOffsetMagicCombat,
+			groupEdit_sideOffsetMeleeCombat,
+			groupEdit_upOffsetMeleeCombat,
+			groupEdit_zoomOffsetMeleeCombat
 		})
 	elseIf (a_page == " Presets")
 		AddHeaderOption("Save Preset")

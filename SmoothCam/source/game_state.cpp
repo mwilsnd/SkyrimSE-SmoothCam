@@ -255,6 +255,46 @@ const bool GameState::IsRangedWeaponDrawn(PlayerCharacter* player) noexcept {
 	return false;
 }
 
+const bool GameState::IsUsingCrossbow(PlayerCharacter* player) noexcept {
+	if (!GameState::IsWeaponDrawn(player)) return false;
+	const auto right = GameState::GetEquippedWeapon(player);
+	const auto left = GameState::GetEquippedWeapon(player, true);
+
+	if (right && (right->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
+		right->gameData.type == TESObjectWEAP::GameData::kType_CBow))
+	{
+		return true;
+	}
+
+	if (left && (left->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
+		left->gameData.type == TESObjectWEAP::GameData::kType_CBow))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+const bool GameState::IsUsingBow(PlayerCharacter* player) noexcept {
+	if (!GameState::IsWeaponDrawn(player)) return false;
+	const auto right = GameState::GetEquippedWeapon(player);
+	const auto left = GameState::GetEquippedWeapon(player, true);
+
+	if (right && (right->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
+		right->gameData.type == TESObjectWEAP::GameData::kType_Bow2))
+	{
+		return true;
+	}
+
+	if (left && (left->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
+		left->gameData.type == TESObjectWEAP::GameData::kType_Bow2))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 // Returns true if the player is sneaking
 const bool GameState::IsSneaking(const PlayerCharacter* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);

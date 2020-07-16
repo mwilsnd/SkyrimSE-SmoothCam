@@ -48,6 +48,8 @@ namespace Camera {
 				void UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const;
 				// Directly sets the crosshair position
 				void SetCrosshairPosition(const glm::vec2& pos) const;
+				// Center the position of the crosshair
+				void CenterCrosshair() const;
 				// Toggles visibility of the crosshair
 				void SetCrosshairEnabled(bool enabled) const;
 

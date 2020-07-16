@@ -1,13 +1,6 @@
 #pragma once
 #include "nlohmann/json.hpp"
 
-#define CREATE_JSON_VALUE(obj, member) {#member, obj.member}
-#define VALUE_FROM_JSON(obj, member)	\
-{										\
-	const auto def = obj.##member##;	\
-	obj.member = j.value(#member, def);	\
-}
-
 namespace Config {
 	using json = nlohmann::json;
 	constexpr auto MaxPresetSlots = 6;
@@ -79,21 +72,31 @@ namespace Config {
 		{ ScalarMethods::EXP_INOUT, 	"exponentialEaseInOut" },
 	});
 
+	typedef struct gameConf {
+		float f3PArrowTiltUpAngle = 2.5f;
+		float f3PBoltTiltUpAngle = 2.5f;
+	} GameConfig;
+
 	typedef struct offsetGroup {
 		float sideOffset = 25.0;
 		float upOffset = 0.0;
+		float zoomOffset = 0.0f;
 
 		float combatRangedSideOffset = 25.0f;
 		float combatRangedUpOffset = 0.0f;
+		float combatRangedZoomOffset = 0.0f;
 
 		float combatMagicSideOffset = 25.0f;
 		float combatMagicUpOffset = 0.0f;
+		float combatMagicZoomOffset = 0.0f;
 
 		float combatMeleeSideOffset = 25.0f;
 		float combatMeleeUpOffset = 0.0f;
+		float combatMeleeZoomOffset = 0.0f;
 
 		float horseSideOffset = 25.0f;
 		float horseUpOffset = 0.0f;
+		float horseZoomOffset = 0.0f;
 
 		bool interp = true;
 		bool interpRangedCombat = true;
@@ -111,6 +114,8 @@ namespace Config {
 
 		bool hideNonCombatCrosshair = false;
 		bool hideCrosshairMeleeCombat = false;
+
+		bool enableCrosshairSizeManip = false;
 		float crosshairNPCHitGrowSize = 16.0f;
 		float crosshairMinDistSize = 16.0f;
 		float crosshairMaxDistSize = 24.0f;
@@ -202,4 +207,6 @@ namespace Config {
 	BSFixedString GetPresetSlotName(int slot);
 	// Get the file path for the given preset slot
 	std::wstring GetPresetPath(int slot);
+
+	const GameConfig* const GetGameConfig();
 }

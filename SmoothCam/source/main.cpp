@@ -57,7 +57,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 7;
+		info->version = 8;
 
 		g_pluginHandle = skse->GetPluginHandle();
 

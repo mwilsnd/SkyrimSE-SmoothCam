@@ -109,7 +109,7 @@ void Camera::State::BaseCameraState::UpdateCrosshair(PlayerCharacter* player, co
 			if (use3D) {
 				UpdateCrosshairPosition(player, playerCamera);
 			} else {
-				SetCrosshairPosition({ 640.0f, 360.0f });
+				CenterCrosshair();
 				camera->SetCrosshairSize({ camera->baseCrosshairData.xScale, camera->baseCrosshairData.yScale });
 			}
 		}
@@ -118,7 +118,7 @@ void Camera::State::BaseCameraState::UpdateCrosshair(PlayerCharacter* player, co
 			SetCrosshairEnabled(false);
 		} else {
 			SetCrosshairEnabled(true);
-			SetCrosshairPosition({ 640.0f, 360.0f });
+			CenterCrosshair();
 			camera->SetCrosshairSize({ camera->baseCrosshairData.xScale, camera->baseCrosshairData.yScale });
 		}
 	}
@@ -132,6 +132,10 @@ void Camera::State::BaseCameraState::UpdateCrosshairPosition(PlayerCharacter* pl
 // Directly sets the crosshair position
 void Camera::State::BaseCameraState::SetCrosshairPosition(const glm::vec2& pos) const {
 	camera->SetCrosshairPosition(pos);
+}
+
+void Camera::State::BaseCameraState::CenterCrosshair() const {
+	camera->CenterCrosshair();
 }
 
 // Toggles visibility of the crosshair

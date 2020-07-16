@@ -90,10 +90,14 @@ namespace Camera {
 			float GetCurrentCameraZoom(const CorrectedPlayerCamera* camera, const GameState::CameraState currentState) const noexcept;
 			// Returns an offset group for the current player movement state
 			const Config::OffsetGroup* GetOffsetForState(const CameraActionState state) const noexcept;
+			// 
+			float GetActiveWeaponStateZoomOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
 			float GetActiveWeaponStateUpOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
 			float GetActiveWeaponStateSideOffset(PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
+			//
+			float GetCurrentCameraZoomOffset(PlayerCharacter* player) const noexcept;
 			// Returns the camera height for the current player state
 			float GetCurrentCameraHeight(PlayerCharacter* player) const noexcept;
 			// Returns the ideal camera distance for the current zoom level
@@ -116,6 +120,8 @@ namespace Camera {
 			void ReadInitialCrosshairInfo();
 			// Set the 3D crosshair position
 			void SetCrosshairPosition(const glm::vec2& pos) const;
+			// Center the position of the crosshair
+			void CenterCrosshair() const;
 			// Set the size of the 3D crosshair
 			void SetCrosshairSize(const glm::vec2& size) const;
 			// Show or hide the crosshair
@@ -212,10 +218,12 @@ namespace Camera {
 
 			struct {
 				bool captured = false;
-				double xOff = 0.0f;
-				double yOff = 0.0f;
-				double xScale = 0.0f;
-				double yScale = 0.0f;
+				double xOff = 0.0;
+				double yOff = 0.0;
+				double xScale = 0.0;
+				double yScale = 0.0;
+				double xCenter = 0.0;
+				double yCenter = 0.0;
 			} baseCrosshairData;
 
 			bool firstFrame = false;

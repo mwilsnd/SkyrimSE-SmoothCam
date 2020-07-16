@@ -1,7 +1,6 @@
 #pragma once
 
 namespace ArrowFixes {
-	constexpr auto arrowPitchModFactor = 0.05f;
 	struct LaunchData {
 		void* vtbl;
 		NiPoint3 unkVec1;

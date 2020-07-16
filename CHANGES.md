@@ -1,3 +1,14 @@
+## Alpha 1.7
+* Bumped module and MCM version number to 8
+* Added a "group edit" tab in the MCM, allowing users to edit all offset groups at once.
+* Increased the maximum slider range for "MinFollowDistance" from 64 to 256.
+* Fixed the crosshair position being wrong with ultrawide aspect ratios - TEST WITH ULTRATALL
+* Config now reads Skyrim.ini and will use user supplied `f3PArrowTiltUpAngle` and `f3PBoltTiltUpAngle` if found.
+* Opt-in option for crosshair size manipulation.
+* Added "ZoomOffset" settings to offset groups, allowing the camera to offset the zoom level in/out on different state transitions.
+* MCM layout changes - **Users of prior versions may need to disable the esp and make a save after the menu disappears then quit and enable it again for changes to update correctly**
+* Simplified the papyrus config binding code.
+
 ## Alpha 1.6
 * Bumped module and MCM version number to 7
 * Removed the need for a custom hudmenu.swf for the 3D crosshair.
