@@ -54,6 +54,8 @@ namespace Camera {
 			void UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera);
 			// Called when the player toggles the POV
 			void OnTogglePOV(const ButtonEvent* ev) noexcept;
+			// Called when any other key is pressed
+			void OnKeyPress(const ButtonEvent* ev) noexcept;
 			// Called when the dialog menu is shown or hidden
 			void OnDialogMenuChanged(const MenuOpenCloseEvent* const ev) noexcept;
 			// Returns our most recent camera position
@@ -108,6 +110,8 @@ namespace Camera {
 			glm::vec3 GetCurrentCameraOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the current smoothing scalar to use for the given distance to the player
 			float GetCurrentSmoothingScalar(const float distance, ScalarSelector method = ScalarSelector::Normal) const;
+			// Returns the user defined distance clamping vector pair
+			std::tuple<glm::vec3, glm::vec3> GetDistanceClamping() const noexcept;
 			// Returns true if interpolation is allowed in the current state
 			bool IsInterpAllowed(PlayerCharacter* player) const noexcept;
 			// Constructs the view matrix for the camera
@@ -230,6 +234,7 @@ namespace Camera {
 			bool povIsThird = false;
 			bool povWasPressed = false;
 			bool dialogMenuOpen = false;
+			int shoulderSwap = 1;
 
 			friend class State::BaseCameraState;
 	};

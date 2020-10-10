@@ -122,6 +122,8 @@ namespace Config {
 
 		// Misc
 		bool disableDeltaTime = false;
+		int shoulderSwapKey = -1;
+		bool swapXClamping = true;
 		
 		// Comapt
 		bool disableDuringDialog = false;
@@ -133,21 +135,21 @@ namespace Config {
 		bool enableInterp = true;
 		ScalarMethods currentScalar = ScalarMethods::SINE_IN;
 		float minCameraFollowDistance = 64.0f;
-		float minCameraFollowRate = 0.2f;
-		float maxCameraFollowRate = 0.5f;
+		float minCameraFollowRate = 0.15f;
+		float maxCameraFollowRate = 0.4f;
 		float zoomMul = 500.0f;
 		float zoomMaxSmoothingDistance = 650.0f;
 
 		// Separate local space interpolation
-		bool separateLocalInterp = false;
+		bool separateLocalInterp = true;
 		ScalarMethods separateLocalScalar = ScalarMethods::CIRC_IN;
-		float localScalarRate = 1.0f;
+		float localScalarRate = 0.75f;
 
 		// Separate Z
-		bool separateZInterp = false;
+		bool separateZInterp = true;
 		ScalarMethods separateZScalar = ScalarMethods::SINE_IN;
 		float separateZMaxSmoothingDistance = 60.0f;
-		float separateZMinFollowRate = 0.25f;
+		float separateZMinFollowRate = 0.15f;
 		float separateZMaxFollowRate = 0.4f;
 
 		// Offset interpolation

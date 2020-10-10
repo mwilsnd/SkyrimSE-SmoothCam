@@ -57,13 +57,15 @@ glm::vec3 Camera::State::BaseCameraState::ComputeOffsetClamping(PlayerCharacter*
 		forward, right, up, coef
 	);
 
+	auto [mins, maxs] = camera->GetDistanceClamping();
+
 	// Now we can do whatever we want to the interp vector in axis aligned space
 	if (camera->config->cameraDistanceClampXEnable)
-		coef.x = glm::clamp(coef.x, camera->config->cameraDistanceClampXMin, camera->config->cameraDistanceClampXMax);
+		coef.x = glm::clamp(coef.x, mins.x, maxs.x);
 	if (camera->config->cameraDistanceClampYEnable)
-		coef.y = glm::clamp(coef.y, camera->config->cameraDistanceClampYMin, camera->config->cameraDistanceClampYMax);
+		coef.y = glm::clamp(coef.y, mins.y, maxs.y);
 	if (camera->config->cameraDistanceClampZEnable)
-		coef.z = glm::clamp(coef.z, camera->config->cameraDistanceClampZMin, camera->config->cameraDistanceClampZMax);
+		coef.z = glm::clamp(coef.z, mins.z, maxs.z);
 
 	// Now recompose with the new coefficients and add back the world position
 	return (forward * coef.x) + (right * coef.y) + (up * coef.z) + expectedPosition;
@@ -80,13 +82,15 @@ glm::vec3 Camera::State::BaseCameraState::ComputeOffsetClamping(PlayerCharacter*
 		forward, right, up, coef
 	);
 
+	auto [mins, maxs] = camera->GetDistanceClamping();
+
 	// Now we can do whatever we want to the interp vector in axis aligned space
 	if (camera->config->cameraDistanceClampXEnable)
-		coef.x = glm::clamp(coef.x, camera->config->cameraDistanceClampXMin, camera->config->cameraDistanceClampXMax);
+		coef.x = glm::clamp(coef.x, mins.x, maxs.x);
 	if (camera->config->cameraDistanceClampYEnable)
-		coef.y = glm::clamp(coef.y, camera->config->cameraDistanceClampYMin, camera->config->cameraDistanceClampYMax);
+		coef.y = glm::clamp(coef.y, mins.y, maxs.y);
 	if (camera->config->cameraDistanceClampZEnable)
-		coef.z = glm::clamp(coef.z, camera->config->cameraDistanceClampZMin, camera->config->cameraDistanceClampZMax);
+		coef.z = glm::clamp(coef.z, mins.z, maxs.z);
 
 	// Now recompose with the new coefficients and add back the world position
 	return (forward * coef.x) + (right * coef.y) + (up * coef.z) + cameraWorldTarget/* + expectedPosition*/;

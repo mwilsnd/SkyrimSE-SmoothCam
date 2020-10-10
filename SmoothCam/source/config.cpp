@@ -68,6 +68,8 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, crosshairMinDistSize),
 		CREATE_JSON_VALUE(obj, crosshairMaxDistSize),
 		CREATE_JSON_VALUE(obj, disableDeltaTime),
+		CREATE_JSON_VALUE(obj, shoulderSwapKey),
+		CREATE_JSON_VALUE(obj, swapXClamping),
 		CREATE_JSON_VALUE(obj, disableDuringDialog),
 		CREATE_JSON_VALUE(obj, currentScalar),
 		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonHorse),
@@ -125,6 +127,8 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, crosshairMinDistSize)
 	VALUE_FROM_JSON(obj, crosshairMaxDistSize)
 	VALUE_FROM_JSON(obj, disableDeltaTime)
+	VALUE_FROM_JSON(obj, shoulderSwapKey)
+	VALUE_FROM_JSON(obj, swapXClamping)
 	VALUE_FROM_JSON(obj, disableDuringDialog)
 	VALUE_FROM_JSON(obj, currentScalar)
 	VALUE_FROM_JSON(obj, comaptIC_FirstPersonHorse)

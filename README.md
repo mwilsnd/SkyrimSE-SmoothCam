@@ -18,7 +18,7 @@ Depending on the age of your processor (~2011 and earlier), you might need to us
 
 ## Installing
 If using one of the pre-compiled releases, just copy the `Data` folder in the archive into your skyrim folder or install via a mod manager.
-If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins`, `hudmenu.swf` to `Data/interface`, `SmoothCam.esp` to `Data/` and `SmoothCamMCM.pex` to `Data/Scripts`. Enable the esp file if you wish to use the MCM, otherwise the module will generate a json file in the plugins folder you can edit to manually configure the camera.
+If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins` (along with the address library database file), `SmoothCam.esp` to `Data/` and `SmoothCamMCM.pex` to `Data/Scripts`. Enable the esp file if you wish to use the MCM, otherwise the module will generate a json file in the plugins folder you can edit to manually configure the camera.
 
 ## Building
 To build the project, clone the repo (remember to include `--recurse-submodules`), then run `make_vs2019.bat` or `make_vs2017.bat`.
@@ -26,7 +26,7 @@ The build scripts require `premake5` and `7-Zip` to be installed and available o
 
 Once premake has finished, open the generated Visual Studio solution, select `Debug` or `Release` and select `Build Solution` from the build dropdown.
 
-Built files are placed in `SmoothCam/bin/<target>/SmoothCam`. Be sure to also copy `hudmenu.swf` from the UI folder into `Data/interface` for the 3D crosshair to work. Copy the esp to `Data/` and the pex file to `Data/Scripts`.
+Built files are placed in `SmoothCam/bin/<target>/SmoothCam`.
 
 To build the papyrus script, you'll need `lua` on the system path. To run the code generation just run `MCM/run_preprocess.bat` which will generate `SmoothCamMCM.psc`.
 From there just compile the generated code like any normal papyrus script.
@@ -46,6 +46,7 @@ use3DBowAimCrosshair | Enables the raycasted crosshair while aiming with a bow
 use3DMagicCrosshair | Enables the raycasted crosshair when magic is equiped
 hideNonCombatCrosshair | Hides the crosshair when no weapon is drawn
 hideCrosshairMeleeCombat | Hides the crosshair when melee weapons are drawn
+enableCrosshairSizeManip | Enable size manipulation of the crosshair
 crosshairNPCHitGrowSize | When the 3D crosshair is over an NPC, grow the size of the crosshair by this amount
 crosshairMinDistSize | Sets the size of the 3D crosshair when the player's aim ray is at the maximum distance
 crosshairMaxDistSize | Sets the size of the 3D crosshair when the player's aim ray is at the minimum distance
@@ -54,6 +55,8 @@ disableDuringDialog | Disables SmoothCam during character-NPC conversations
 comaptIC_FirstPersonHorse | Enables compat code for dealing with issue when running the Improved Camera mod
 comaptIC_FirstPersonDragon | Enables compat code for dealing with issue when running the Improved Camera mod
 compatIC_FirstPersonSitting | Enables compat code for dealing with issue when running the Improved Camera mod
+shoulderSwapKey | The key code used for swapping the X axis when pressed
+swapXClamping | When swapping the shoulder/X axis, also flips the distance clamping X values
 currentScalar | A value from 0 - 21: The scalar function to use for interpolation
 minCameraFollowDistance | The distance the camera follows the player from when at the lowest zoom level
 minCameraFollowRate | The amount of camera latency when the camera is close to the player (lower = more latency)
@@ -100,14 +103,19 @@ OffsetSetting | Description
 --- | ---
 sideOffset | The amount to move the camera to the right
 upOffset | The amount to move the camera up
+zoomOffset | The amount to zoom the camera by
 combatRangedSideOffset | The amount to move the camera to the right during ranged combat
 combatRangedUpOffset | The amount to move the camera up during ranged combat
+combatRangedZoomOffset | The amount to zoom the camera by
 combatMagicSideOffset | The amount to move the camera to the right during magic combat
 combatMagicUpOffset | The amount to move the camera up during magic combat
+combatMagicZoomOffset | The amount to zoom the camera by
 combatMeleeSideOffset | The amount to move the camera to the right during melee combat
 combatMeleeUpOffset | The amount to move the camera up during melee combat
+combatMeleeZoomOffset | The amount to zoom the camera by
 horseSideOffset | The amount to move the camera to the right when on horseback
 horseUpOffset | The amount to move the camera up when on horseback
+horseZoomOffset | The amount to zoom the camera by
 interp | Enable smoothing during this state
 interpRangedCombat | Enable smoothing during this state when in ranged combat
 interpMagicCombat | Enable smoothing during this state when in magic combat

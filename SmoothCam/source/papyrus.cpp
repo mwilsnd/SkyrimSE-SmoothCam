@@ -76,6 +76,7 @@ const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetter
 	IMPL_GETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable)
 	IMPL_GETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable)
 	IMPL_GETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable)
+	IMPL_GETTER("ShoulderSwapXClamping",			swapXClamping)
 
 	IMPL_GETTER("InterpStanding",					standing.interp)
 	IMPL_GETTER("InterpStandingRangedCombat",		standing.interpRangedCombat)
@@ -230,6 +231,10 @@ const std::unordered_map<std::string_view, std::function<float(void)>> floatGett
 	IMPL_GETTER("Dragon:UpOffset",						dragon.upOffset)
 };
 
+const std::unordered_map<std::string_view, std::function<int(void)>> intGetters = {
+	IMPL_GETTER("ShoulderSwapKeyCode", shoulderSwapKey)
+};
+
 const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> stringSetters = {
 	IMPL_SCALAR_METHOD_SETTER("InterpolationMethod", currentScalar)
 	IMPL_SCALAR_METHOD_SETTER("SeparateZInterpMethod", separateZScalar)
@@ -258,6 +263,7 @@ const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetter
 	IMPL_SETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable, bool)
 	IMPL_SETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable, bool)
 	IMPL_SETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable, bool)
+	IMPL_SETTER("ShoulderSwapXClamping",			swapXClamping, bool)
 
 	IMPL_SETTER("InterpStanding",					standing.interp, bool)
 	IMPL_SETTER("InterpStandingRangedCombat",		standing.interpRangedCombat, bool)
@@ -426,6 +432,10 @@ const std::unordered_map<std::string_view, std::function<void(float)>> floatSett
 	IMPL_GROUP_SETTER("Group:Melee:ZoomOffset",			combatMeleeZoomOffset, float)
 };
 
+const std::unordered_map<std::string_view, std::function<void(int)>> intSetters = {
+	IMPL_SETTER("ShoulderSwapKeyCode", shoulderSwapKey, int)
+};
+
 void PapyrusBindings::Bind(VMClassRegistry* registry) {
 	registry->RegisterFunction(
 		new NativeFunction2<StaticFunctionTag, void, BSFixedString, BSFixedString>(
@@ -461,6 +471,19 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 				const auto it = floatSetters.find(var.c_str());
 				if (it != floatSetters.end())
 					it->second(value);
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction2<StaticFunctionTag, void, BSFixedString, SInt32>(
+			"SmoothCam_SetIntConfig",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput, BSFixedString var, SInt32 value) {
+				const auto it = intSetters.find(var.c_str());
+				if (it != intSetters.end())
+					it->second(static_cast<int>(value));
 			},
 			registry
 		)
@@ -506,6 +529,21 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 					return it->second();
 				else
 					return 0.0f;
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction1<StaticFunctionTag, SInt32, BSFixedString>(
+			"SmoothCam_GetIntConfig",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput, BSFixedString var) {
+				const auto it = intGetters.find(var.c_str());
+				if (it != intGetters.end())
+					return static_cast<SInt32>(it->second());
+				else
+					return static_cast<SInt32>(-1);
 			},
 			registry
 		)

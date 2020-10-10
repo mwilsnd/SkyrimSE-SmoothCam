@@ -77,6 +77,11 @@ uintptr_t __fastcall mOnInput(PlayerInputHandler* pThis, InputEvent* input) {
 					if (!g_theCamera.expired() && (lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)) {
 						lockedPtr->OnTogglePOV(ev);
 					}
+				} else {
+					std::shared_ptr<Camera::SmoothCamera> lockedPtr;
+					if (!g_theCamera.expired() && (lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)) {
+						lockedPtr->OnKeyPress(ev);
+					}
 				}
 				
 				break;

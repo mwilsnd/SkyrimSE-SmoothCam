@@ -6,10 +6,12 @@ Import SKSE
 string[] interpMethods
 string[] presets
 
+Function SmoothCam_SetIntConfig(string member, int value) global native
 Function SmoothCam_SetStringConfig(string member, string value) global native
 Function SmoothCam_SetBoolConfig(string member, bool value) global native
 Function SmoothCam_SetFloatConfig(string member, float value) global native
 
+int Function SmoothCam_GetIntConfig(string member) global native
 string Function SmoothCam_GetStringConfig(string member) global native
 bool Function SmoothCam_GetBoolConfig(string member) global native
 float Function SmoothCam_GetFloatConfig(string member) global native
@@ -171,8 +173,35 @@ endFunction
 	}
 }
 
+#constexpr_struct KeyBindSetting {
+	real_int ref = 0
+	string settingName = ""
+	string displayName = ""
+	string desc = ""
+
+	MACRO implControl = {
+		this->ref = AddKeyMapOption(this->displayName, SmoothCam_GetIntConfig(this->settingName))
+	}
+
+	MACRO implSelectHandler = {
+		if (StringUtil.GetLength(a_conflictControl) == 0)
+			SmoothCam_SetIntConfig(this->settingName, a_keyCode)
+			SetKeyMapOptionValue(this->ref, a_keyCode)
+		else
+			if (ShowMessage(a_conflictControl + " conflicts with another control assigned to " + a_conflictName + ".\nAre you sure you want to assign this control?"))
+				SmoothCam_SetIntConfig(this->settingName, a_keyCode)
+				SetKeyMapOptionValue(this->ref, a_keyCode)
+			endIf
+		endIf
+	}
+
+	MACRO implDesc = {
+		SetInfoText(this->desc)
+	}
+}
+
 ScriptMeta scriptMetaInfo -> {
-	version: 8
+	version: 9
 }
 
 ; Presets
@@ -293,6 +322,11 @@ ToggleSetting cameraDistanceClampZEnable -> {
 	settingName: "CameraDistanceClampZEnable"
 	displayName: "Enable Z Distance Clamp"
 	desc: "Clamp the maximum distance the camera may move away from the target position along the Z (up) axis."
+}
+ToggleSetting swapDistanceClampXAxis -> {
+	settingName: "ShoulderSwapXClamping"
+	displayName: "Also Swap X Axis Clamping"
+	desc: "When shoulder swapping, will also swap the distance clamping X axis range."
 }
 
 ListSetting interpMethod -> {
@@ -488,6 +522,12 @@ SliderSetting sepLocalSpaceInterpRate -> {
 	min: 0.01
 	max: 1.0
 	displayFormat: "{2}"
+}
+
+KeyBindSetting shoulderSwapKey -> {
+	settingName: "ShoulderSwapKeyCode"
+	displayName: "Shoulder Swap Key"
+	desc: "Inverts the current X offset of the camera"
 }
 
 ; Crosshair
@@ -1366,7 +1406,7 @@ event OnPageReset(string a_page)
 
 		AddHeaderOption("Misc")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			zoomMul, disableDeltaTime
+			shoulderSwapKey, swapDistanceClampXAxis, zoomMul, disableDeltaTime
 		})
 	elseIf (a_page == " Crosshair")
 		AddHeaderOption("3D Crosshair Settings")
@@ -1645,12 +1685,17 @@ event OnOptionInputAccept(int a_option, string a_input)
 	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implAcceptHandler, {IMPL_ALL_IMPLS_OF_STRUCT(SavePresetSetting)})
 endEvent
 
+event OnOptionKeyMapChange(int a_option, int a_keyCode, string a_conflictControl, string a_conflictName)
+	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implSelectHandler, {IMPL_ALL_IMPLS_OF_STRUCT(KeyBindSetting)})
+endEvent
+
 event OnOptionHighlight(int a_option)
 	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implDesc, {
 		IMPL_ALL_IMPLS_OF_STRUCT(SliderSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(ToggleSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(ListSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(SavePresetSetting),
-		IMPL_ALL_IMPLS_OF_STRUCT(LoadPresetSetting)
+		IMPL_ALL_IMPLS_OF_STRUCT(LoadPresetSetting),
+		IMPL_ALL_IMPLS_OF_STRUCT(KeyBindSetting)
 	})
 endEvent

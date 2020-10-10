@@ -168,25 +168,27 @@ do class "ConstexprStructToVars" : namespace "papyrus.preproc" {
 					gen_member = gen_member:trim()
 
 					if not generated[member.."."..gen_decl.."."..gen_member] then
-						local typeInfo = self.m_tblStructTypes[self.m_tblStructImpls[gen_decl].type]
+						if self.m_tblStructImpls[gen_decl] and self.m_tblStructTypes[self.m_tblStructImpls[gen_decl].type] then
+							local typeInfo = self.m_tblStructTypes[self.m_tblStructImpls[gen_decl].type]
 
-						local usage = self.m_tblStructMemberUsage[gen_decl.."."..gen_member]
-						if usage then
-							code = code:replace( gen_decl.."."..gen_member, usage.name )
-						else
-							if typeInfo.members[gen_member].isreal then
-								code = code:replace( gen_decl.."."..gen_member, gen_decl.. "_".. gen_member )
+							local usage = self.m_tblStructMemberUsage[gen_decl.."."..gen_member]
+							if usage then
+								code = code:replace( gen_decl.."."..gen_member, usage.name )
 							else
-								-- Value literal
-								local value = self.m_tblStructImpls[gen_decl].members[gen_member]
-								if not value then
-									value = typeInfo.members[gen_member].value
+								if typeInfo.members[gen_member].isreal then
+									code = code:replace( gen_decl.."."..gen_member, gen_decl.. "_".. gen_member )
+								else
+									-- Value literal
+									local value = self.m_tblStructImpls[gen_decl].members[gen_member]
+									if not value then
+										value = typeInfo.members[gen_member].value
+									end
+									code = code:replace( gen_decl.."."..gen_member, value )
 								end
-								code = code:replace( gen_decl.."."..gen_member, value )
 							end
-						end
 
-						generated[member.."."..gen_decl.."."..gen_member] = true
+							generated[member.."."..gen_decl.."."..gen_member] = true
+						end
 					end
 				end
 

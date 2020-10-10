@@ -11,6 +11,7 @@
 #include <fstream>
 #include <array>
 #include <mutex>
+#include <tuple>
 
 #include <codeanalysis\warnings.h>
 #pragma warning( push )

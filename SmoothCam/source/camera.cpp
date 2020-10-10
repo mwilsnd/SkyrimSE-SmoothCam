@@ -22,6 +22,12 @@ void Camera::SmoothCamera::OnTogglePOV(const ButtonEvent* ev) noexcept {
 	povWasPressed = true;
 }
 
+void Camera::SmoothCamera::OnKeyPress(const ButtonEvent* ev) noexcept {
+	if (config->shoulderSwapKey >= 0 && config->shoulderSwapKey == ev->keyMask && ev->timer <= 0.000001f) {
+		shoulderSwap = shoulderSwap == 1 ? -1 : 1;
+	}
+}
+
 void Camera::SmoothCamera::OnDialogMenuChanged(const MenuOpenCloseEvent* const ev) noexcept {
 	dialogMenuOpen = ev->opening;
 }
@@ -397,9 +403,9 @@ float Camera::SmoothCamera::GetCurrentCameraSideOffset(PlayerCharacter* player, 
 	switch (currentState) {
 		case GameState::CameraState::Horseback: {
 			if (GameState::IsBowDrawn(player)) {
-				return config->bowAim.horseSideOffset;
+				return config->bowAim.horseSideOffset * shoulderSwap;
 			} else {
-				return GetActiveWeaponStateSideOffset(player, &config->horseback);
+				return GetActiveWeaponStateSideOffset(player, &config->horseback) * shoulderSwap;
 			}
 		}
 		default:
@@ -412,14 +418,14 @@ float Camera::SmoothCamera::GetCurrentCameraSideOffset(PlayerCharacter* player, 
 		case CameraActionState::Sitting:
 		case CameraActionState::Aiming:
 		case CameraActionState::Swimming: {
-			return offsetState.currentGroup->sideOffset;
+			return offsetState.currentGroup->sideOffset * shoulderSwap;
 		}
 		case CameraActionState::Sneaking:
 		case CameraActionState::Sprinting:
 		case CameraActionState::Walking:
 		case CameraActionState::Running:
 		case CameraActionState::Standing: {
-			return GetActiveWeaponStateSideOffset(player, offsetState.currentGroup);
+			return GetActiveWeaponStateSideOffset(player, offsetState.currentGroup) * shoulderSwap;
 		}
 		default: {
 			break;
@@ -555,6 +561,23 @@ float Camera::SmoothCamera::GetCurrentSmoothingScalar(const float distance, Scal
 	}
 
 	return mmath::RunScalarFunction<float>(scalarMethod, interpValue);
+}
+
+// Returns the user defined distance clamping vector pair
+std::tuple<glm::vec3, glm::vec3> Camera::SmoothCamera::GetDistanceClamping() const noexcept {
+	float minsX = config->cameraDistanceClampXMin;
+	float maxsX = config->cameraDistanceClampXMax;
+	
+	if (config->swapXClamping && shoulderSwap < 1) {
+		std::swap(minsX, maxsX);
+		maxsX *= -1.0f;
+		minsX *= -1.0f;
+	}
+
+	return std::tie(
+		glm::vec3{ minsX, config->cameraDistanceClampYMin, config->cameraDistanceClampZMin },
+		glm::vec3{ maxsX, config->cameraDistanceClampYMax, config->cameraDistanceClampZMax }
+	);
 }
 
 // Returns true if interpolation is allowed in the current state

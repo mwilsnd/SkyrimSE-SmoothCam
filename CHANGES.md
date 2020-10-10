@@ -1,3 +1,10 @@
+## Beta 1
+* Bumped module and MCM version number to 9
+* Promoted to beta.
+* Added shoulder swapping via hotkey.
+* Added separable option for swapping the distance clamping X axis when swapping shoulders.
+* Fixed issue with `preproc_constexpr_struct.lua` incorrectly assuming all `a.b` syntax was a struct macro to be replaced.
+
 ## Alpha 1.7
 * Bumped module and MCM version number to 8
 * Added a "group edit" tab in the MCM, allowing users to edit all offset groups at once.
