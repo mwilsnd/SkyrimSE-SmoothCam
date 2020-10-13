@@ -1,5 +1,6 @@
 #include "camera_state.h"
 #include "camera.h"
+#include "raycast.h"
 
 Camera::State::BaseCameraState::BaseCameraState(Camera::SmoothCamera* camera) noexcept : camera(camera) {}
 
@@ -194,13 +195,13 @@ glm::vec3 Camera::State::BaseCameraState::UpdateInterpolatedLocalPosition(Player
 		return rot;
 	}
 	
-	const auto pos = mmath::Interpolate<glm::vec3, float>(
+	const auto pos = mmath::Interpolate<glm::dvec3, double>(
 		camera->lastLocalPosition, rot, camera->GetCurrentSmoothingScalar(
 			camera->config->localScalarRate,
 			ScalarSelector::LocalSpace
 		)
 	);
-	StoreLastLocalPosition(pos);
+	StoreLastLocalPosition(static_cast<glm::vec3>(pos));
 	return pos;
 }
 
@@ -215,21 +216,21 @@ glm::vec3 Camera::State::BaseCameraState::UpdateInterpolatedWorldPosition(Player
 	}
 
 	if (GetConfig()->separateZInterp) {
-		const auto xy = mmath::Interpolate<glm::vec3, float>(
+		const auto xy = mmath::Interpolate<glm::dvec3, double>(
 			camera->lastWorldPosition, pos, camera->GetCurrentSmoothingScalar(distance)
 		);
 
-		const auto z = mmath::Interpolate<glm::vec3, float>(
+		const auto z = mmath::Interpolate<glm::dvec3, double>(
 			camera->lastWorldPosition, pos, camera->GetCurrentSmoothingScalar(distance, ScalarSelector::SepZ)
 		);
 
 		return { xy.x, xy.y, z.z };
 
 	} else {
-		const auto ret = mmath::Interpolate<glm::vec3, float>(
+		const auto ret = mmath::Interpolate<glm::dvec3, double>(
 			camera->lastWorldPosition, pos, camera->GetCurrentSmoothingScalar(distance)
 		);
-		return ret;
+		return static_cast<glm::vec3>(ret);
 	}
 }
 

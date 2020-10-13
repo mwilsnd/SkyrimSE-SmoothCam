@@ -60,6 +60,7 @@ const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetter
 	IMPL_GETTER("FirstPersonHorse",					comaptIC_FirstPersonHorse)
 	IMPL_GETTER("FirstPersonDragon",				comaptIC_FirstPersonDragon)
 	IMPL_GETTER("FirstPersonSitting",				compatIC_FirstPersonSitting)
+	IMPL_GETTER("IFPVCompat",						compatIFPV)
 	IMPL_GETTER("InterpolationEnabled",				enableInterp)
 	IMPL_GETTER("SeparateLocalInterpolation",		separateLocalInterp)
 	IMPL_GETTER("DisableDeltaTime",					disableDeltaTime)
@@ -247,6 +248,7 @@ const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetter
 	IMPL_SETTER("FirstPersonHorse",					comaptIC_FirstPersonHorse, bool)
 	IMPL_SETTER("FirstPersonDragon",				comaptIC_FirstPersonDragon, bool)
 	IMPL_SETTER("FirstPersonSitting",				compatIC_FirstPersonSitting, bool)
+	IMPL_SETTER("IFPVCompat",						compatIFPV, bool)	
 	IMPL_SETTER("InterpolationEnabled",				enableInterp, bool)
 	IMPL_SETTER("SeparateLocalInterpolation",		separateLocalInterp, bool)
 	IMPL_SETTER("DisableDeltaTime",					disableDeltaTime, bool)
@@ -577,6 +579,17 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, SInt32 index) {
 				return Config::GetPresetSlotName(index);
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction0<StaticFunctionTag, void>(
+			"SmoothCam_ResetConfig",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput) {
+				Config::ResetConfig();
 			},
 			registry
 		)

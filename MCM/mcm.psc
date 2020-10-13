@@ -10,6 +10,7 @@ Function SmoothCam_SetIntConfig(string member, int value) global native
 Function SmoothCam_SetStringConfig(string member, string value) global native
 Function SmoothCam_SetBoolConfig(string member, bool value) global native
 Function SmoothCam_SetFloatConfig(string member, float value) global native
+Function SmoothCam_ResetConfig() global native
 
 int Function SmoothCam_GetIntConfig(string member) global native
 string Function SmoothCam_GetStringConfig(string member) global native
@@ -83,6 +84,27 @@ endFunction
 	MACRO implSelectHandler = {
 		SmoothCam_SetBoolConfig(this->settingName, !SmoothCam_GetBoolConfig(this->settingName))
 		SetToggleOptionValue(a_option, SmoothCam_GetBoolConfig(this->settingName))
+	}
+
+	MACRO implDesc = {
+		SetInfoText(this->desc)
+	}
+}
+
+#constexpr_struct ResetSetting {
+	real_int ref = 0
+	string displayName = ""
+	string desc = ""
+
+	MACRO implControl = {
+		this->ref = AddToggleOption(this->displayName, false)
+	}
+
+	MACRO implSelectHandler = {
+		if (ShowMessage("Are you sure? This will reset all settings to their default values."))
+			SmoothCam_ResetConfig()
+			ShowMessage("Settings reset.")
+		endIf
 	}
 
 	MACRO implDesc = {
@@ -201,7 +223,7 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 9
+	version: 10
 }
 
 ; Presets
@@ -275,6 +297,17 @@ ToggleSetting disableDuringDialog -> {
 	settingName: "DisableDuringDialog"
 	displayName: "Disable During Dialog"
 	desc: "Disables SmoothCam when the dialog menu is open."
+}
+ToggleSetting ifpvCompat -> {
+	settingName: "IFPVCompat"
+	displayName: "Immersive First Person View"
+	desc: "Enable compat fixes for Improved First Person View."
+}
+
+; Reset
+ResetSetting reset -> {
+	displayName: "Reset All Settings"
+	desc: "Set all settings back to their defual values."
 }
 
 ; Following
@@ -1370,6 +1403,9 @@ event OnPageReset(string a_page)
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			icFirstPersonHorse, icFirstPersonDragon, icFirstPersonSitting
 		})
+
+		AddHeaderOption("Immersive First Person View")
+		ifpvCompat->!implControl
 	elseIf (a_page == " Following")
 		AddHeaderOption("Interpolation")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
@@ -1406,7 +1442,7 @@ event OnPageReset(string a_page)
 
 		AddHeaderOption("Misc")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			shoulderSwapKey, swapDistanceClampXAxis, zoomMul, disableDeltaTime
+			shoulderSwapKey, swapDistanceClampXAxis, zoomMul, disableDeltaTime, reset
 		})
 	elseIf (a_page == " Crosshair")
 		AddHeaderOption("3D Crosshair Settings")
@@ -1657,6 +1693,7 @@ endEvent
 event OnOptionSelect(int a_option)
 	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implSelectHandler, {
 		IMPL_ALL_IMPLS_OF_STRUCT(ToggleSetting),
+		IMPL_ALL_IMPLS_OF_STRUCT(ResetSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(LoadPresetSetting)
 	})
 endEvent
@@ -1693,6 +1730,7 @@ event OnOptionHighlight(int a_option)
 	IMPL_IFCHAIN_MACRO_INVOKE(a_option, ref, implDesc, {
 		IMPL_ALL_IMPLS_OF_STRUCT(SliderSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(ToggleSetting),
+		IMPL_ALL_IMPLS_OF_STRUCT(ResetSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(ListSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(SavePresetSetting),
 		IMPL_ALL_IMPLS_OF_STRUCT(LoadPresetSetting),

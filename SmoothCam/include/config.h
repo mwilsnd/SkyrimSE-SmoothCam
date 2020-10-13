@@ -75,6 +75,8 @@ namespace Config {
 	typedef struct gameConf {
 		float f3PArrowTiltUpAngle = 2.5f;
 		float f3PBoltTiltUpAngle = 2.5f;
+		float fNearDistance = 15.0f;
+		float fMinCurrentZoom = -0.200000003;
 	} GameConfig;
 
 	typedef struct offsetGroup {
@@ -127,9 +129,10 @@ namespace Config {
 		
 		// Comapt
 		bool disableDuringDialog = false;
-		bool comaptIC_FirstPersonHorse = true;
-		bool comaptIC_FirstPersonDragon = true;
-		bool compatIC_FirstPersonSitting = true;
+		bool comaptIC_FirstPersonHorse = false;
+		bool comaptIC_FirstPersonDragon = false;
+		bool compatIC_FirstPersonSitting = false;
+		bool compatIFPV = false;
 
 		// Primary interpolation
 		bool enableInterp = true;
@@ -142,15 +145,15 @@ namespace Config {
 
 		// Separate local space interpolation
 		bool separateLocalInterp = true;
-		ScalarMethods separateLocalScalar = ScalarMethods::CIRC_IN;
-		float localScalarRate = 0.75f;
+		ScalarMethods separateLocalScalar = ScalarMethods::EXP_IN;
+		float localScalarRate = 1.0f;
 
 		// Separate Z
 		bool separateZInterp = true;
 		ScalarMethods separateZScalar = ScalarMethods::SINE_IN;
 		float separateZMaxSmoothingDistance = 60.0f;
-		float separateZMinFollowRate = 0.15f;
-		float separateZMaxFollowRate = 0.4f;
+		float separateZMinFollowRate = 0.2f;
+		float separateZMaxFollowRate = 0.6f;
 
 		// Offset interpolation
 		bool enableOffsetInterpolation = true;
@@ -168,7 +171,7 @@ namespace Config {
 		float cameraDistanceClampXMax = 35.0f;
 		bool cameraDistanceClampYEnable = true;
 		float cameraDistanceClampYMin = -100.0f;
-		float cameraDistanceClampYMax = 20.0f;
+		float cameraDistanceClampYMax = 10.0f;
 		bool cameraDistanceClampZEnable = true;
 		float cameraDistanceClampZMin = -60.0f;
 		float cameraDistanceClampZMax = 60.0f;
@@ -198,6 +201,7 @@ namespace Config {
 	void ReadConfigFile();
 	void SaveCurrentConfig();
 	UserConfig* GetCurrentConfig() noexcept;
+	void ResetConfig();
 
 	// Returns "" if ok, otherwise has an error message
 	BSFixedString SaveConfigAsPreset(int slot, const BSFixedString& name);

@@ -106,8 +106,11 @@
 #include "addrlib/offsets.h"
 
 #ifdef _DEBUG
+//#   define DEBUG_DRAWING
 #   include "profile.h"
+#   ifdef DEBUG_DRAWING
 #   include "debug_drawing.h"
+#   endif
 #endif
 
 #include "basicdetour.h"

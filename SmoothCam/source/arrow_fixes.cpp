@@ -1,7 +1,7 @@
 #include "arrow_fixes.h"
 #include "game_state.h"
 
-#ifdef _DEBUG
+#ifdef DEBUG_DRAWING
 SkyrimSE::ArrowProjectile* current;
 std::mutex segmentLock;
 std::vector<std::tuple<glm::vec3, glm::vec3>> segments;
@@ -14,19 +14,6 @@ void ArrowFixes::Draw() {
 			mmath::PointToScreen(std::get<1>(cmd))
 		));
 	}
-}
-
-typedef uintptr_t(*UpdateTraceArrowProjectile)(SkyrimSE::ArrowProjectile*, NiPoint3*, NiPoint3*);
-UpdateTraceArrowProjectile fnUpdateTraceArrowProjectile;
-std::unique_ptr<BasicDetour> detUpdateTraceArrowProjectile;
-uintptr_t mUpdateTraceArrowProjectile(SkyrimSE::ArrowProjectile* arrow, NiPoint3* to, NiPoint3* from) {
-	if (arrow->shooter == 0x00100000) {
-		std::lock_guard<std::mutex> lock(segmentLock);
-		segments.push_back(std::make_tuple(glm::vec3{ from->x, from->y, from->z }, glm::vec3{ to->x, to->y, to->z }));
-	}
-
-	auto ret = fnUpdateTraceArrowProjectile(arrow, to, from);
-	return ret;
 }
 
 typedef UInt32(*MaybeSpawnArrow)(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
@@ -46,10 +33,60 @@ UInt32 mMaybeSpawnArrow(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchDat
 		std::lock_guard<std::mutex> lock(segmentLock);
 		segments.clear();
 	}
+	return ret;
+}
 
+typedef uintptr_t(*UpdateTraceArrowProjectile)(SkyrimSE::ArrowProjectile*, NiPoint3&, NiPoint3&);
+UpdateTraceArrowProjectile fnUpdateTraceArrowProjectile;
+std::unique_ptr<BasicDetour> detUpdateTraceArrowProjectile;
+uintptr_t mUpdateTraceArrowProjectile(SkyrimSE::ArrowProjectile* arrow, NiPoint3& to, NiPoint3& from) {
+	if (arrow->shooter == 0x00100000) {
+		std::lock_guard<std::mutex> lock(segmentLock);
+		segments.push_back(std::make_tuple(glm::vec3{ from.x, from.y, from.z }, glm::vec3{ to.x, to.y, to.z }));
+	}
+	auto ret = fnUpdateTraceArrowProjectile(arrow, to, from);
 	return ret;
 }
 #endif
+
+//FUN_14084b430:49866
+typedef void(*FactorCameraOffset)(CorrectedPlayerCamera* camera, NiPoint3& pos, bool fac);
+FactorCameraOffset fnFactorCameraOffset;
+std::unique_ptr<BasicDetour> detFactorCameraOffset;
+void mFactorCameraOffset(CorrectedPlayerCamera* camera, NiPoint3& pos, bool fac) {
+	if (fac) {
+		fnFactorCameraOffset(camera, pos, fac);
+		return;
+	}
+
+	auto tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraStates[CorrectedPlayerCamera::kCameraState_ThirdPerson2]);
+	if (!tps) {
+		fnFactorCameraOffset(camera, pos, fac);
+		return;
+	}
+
+	NiQuaternion quat;
+	NiMatrix33 mat;
+
+	tps->UpdateRotation();
+	typedef void(__thiscall CorrectedThirdPersonState::* GetRotation)(NiQuaternion&);
+	(tps->*reinterpret_cast<GetRotation>(&CorrectedThirdPersonState::Unk_04))(quat);
+
+	//1cfa50:makeMatrix33Qua
+	typedef void(*makeMatrix33Qua)(NiQuaternion& q, NiMatrix33& m);
+	Offsets::Get<makeMatrix33Qua>(15612)(quat, mat);
+
+	NiPoint3 offsetActual;
+
+	// SSE Engine Fixes will call GetEyeVector with factorCameraOffset = true
+	// We appear to screw this computation up as a side effect of correcting the interaction crosshair
+	// So, yeah. Just fix it here.
+	if (GameState::IsThirdPerson(camera) || GameState::IsInHorseCamera(camera) || GameState::IsInDragonCamera(camera))
+		offsetActual = { 0, 0, 0 };
+	else
+		offsetActual = tps->offsetVector;
+	pos = mat * offsetActual;
+}
 
 typedef void(*UpdateArrowFlightPath)(SkyrimSE::ArrowProjectile* arrow);
 UpdateArrowFlightPath fnUpdateArrowFlightPath;
@@ -140,6 +177,20 @@ void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 
 bool ArrowFixes::Attach() {
 	{
+		//FUN_14084b430:FactorCameraOffset:GetEyeVector
+		fnFactorCameraOffset = Offsets::Get<FactorCameraOffset>(49866);
+		detFactorCameraOffset = std::make_unique<BasicDetour>(
+			reinterpret_cast<void**>(&fnFactorCameraOffset),
+			mFactorCameraOffset
+		);
+
+		if (!detFactorCameraOffset->Attach()) {
+			_ERROR("Failed to place detour on target function, this error is fatal.");
+			FatalError(L"Failed to place detour on target function, this error is fatal.");
+		}
+	}
+
+	{
 		//140750150::UpdateArrowFlightPath
 		fnUpdateArrowFlightPath = Offsets::Get<UpdateArrowFlightPath>(42998);
 		detArrowFlightPath = std::make_unique<BasicDetour>(
@@ -153,21 +204,7 @@ bool ArrowFixes::Attach() {
 		}
 	}
 
-#ifdef _DEBUG
-	{
-		//140751430::UpdateTraceArrowProjectile
-		fnUpdateTraceArrowProjectile = Offsets::Get<UpdateTraceArrowProjectile>(43008);
-		detUpdateTraceArrowProjectile = std::make_unique<BasicDetour>(
-			reinterpret_cast<void**>(&fnUpdateTraceArrowProjectile),
-			mUpdateTraceArrowProjectile
-		);
-
-		if (!detUpdateTraceArrowProjectile->Attach()) {
-			_ERROR("Failed to place detour on target function, this error is fatal.");
-			FatalError(L"Failed to place detour on target function, this error is fatal.");
-		}
-	}
-
+#ifdef DEBUG_DRAWING
 	{
 		arrOrig = Offsets::Get<MaybeSpawnArrow>(42928);
 		detMaybeArrow = std::make_unique<BasicDetour>(
@@ -176,6 +213,20 @@ bool ArrowFixes::Attach() {
 		);
 
 		if (!detMaybeArrow->Attach()) {
+			_ERROR("Failed to place detour on target function, this error is fatal.");
+			FatalError(L"Failed to place detour on target function, this error is fatal.");
+		}
+	}
+
+	{
+		//140751430::UpdateTraceArrowProjectile
+		fnUpdateTraceArrowProjectile = Offsets::Get<UpdateTraceArrowProjectile>(43008);
+		detUpdateTraceArrowProjectile = std::make_unique<BasicDetour>(
+			reinterpret_cast<void**>(&fnUpdateTraceArrowProjectile),
+			mUpdateTraceArrowProjectile
+			);
+
+		if (!detUpdateTraceArrowProjectile->Attach()) {
 			_ERROR("Failed to place detour on target function, this error is fatal.");
 			FatalError(L"Failed to place detour on target function, this error is fatal.");
 		}

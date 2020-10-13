@@ -8,6 +8,9 @@ public:
 	virtual void Unk_09(void);						    // 0x48
 	virtual void Unk_0A(void);						    // 0x50
 	virtual void UpdateMode(bool weaponDrawn);		    // 0x58
+	virtual void Unk01();
+	virtual void Unk02();
+	virtual void UpdateRotation();
 
 	PlayerInputHandler		inputHandler;				// 20
 	NiNode*                 cameraNode;				    // 30

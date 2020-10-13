@@ -1,3 +1,18 @@
+## Beta 1.1
+* Bumped module and MCM version number to 10
+* Added a compatibility patch for Immersive First Person View.
+* Tweaked Improved Camera compatibility when on horseback.
+* Remove dynamic casting for camera state method invocations, not really required.
+* Config now reads fNearDistance, in case the player changes it - changing it isn't really advised though if you use Immersive First Person View (We check the expected near value against what it actually is, combined with a distance check, to try and figure out if we are in IFPV's hacked first person mode).
+* Config now reads fMinCurrentZoom rather than use the hard coded value.
+* Adjusted config defaults to no longer enable compat options - these should be opt-in.
+* Using new raycasting method for the crosshair, dropped the jank custom intersection test.
+* Fix arrow and magic projectiles spawning behind the player when using the archery patch with SSE Engine Fixes.
+* Changed some of the interpolation math to FP64 to gain a bit more precision (might not end up being necessary).
+* Switched to SKSE's ITimer over using naked qpc.
+* Updated config defaults and added a new MCM option to restore default values.
+* As some users have reported local space smoothing causing jitter, the local space smoothing rate now defaults to 1, making it opt-in. Jitter is mostly caused by a sub-60 frame rate, currently looking into options for correcting jitter in a later update.
+
 ## Beta 1
 * Bumped module and MCM version number to 9
 * Promoted to beta.

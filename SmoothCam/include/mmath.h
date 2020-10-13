@@ -52,15 +52,6 @@ namespace mmath {
 	void DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 		glm::vec3& forward, glm::vec3& right, glm::vec3& up, glm::vec3& coef) noexcept;
 
-	// Construct an AABB for an actor
-	AABB GetReferAABB(TESObjectREFR* ref);
-	AABB RotateAABB(const AABB& axisAligned, const NiMatrix33& mat) noexcept;
-	AABB GetActorAABB(Actor* actor);
-
-	// Ray-AABB intersect
-	bool IntersectRayAABB(const glm::vec3& start, const glm::vec3& dir, const AABB& aabb,
-		glm::vec3& hitPos) noexcept;
-
 	glm::vec2 PointToScreen(const glm::vec3& point);
 
 	template<typename T, typename S>

@@ -2,13 +2,24 @@
 #include "camera.h"
 #include "arrow_fixes.h"
 
+#include <common/ITimer.h>
+
 static PLH::VFuncMap origVFuncs_PlayerInput;
 static PLH::VFuncMap origVFuncs_MenuOpenClose;
 std::weak_ptr<Camera::SmoothCamera> g_theCamera;
+
+static ITimer timer;
 double curFrame = 0.0;
 double lastFrame = 0.0;
 
-double GetTime() noexcept {
+double curQPC = 0.0;
+double lastQPC = 0.0;
+
+static double GetTime() noexcept {
+	return timer.GetElapsedTime();
+}
+
+static double GetQPC() noexcept {
 	LARGE_INTEGER f, i;
 	if (QueryPerformanceCounter(&i) && QueryPerformanceFrequency(&f)) {
 		auto frequency = 1.0 / static_cast<double>(f.QuadPart);
@@ -21,23 +32,40 @@ void StepFrameTime() noexcept {
 	lastFrame = curFrame;
 	curFrame = GetTime();
 
-#ifdef _DEBUG
+	lastQPC = curQPC;
+	curQPC = GetQPC();
+
+#ifdef DEBUG_DRAWING
 	ArrowFixes::Draw();
 #endif
 }
 
+double CurTime() noexcept {
+	return curFrame;
+}
+
+double CurQPC() noexcept {
+	return curQPC;
+}
+
 double GetFrameDelta() noexcept {
-	return static_cast<float>(curFrame - lastFrame);
+	return curFrame - lastFrame;
+}
+
+double GetQPCDelta() noexcept {
+	return curQPC - lastQPC;
 }
 
 #define CAMERA_UPDATE_DETOUR_IMPL(name)															\
 static PLH::VFuncMap origVFuncs_##name##;														\
 void __fastcall mCameraStateUpdate##name##(TESCameraState* pThis, void* unk) {					\
-	reinterpret_cast<Detours::CameraOnUpdate>(origVFuncs_##name##.at(3))(pThis, unk);			\
 	StepFrameTime();																			\
+	std::shared_ptr<Camera::SmoothCamera> lockedPtr;											\
 	auto player = *g_thePlayer;																	\
 	auto camera = CorrectedPlayerCamera::GetSingleton();										\
-	std::shared_ptr<Camera::SmoothCamera> lockedPtr;											\
+	if ((camera && player); lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)				\
+	lockedPtr->PreGameUpdate(player, camera);													\
+	reinterpret_cast<Detours::CameraOnUpdate>(origVFuncs_##name##.at(3))(pThis, unk);			\
 	if ((camera && player); lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)				\
 		lockedPtr->UpdateCamera(player, camera);												\
 }
@@ -108,6 +136,7 @@ EventResult __fastcall mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent
 
 bool Detours::Attach(std::shared_ptr<Camera::SmoothCamera> theCamera) {
 	g_theCamera = theCamera;
+	timer.Start();
 
 	{
 		PLH::VFuncSwapHook playerInputHooks(

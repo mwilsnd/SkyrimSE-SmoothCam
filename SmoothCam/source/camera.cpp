@@ -1,11 +1,15 @@
 #include "camera.h"
 #include "arrow_fixes.h"
 #ifdef _DEBUG
+#ifdef DEBUG_DRAWING
 #include "debug_drawing.h"
 #endif
+#endif
 
+double CurTime() noexcept;
+double CurQPC() noexcept;
 double GetFrameDelta() noexcept;
-double GetTime() noexcept;
+double GetQPCDelta() noexcept;
 
 Camera::SmoothCamera::SmoothCamera() noexcept : config(Config::GetCurrentConfig()) {
 	cameraStates[static_cast<size_t>(GameState::CameraState::ThirdPerson)] =
@@ -48,6 +52,40 @@ const bool Camera::SmoothCamera::UpdateCameraPOVState(const PlayerCharacter* pla
 }
 
 #pragma region Camera state updates
+// Check if the camera is near the player's head (for first person mods)
+bool Camera::SmoothCamera::CameraNearHead(const PlayerCharacter* player, const CorrectedPlayerCamera* camere, float cutOff) {
+	// Grab the eye vector, if we can't find the head node the origin will be our fallback
+	NiPoint3 niOrigin, niNormal;
+	typedef void(__thiscall PlayerCharacter::* GetEyeVector)(NiPoint3& origin, NiPoint3& normal, bool factorCameraOffset) const;
+	(player->*reinterpret_cast<GetEyeVector>(&PlayerCharacter::Unk_C2))(niOrigin, niNormal, false);
+
+	BSFixedString name = "NPC Head [Head]";
+	auto node = player->loadedState->node->GetObjectByName(&name.data);
+	if (node) {
+		niOrigin = node->m_worldTransform.pos;
+	}
+
+	const auto dist = glm::distance(
+		glm::vec3{
+			niOrigin.x,
+			niOrigin.y,
+			niOrigin.z
+		},
+		gameLastActualPosition
+	);
+
+	return dist <= cutOff;
+}
+
+// Immersive First Person patch
+// Kind of in a bind here due to how IFPV patches the camera state transition, combined
+// with the point during code execution when we run vs. they run - Just do a distance test
+bool Camera::SmoothCamera::IFPV_InFirstPersonState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
+	// IFPV also changes the near plane which we can check to reduce false positives
+	// This is pretty damn hackey but without a better way to detect this we don't have much choice
+	return (CameraNearHead(player, camera) && lastNearPlane != Config::GetGameConfig()->fNearDistance);
+}
+
 // Returns the current camera state for use in selecting an update method
 const GameState::CameraState Camera::SmoothCamera::GetCurrentCameraState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) {
 	GameState::CameraState newState = GameState::CameraState::Unknown;
@@ -62,11 +100,28 @@ const GameState::CameraState Camera::SmoothCamera::GetCurrentCameraState(const P
 	}
 
 	newState = GameState::GetCameraState(player, camera);
-	if (newState == GameState::CameraState::Horseback && config->comaptIC_FirstPersonHorse) {
+
+	const auto minZoom = Config::GetGameConfig()->fMinCurrentZoom;
+	
+	if (config->compatIFPV && (newState == GameState::CameraState::ThirdPerson || newState == GameState::CameraState::ThirdPersonCombat)) {
+		const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraState);
+		if (tps->cameraZoom == minZoom && tps->cameraLastZoom == minZoom) {
+			// IFPV
+			if (IFPV_InFirstPersonState(player, camera))
+				newState = GameState::CameraState::FirstPerson;
+		}
+	} else if (config->compatIFPV && newState == GameState::CameraState::Horseback) {
+		// ditto
+		if (IFPV_InFirstPersonState(player, camera))
+			newState = GameState::CameraState::FirstPerson;
+	}
+	
+	if (newState == GameState::CameraState::Horseback && config->comaptIC_FirstPersonHorse && !config->compatIFPV) {
 		const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraState);
 		if (tps) {
-			if ((tps->cameraZoom == -SKYRIM_MIN_ZOOM_FRACTION && tps->cameraLastZoom == -SKYRIM_MIN_ZOOM_FRACTION) ||
-				currentActionState == CameraActionState::FirstPersonHorseback)
+			if ((tps->cameraZoom == minZoom && tps->cameraLastZoom == minZoom) ||
+				currentActionState == CameraActionState::FirstPersonHorseback ||
+				CameraNearHead(player, camera))
 			{
 				if (povWasPressed)
 					newState = GameState::CameraState::Horseback;
@@ -81,7 +136,7 @@ const GameState::CameraState Camera::SmoothCamera::GetCurrentCameraState(const P
 	} else if (newState == GameState::CameraState::Dragon && config->comaptIC_FirstPersonDragon) {
 		const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraState);
 		if (tps) {
-			if ((tps->cameraZoom == -SKYRIM_MIN_ZOOM_FRACTION && tps->cameraLastZoom == -SKYRIM_MIN_ZOOM_FRACTION) ||
+			if ((tps->cameraZoom == minZoom && tps->cameraLastZoom == minZoom) ||
 				currentActionState == CameraActionState::FirstPersonDragon)
 			{
 				newState = GameState::CameraState::FirstPerson;
@@ -173,28 +228,16 @@ void Camera::SmoothCamera::OnCameraStateTransition(const PlayerCharacter* player
 {
 	switch (oldState) {
 		case GameState::CameraState::ThirdPerson: {
-			if (cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))) {
-				dynamic_cast<State::ThirdpersonState*>(
-					cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson)).get()
-				)->OnEnd(player, camera);
-				break;
-			}
+			cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))->OnEnd(player, camera);
+			break;
 		}
 		case GameState::CameraState::ThirdPersonCombat: {
-			if (cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))) {
-				dynamic_cast<State::ThirdpersonCombatState*>(
-					cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat)).get()
-				)->OnEnd(player, camera);
-				break;
-			}
+			cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))->OnEnd(player, camera);
+			break;
 		}
 		case GameState::CameraState::Horseback: {
-			if (cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))) {
-				dynamic_cast<State::ThirdpersonHorseState*>(
-					cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback)).get()
-				)->OnEnd(player, camera);
-				break;
-			}
+			cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))->OnEnd(player, camera);
+			break;
 		}
 		default:
 			break;
@@ -202,28 +245,16 @@ void Camera::SmoothCamera::OnCameraStateTransition(const PlayerCharacter* player
 
 	switch (newState) {
 		case GameState::CameraState::ThirdPerson: {
-			if (cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))) {
-				dynamic_cast<State::ThirdpersonState*>(
-					cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson)).get()
-				)->OnBegin(player, camera);
-				break;
-			}
+			cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))->OnBegin(player, camera);
+			break;
 		}
 		case GameState::CameraState::ThirdPersonCombat: {
-			if (cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))) {
-				dynamic_cast<State::ThirdpersonCombatState*>(
-					cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat)).get()
-				)->OnBegin(player, camera);
-				break;
-			}
+			cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))->OnBegin(player, camera);
+			break;
 		}
 		case GameState::CameraState::Horseback: {
-			if (cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))) {
-				dynamic_cast<State::ThirdpersonHorseState*>(
-					cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback)).get()
-				)->OnBegin(player, camera);
-				break;
-			}
+			cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))->OnBegin(player, camera);
+			break;
 		}
 		default:
 			break;
@@ -493,11 +524,7 @@ void Camera::SmoothCamera::SetPosition(const glm::vec3& pos, const CorrectedPlay
 	if (!mmath::IsValid(currentPosition)) {
 		__debugbreak();
 		// Oops, go ahead and clear both
-		lastPosition = currentPosition = {
-			cameraNode->m_worldTransform.pos.x,
-			cameraNode->m_worldTransform.pos.y,
-			cameraNode->m_worldTransform.pos.z
-		};
+		lastPosition = currentPosition = gameInitialWorldPosition;
 		return;
 	}
 #endif
@@ -529,38 +556,46 @@ void Camera::SmoothCamera::UpdateInternalWorldToScreenMatrix(NiCamera* camera, f
 }
 
 // Returns the current smoothing scalar to use for the given distance to the player
-float Camera::SmoothCamera::GetCurrentSmoothingScalar(const float distance, ScalarSelector method) const {
+double Camera::SmoothCamera::GetCurrentSmoothingScalar(const float distance, ScalarSelector method) const {
 	Config::ScalarMethods scalarMethod;
+	
+	// Work in FP64 here to eek out some more precision
+	// Avoid a divide-by-zero error by clamping to this lower bound
+	constexpr const double minZero = 0.000000000001;
 
-	float scalar = 1.0f;
-	float interpValue = 1.0f;
-	float remapped = 1.0f;
+	double scalar = 1.0;
+	double interpValue = 1.0;
+	double remapped = 1.0;
 
 	if (method == ScalarSelector::SepZ) {
-		const auto max = config->separateZMaxSmoothingDistance;
-		scalar = glm::clamp(1.0f - ((max - distance) / max), 0.0f, 1.0f);
-		remapped = mmath::Remap<float>(scalar, 0.0f, 1.0f, config->separateZMinFollowRate, config->separateZMaxFollowRate);
+		const auto max = static_cast<double>(config->separateZMaxSmoothingDistance);
+		scalar = glm::clamp(glm::max(1.0 - (max - distance), minZero) / max, 0.0, 1.0);
+		remapped = mmath::Remap<double>(
+			scalar, 0.0, 1.0, static_cast<double>(config->separateZMinFollowRate), static_cast<double>(config->separateZMaxFollowRate)
+		);
 		scalarMethod = config->separateZScalar;
 	} else if (method == ScalarSelector::LocalSpace) {
 		remapped = distance;
 		scalarMethod = config->separateLocalScalar;
 	} else {
-		const auto max = config->zoomMaxSmoothingDistance;
-		scalar = glm::clamp(1.0f - ((max - distance) / max), 0.0f, 1.0f);
-		remapped = mmath::Remap<float>(scalar, 0.0f, 1.0f, config->minCameraFollowRate, config->maxCameraFollowRate);
+		const auto max = static_cast<double>(config->zoomMaxSmoothingDistance);
+		scalar = glm::clamp(glm::max(1.0 - (max - distance), minZero) / max, 0.0, 1.0);
+		remapped = mmath::Remap<double>(
+			scalar, 0.0, 1.0, static_cast<double>(config->minCameraFollowRate), static_cast<double>(config->maxCameraFollowRate)
+		);
 		scalarMethod = config->currentScalar;
 	}
 
 	if (!config->disableDeltaTime) {
-		const auto delta = GetFrameDelta();
-		const auto fps = 1.0 / delta;
-		const auto mul = -fps * glm::log2(1.0f - remapped);
-		interpValue = static_cast<float>(glm::clamp(1.0 - glm::exp2(-mul * delta), 0.0, 1.0));
+		const double delta = glm::max(GetFrameDelta(), minZero);
+		const double fps = 1.0 / delta;
+		const double mul = -fps * glm::log2(1.0 - remapped);
+		interpValue = glm::clamp(1.0 - glm::exp2(-mul * delta), 0.0, 1.0);
 	} else {
 		interpValue = remapped;
 	}
 
-	return mmath::RunScalarFunction<float>(scalarMethod, interpValue);
+	return mmath::RunScalarFunction<double>(scalarMethod, interpValue);
 }
 
 // Returns the user defined distance clamping vector pair
@@ -647,9 +682,9 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 
 			// @Note: I'm sure there is some way to make this perfect, but this is close enough
 			float fac = 0.0f;
-			if (GameState::IsUsingCrossbow(*g_thePlayer)) {
+			if (GameState::IsUsingCrossbow(player)) {
 				fac = glm::radians(Config::GetGameConfig()->f3PBoltTiltUpAngle) * 0.5f;
-			} else if (GameState::IsUsingBow(*g_thePlayer)) {
+			} else if (GameState::IsUsingBow(player)) {
 				fac = glm::radians(Config::GetGameConfig()->f3PArrowTiltUpAngle) * 0.5f;
 			}
 			
@@ -679,7 +714,7 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 	constexpr auto rayLength = 6000.0f; // Range of most (all?) arrows
 	auto origin = glm::vec4(niOrigin.x, niOrigin.y, niOrigin.z, 0.0f);
 	auto ray = glm::vec4(niNormal.x, niNormal.y, niNormal.z, 0.0f) * rayLength;
-	const auto result = Raycast::CastRay(origin, origin + ray, 0.1f, true);
+	const auto result = Raycast::hkpCastRay(origin, origin + ray);
 
 	auto port = NiRect<float>();
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
@@ -720,7 +755,7 @@ void Camera::SmoothCamera::UpdateCrosshairPosition(PlayerCharacter* player, cons
 		};
 	}
 
-#ifdef _DEBUG
+#ifdef DEBUG_DRAWING
 	auto lineStart = mmath::PointToScreen(origin);
 	auto lineEnd = mmath::PointToScreen(result.hit ? result.hitPos : origin + ray);
 	DebugDrawing::Submit(DebugDrawing::DrawLine(lineStart, lineEnd, { 0.0f, 1.0f, 0.0f }));
@@ -805,32 +840,55 @@ void Camera::SmoothCamera::SetCrosshairEnabled(bool enabled) const {
 #pragma endregion
 
 #pragma region Camera getters
+void Camera::SmoothCamera::UpdateInternalRotation(CorrectedPlayerCamera* camera) noexcept {
+	const auto tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
+	if (!tps) return;
+	tps->UpdateRotation();
+	currentQuat = glm::quat{ tps->rotation.m_fW, tps->rotation.m_fX, tps->rotation.m_fY, tps->rotation.m_fZ };
+
+	const auto pitch = glm::pitch(currentQuat);
+	const auto yaw = glm::roll(currentQuat);
+	currentRotation.x = pitch *-1;
+	currentRotation.y = yaw *-1;
+}
+
 // Returns the camera's pitch
 float Camera::SmoothCamera::GetCameraPitchRotation(const CorrectedPlayerCamera* camera) const noexcept {
-	const auto mat = camera->cameraNode->m_localTransform.rot;
-	const auto a = glm::clamp(-mat.data[2][1], -1.0f, 1.0f);
-	return glm::asin(a);
+	return currentRotation.x;
 }
 
 // Returns the camera's yaw
 float Camera::SmoothCamera::GetCameraYawRotation(const CorrectedPlayerCamera* camera) const noexcept {
-	const auto mtx = reinterpret_cast<NiCamera*>(camera->cameraNode->m_children.m_data[0])->m_worldTransform.rot;
-	if (mtx.data[0][0] <= 0.0000001f || mtx.data[2][2] <= 0.0000001f) {
-		auto ab = glm::atan(mtx.data[0][2], mtx.data[1][2]);
-		return ab - mmath::half_pi;
-	}
-
-	return glm::atan(mtx.data[0][0], mtx.data[1][0]);
-
+	return currentRotation.y;
 }
 
 // Returns the camera's current zoom level - Camera must extend ThirdPersonState
 float Camera::SmoothCamera::GetCameraZoomScalar(const CorrectedPlayerCamera* camera, uint16_t cameraState) const noexcept {
 	const auto state = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraStates[cameraState]);
 	if (!state) return 0.0f;
-	return state->cameraZoom + SKYRIM_MIN_ZOOM_FRACTION;
+	return state->cameraZoom + (Config::GetGameConfig()->fMinCurrentZoom *-1);
 }
 #pragma endregion
+
+// Use this method to snatch modifications done by mods that run after us
+// Called before the internal game method runs which will overwrite most of that
+void Camera::SmoothCamera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera) {
+	// Store the last actual position the game used for rendering
+	auto cameraNi = reinterpret_cast<NiCamera*>(
+		camera->cameraNode->m_children.m_size == 0 ?
+		nullptr :
+		camera->cameraNode->m_children.m_data[0]
+	);
+	if (cameraNi)
+		gameLastActualPosition = {
+			cameraNi->m_worldTransform.pos.x,
+			cameraNi->m_worldTransform.pos.y,
+			cameraNi->m_worldTransform.pos.z
+		};
+
+	// Grab the last near plane value too, for IFPV compat checks
+	lastNearPlane = cameraNi->m_frustum.m_fNear;
+}
 
 // Selects the correct update method and positions the camera
 void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera) {
@@ -845,21 +903,23 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 	auto cameraNode = camera->cameraNode;
 	config = Config::GetCurrentConfig();
 
+	gameInitialWorldPosition = {
+		cameraNode->m_worldTransform.pos.x,
+		cameraNode->m_worldTransform.pos.y,
+		cameraNode->m_worldTransform.pos.z
+	};
+
 	// Update states & effects
 	const auto pov = UpdateCameraPOVState(player, camera);
 	const auto state = GetCurrentCameraState(player, camera);
 	const auto actionState = GetCurrentCameraActionState(player, camera);
 	offsetState.currentGroup = GetOffsetForState(actionState);
 	const auto currentOffset = GetCurrentCameraOffset(player, camera);
-	const auto curTime = GetTime();
+	const auto curTime = CurTime();
 
 	// Perform a bit of setup to smooth out camera loading
 	if (!firstFrame) {
-		lastPosition = lastWorldPosition = currentPosition = {
-			cameraNode->m_worldTransform.pos.x,
-			cameraNode->m_worldTransform.pos.y,
-			cameraNode->m_worldTransform.pos.z
-		};
+		lastPosition = lastWorldPosition = currentPosition = gameInitialWorldPosition;
 		firstFrame = true;
 	}
 
@@ -891,41 +951,28 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 		zoomTransitionState.currentPosition,
 		offsetTransitionState.currentPosition.y
 	};
-	
+
 	// Save the camera position
 	lastPosition = currentPosition;
 
 	if (config->disableDuringDialog && dialogMenuOpen) {
-		lastPosition = lastWorldPosition = currentPosition = {
-			cameraNode->m_worldTransform.pos.x,
-			cameraNode->m_worldTransform.pos.y,
-			cameraNode->m_worldTransform.pos.z
-		};
+		lastPosition = lastWorldPosition = currentPosition = gameInitialWorldPosition;
 	} else {
 		switch (state) {
 			case GameState::CameraState::ThirdPerson: {
-				if (cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))) {
-					dynamic_cast<State::ThirdpersonState*>(
-						cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson)).get()
-					)->Update(player, camera);
-					break;
-				}
+				UpdateInternalRotation(camera);
+				cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))->Update(player, camera);
+				break;
 			}
 			case GameState::CameraState::ThirdPersonCombat: {
-				if (cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))) {
-					dynamic_cast<State::ThirdpersonCombatState*>(
-						cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat)).get()
-					)->Update(player, camera);
-					break;
-				}
+				UpdateInternalRotation(camera);
+				cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))->Update(player, camera);
+				break;
 			}
 			case GameState::CameraState::Horseback: {
-				if (cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))) {
-					dynamic_cast<State::ThirdpersonHorseState*>(
-						cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback)).get()
-					)->Update(player, camera);
-					break;
-				}
+				UpdateInternalRotation(camera);
+				cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))->Update(player, camera);
+				break;
 			}
 
 			// Here just for my own reference that these are unused (for now)
@@ -941,15 +988,12 @@ void Camera::SmoothCamera::UpdateCamera(PlayerCharacter* player, CorrectedPlayer
 			case GameState::CameraState::Bleedout:
 			case GameState::CameraState::Dragon:
 			case GameState::CameraState::Unknown:
-			default: {
+			default:
+			{
 				SetCrosshairEnabled(true);
 				CenterCrosshair();
 				SetCrosshairSize({ baseCrosshairData.xScale, baseCrosshairData.yScale });
-				lastPosition = lastWorldPosition = currentPosition = {
-					cameraNode->m_worldTransform.pos.x,
-					cameraNode->m_worldTransform.pos.y,
-					cameraNode->m_worldTransform.pos.z
-				};
+				lastPosition = lastWorldPosition = currentPosition = gameInitialWorldPosition;
 				break;
 			}
 		}

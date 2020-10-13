@@ -24,7 +24,7 @@ void SKSEMessageHandler(SKSEMessagingInterface::Message* message) {
 			}
 			break;
 		}
-#ifdef _DEBUG
+#ifdef DEBUG_DRAWING
 		case SKSEMessagingInterface::kMessage_InputLoaded: {
 			DebugDrawing::DetourD3D11();
 		}
@@ -57,7 +57,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 9;
+		info->version = 10;
 
 		g_pluginHandle = skse->GetPluginHandle();
 
@@ -66,7 +66,7 @@ extern "C" {
 		}
 
 		if (skse->runtimeVersion != RUNTIME_VERSION_1_5_97) {
-			_WARNING("This module was compiled for skse 1.5.97, you are running an unsupported verion. You may experience crashes or other strange issues.");
+			_WARNING("This module was compiled for skse 1.5.97, you are running an unsupported version. You may experience crashes or other strange issues.");
 		}
 		
 		return true;

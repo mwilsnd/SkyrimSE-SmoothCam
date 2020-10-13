@@ -1,5 +1,7 @@
 #pragma once
 
+struct hkpRayCastInfo;
+
 class bhkWorld {
 	public:
 		virtual void unk1();              // 0x0   ==> FUN_140dac670
@@ -53,7 +55,7 @@ class bhkWorld {
 		virtual void unk49();             // 0x180 ==> FUN_140ddc750
 		virtual void unk50();             // 0x188 ==> FUN_140ddc790
 		virtual void unk51();             // 0x190 ==> FUN_140da64e0
-		virtual void unk52();             // 0x198 ==> FUN_140da7580
+		virtual void CastRay(hkpRayCastInfo*); // 0x198 ==> FUN_140da7580
 		virtual void unk53();             // 0x1A0 ==> FUN_140da79c0
 		virtual void unk54();             // 0x1A8 ==> FUN_140da79f0
 		virtual void unk55();             // 0x1B0 ==> FUN_140da7af0

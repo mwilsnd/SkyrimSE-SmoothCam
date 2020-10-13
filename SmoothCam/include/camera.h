@@ -38,7 +38,6 @@ namespace Camera {
 	const auto UNIT_FORWARD = glm::vec3(1.0f, 0.0f, 0.0f);
 	const auto UNIT_RIGHT = glm::vec3(0.0f, 1.0f, 0.0f);
 	const auto UNIT_UP = glm::vec3(0.0f, 0.0f, 1.0f);
-	constexpr auto SKYRIM_MIN_ZOOM_FRACTION = 0.2f;
 
 	class SmoothCamera {
 		public:
@@ -50,6 +49,8 @@ namespace Camera {
 			~SmoothCamera() = default;
 
 		public:
+			// Runs before the internal game camera logic
+			void PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera);
 			// Selects the correct update method and positions the camera
 			void UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera);
 			// Called when the player toggles the POV
@@ -72,6 +73,9 @@ namespace Camera {
 			const bool UpdateCameraPOVState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
 
 			/// Camera state updates
+			// Check if the camera is near the player's head (for first person mods)
+			bool CameraNearHead(const PlayerCharacter* player, const CorrectedPlayerCamera* camere, float cutOff = 32.0f);
+			bool IFPV_InFirstPersonState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera);
 			// Returns the current camera state for use in selecting an update method
 			const GameState::CameraState GetCurrentCameraState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera);
 			// Returns the current camera action state for use in the selected update method
@@ -109,7 +113,7 @@ namespace Camera {
 			// Returns the full local-space camera offset for the current player state
 			glm::vec3 GetCurrentCameraOffset(PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the current smoothing scalar to use for the given distance to the player
-			float GetCurrentSmoothingScalar(const float distance, ScalarSelector method = ScalarSelector::Normal) const;
+			double GetCurrentSmoothingScalar(const float distance, ScalarSelector method = ScalarSelector::Normal) const;
 			// Returns the user defined distance clamping vector pair
 			std::tuple<glm::vec3, glm::vec3> GetDistanceClamping() const noexcept;
 			// Returns true if interpolation is allowed in the current state
@@ -132,6 +136,8 @@ namespace Camera {
 			void SetCrosshairEnabled(bool enabled) const;
 
 			/// Camera getters
+			// Update the internal rotation
+			void UpdateInternalRotation(CorrectedPlayerCamera* camera) noexcept;
 			// Returns the camera's yaw
 			float GetCameraYawRotation(const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the camera's pitch
@@ -196,10 +202,16 @@ namespace Camera {
 			CameraActionState lastActionState = CameraActionState::Unknown;
 			mmath::NiMatrix44 worldToScreen = {};
 
+			float lastNearPlane = 0.0f;
+			glm::vec3 gameInitialWorldPosition = { 0.0f, 0.0f, 0.0f };
+			glm::vec3 gameLastActualPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 currentPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastLocalPosition = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 lastWorldPosition = { 0.0f, 0.0f, 0.0f };
+
+			glm::vec2 currentRotation = { 0.0f, 0.0f };
+			glm::quat currentQuat = glm::identity<glm::quat>();
 
 			template<typename T>
 			struct TransitionGroup {

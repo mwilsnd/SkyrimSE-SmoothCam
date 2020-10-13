@@ -75,6 +75,7 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonHorse),
 		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonDragon),
 		CREATE_JSON_VALUE(obj, compatIC_FirstPersonSitting),
+		CREATE_JSON_VALUE(obj, compatIFPV),
 		CREATE_JSON_VALUE(obj, minCameraFollowDistance),
 		CREATE_JSON_VALUE(obj, minCameraFollowRate),
 		CREATE_JSON_VALUE(obj, maxCameraFollowRate),
@@ -134,6 +135,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, comaptIC_FirstPersonHorse)
 	VALUE_FROM_JSON(obj, comaptIC_FirstPersonDragon)
 	VALUE_FROM_JSON(obj, compatIC_FirstPersonSitting)
+	VALUE_FROM_JSON(obj, compatIFPV)
 	VALUE_FROM_JSON(obj, minCameraFollowDistance)
 	VALUE_FROM_JSON(obj, minCameraFollowRate)
 	VALUE_FROM_JSON(obj, maxCameraFollowRate)
@@ -221,6 +223,16 @@ void Config::ReadConfigFile() {
 			wchar_t* end;
 			gameConfig.f3PBoltTiltUpAngle = std::wcstof(buf, &end);
 		}
+
+		if (GetPrivateProfileString(L"Display", L"fNearDistance", L"15.0", buf, 16, inipath.c_str()) != 0) {
+			wchar_t* end;
+			gameConfig.fNearDistance = std::wcstof(buf, &end);
+		}
+
+		if (GetPrivateProfileString(L"Camera", L"fMinCurrentZoom", L"-0.200000003", buf, 16, inipath.c_str()) != 0) {
+			wchar_t* end;
+			gameConfig.fMinCurrentZoom = std::wcstof(buf, &end);
+		}
 	}
 
 	currentConfig = cfg;
@@ -234,6 +246,11 @@ void Config::SaveCurrentConfig() {
 
 Config::UserConfig* Config::GetCurrentConfig() noexcept {
 	return &currentConfig;
+}
+
+void Config::ResetConfig() {
+	currentConfig = {};
+	SaveCurrentConfig();
 }
 
 BSFixedString Config::SaveConfigAsPreset(int slot, const BSFixedString& name) {
