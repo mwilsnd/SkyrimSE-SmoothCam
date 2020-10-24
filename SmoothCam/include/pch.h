@@ -5,13 +5,12 @@
 #include <stdexcept>
 #include <algorithm>
 #include <functional> 
-#include <regex>
 #include <bitset>
 #include <unordered_map>
 #include <fstream>
 #include <array>
-#include <mutex>
 #include <tuple>
+#include <filesystem>
 
 #include <codeanalysis\warnings.h>
 #pragma warning( push )
@@ -21,6 +20,7 @@
 #   pragma warning( disable : 26812 4244 4267 )
 #   define WIN32_LEAN_AND_MEAN
 #   define NOMINMAX
+#   undef CreateFont
 #   include <Windows.h>
 
 // Compat when building in unicode mode with SKSE
@@ -63,6 +63,7 @@
 #   ifdef UNICODE
 		// Revert our compat hack
 #       undef WIN32_FIND_DATA
+#       define WIN32_FIND_DATA WIN32_FIND_DATAW
 #   endif
 //#   include <skse64_common/RelocationEx.h>
     
@@ -80,6 +81,7 @@
 #   define GLM_ENABLE_EXPERIMENTAL
 #   include <glm/glm.hpp>
 #   include <glm/gtc/matrix_transform.hpp>
+#   include <glm/ext/matrix_clip_space.hpp>
 #   include <glm/gtc/quaternion.hpp>
 #   include <glm/gtc/constants.hpp>
 #   include <glm/gtx/easing.hpp>
@@ -106,10 +108,15 @@
 #include "addrlib/offsets.h"
 
 #ifdef _DEBUG
-//#   define DEBUG_DRAWING
 #   include "profile.h"
-#   ifdef DEBUG_DRAWING
-#   include "debug_drawing.h"
+#endif
+
+//#define WITH_D2D
+#ifdef WITH_D2D
+#   define WITH_CHARTS
+
+#   ifdef WITH_CHARTS
+#       include "profile.h"
 #   endif
 #endif
 
@@ -121,12 +128,21 @@
 #include "skyrimSE/bhkWorld.h"
 #include "skyrimSE/PlayerCamera.h"
 #include "skyrimSE/ThirdPersonState.h"
+#include "skyrimSE/PlayerCameraTransitionState.h"
 #include "skyrimSE/ArrowProjectile.h"
 
+#include "arrow_fixes.h"
 #include "mmath.h"
 #include "physics.h"
 #include "raycast.h"
 #include "config.h"
+#include "game_state.h"
+
+#include "render/common.h"
+#include "render/d3d_context.h"
+#include "render/cbuffer.h"
+#include "render/shader.h"
+#include "render/vertex_buffer.h"
 
 static inline void FatalError(const wchar_t* message) noexcept {
 	MessageBox(nullptr, message, L"SmoothCamera", MB_ICONERROR);

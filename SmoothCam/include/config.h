@@ -16,6 +16,12 @@ namespace Config {
 		EXP_IN, EXP_OUT, EXP_INOUT,
 	};
 
+	enum class CrosshairType : uint8_t {
+		None,
+		Skyrim,
+		Dot
+	};
+
 	enum class LoadStatus {
 		OK,
 		MISSING,
@@ -72,6 +78,16 @@ namespace Config {
 		{ ScalarMethods::EXP_INOUT, 	"exponentialEaseInOut" },
 	});
 
+	constexpr auto crosshairTypeLookup = mapbox::eternal::hash_map<mapbox::eternal::string, CrosshairType>({
+		{ "Skyrim", CrosshairType::Skyrim },
+		{ "Dot", CrosshairType::Dot }
+	});
+
+	constexpr auto crosshairTypeRevLookup = mapbox::eternal::map<CrosshairType, mapbox::eternal::string>({
+		{ CrosshairType::Skyrim, "Skyrim" },
+		{ CrosshairType::Dot, "Dot" }
+	});
+
 	typedef struct gameConf {
 		float f3PArrowTiltUpAngle = 2.5f;
 		float f3PBoltTiltUpAngle = 2.5f;
@@ -109,18 +125,35 @@ namespace Config {
 	void to_json(json& j, const OffsetGroup& obj);
 	void from_json(const json& j, OffsetGroup& obj);
 
+	typedef struct configColor {
+		float r = 0.0f;
+		float g = 0.0f;
+		float b = 0.0f;
+		float a = 0.0f;
+
+		configColor() {};
+		configColor(float r, float g, float b, float a) : r(r), g(g), b(b), a(a) {}
+	} Color;
+
 	typedef struct parsedConfig {
 		// Crosshair
 		bool use3DBowAimCrosshair = true;
 		bool use3DMagicCrosshair = true;
-
 		bool hideNonCombatCrosshair = false;
 		bool hideCrosshairMeleeCombat = false;
-
 		bool enableCrosshairSizeManip = false;
-		float crosshairNPCHitGrowSize = 16.0f;
+		/*float crosshairNPCHitGrowSize = 16.0f;*/
 		float crosshairMinDistSize = 16.0f;
 		float crosshairMaxDistSize = 24.0f;
+		bool useWorldCrosshair = false;
+		bool worldCrosshairDepthTest = true;
+		CrosshairType worldCrosshairType = CrosshairType::Skyrim;
+
+		// Arrow prediction
+		bool useArrowPrediction = false;
+		bool drawArrowArc = false;
+		Color arrowArcColor = Color(255.0f, 255.0f, 255.0f, 127.0f);
+		float maxArrowPredictionRange = 10000.0f;
 
 		// Misc
 		bool disableDeltaTime = false;
@@ -198,6 +231,9 @@ namespace Config {
 	void to_json(json& j, const Preset& obj);
 	void from_json(const json& j, Preset& obj);
 
+	void to_json(json& j, const Color& obj);
+	void from_json(const json& j, Color& obj);
+
 	void ReadConfigFile();
 	void SaveCurrentConfig();
 	UserConfig* GetCurrentConfig() noexcept;
@@ -213,6 +249,12 @@ namespace Config {
 	BSFixedString GetPresetSlotName(int slot);
 	// Get the file path for the given preset slot
 	std::wstring GetPresetPath(int slot);
+
+	// Load the list of bones for the camera to follow
+	void LoadBonePriorities();
+	using BoneList = std::vector<BSFixedString>;
+	// Get the follow bone list
+	BoneList& GetBonePriorities() noexcept;
 
 	const GameConfig* const GetGameConfig();
 }

@@ -1,0 +1,9 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"bindbc-assimp": "0.0.1",
+		"bindbc-loader": "0.2.1",
+		"gfm": "8.0.4",
+		"intel-intrinsics": "1.3.3"
+	}
+}

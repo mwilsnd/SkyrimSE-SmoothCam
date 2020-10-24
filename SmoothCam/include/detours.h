@@ -5,9 +5,9 @@ namespace Camera {
 }
 
 namespace Detours {
-	bool Attach(std::shared_ptr<Camera::SmoothCamera> theCamera);
+	bool Attach();
 
-	typedef void(__thiscall* CameraOnUpdate)(TESCameraState*, void*);
+	typedef void(__thiscall* CameraOnUpdate)(TESCameraState*, BSTSmartPointer<TESCameraState>&);
 	class CameraStateDetour {
 		public:
 		CameraStateDetour(TESCameraState* pThis, uint16_t idx, uint64_t fnDetour, PLH::VFuncMap& origVFuncs) {

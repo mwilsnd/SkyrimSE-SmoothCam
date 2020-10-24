@@ -1,3 +1,4 @@
+package.path = "../shared/?.lua;"
 local fs = require "fs"
 local args = {...}
 local path = args[1]

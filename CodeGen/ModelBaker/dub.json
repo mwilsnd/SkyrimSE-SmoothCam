@@ -1,0 +1,61 @@
+{
+	"configurations": [
+		{
+			"dflags": [
+				"-mscrtlib=msvcrt",
+				"-boundscheck=off"
+			],
+			"lflags": [
+				"/LIBPATH:./compiled_libs",
+				"/NODEFAULTLIB:libcmt",
+				"/LTCG"
+			],
+			"libs": [
+				"assimp-vc142-mt",
+				"IrrXML",
+				"zlibstatic",
+				"Kernel32"
+			],
+			"name": "application-release",
+			"platforms": [
+				"windows"
+			],
+			"targetType": "executable",
+			"versions": [
+				"DesktopApp"
+			]
+		},
+		{
+			"dflags": [
+				"-mscrtlib=msvcrtd"
+			],
+			"lflags": [
+				"/LIBPATH:./compiled_libs_debug",
+				"/NODEFAULTLIB:libcmtd"
+			],
+			"libs": [
+				"assimp-vc142-mtd",
+				"IrrXMLd",
+				"zlibstaticd",
+				"Kernel32"
+			],
+			"name": "application-debug",
+			"platforms": [
+				"windows"
+			],
+			"targetType": "executable",
+			"versions": [
+				"DesktopApp"
+			]
+		}
+	],
+	"dependencies": {
+		"bindbc-assimp": "~>0.0.1",
+		"gfm": "~>8.0.3"
+	},
+	"name": "ModelBaker",
+	"subConfigurations": {
+		"bindbc-assimp": "static"
+	},
+	"versions": []
+}

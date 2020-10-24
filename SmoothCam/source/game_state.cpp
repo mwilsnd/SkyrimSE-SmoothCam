@@ -168,10 +168,6 @@ const bool GameState::IsMeleeWeaponDrawn(PlayerCharacter* player) noexcept {
 	const auto right = GameState::GetEquippedWeapon(player);
 	const auto left = GameState::GetEquippedWeapon(player, true);
 
-	// Emchanted weapons are considered spells
-	if (!right && !left && !GameState::IsMagicDrawn(player) && !GameState::IsRangedWeaponDrawn(player))
-		return true;
-
 	if (right) {
 		if (right->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
 			right->gameData.type != TESObjectWEAP::GameData::kType_Staff &&
@@ -203,23 +199,22 @@ const bool GameState::IsMeleeWeaponDrawn(PlayerCharacter* player) noexcept {
 const bool GameState::IsMagicDrawn(PlayerCharacter* player) noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return false;
 
-	EnchantmentItem* leftWep;
+	EnchantmentItem* leftWep = nullptr;
 	if (player->leftHandSpell != nullptr)
 		leftWep = DYNAMIC_CAST(player->leftHandSpell, TESForm, EnchantmentItem);
 
-	if (player->leftHandSpell != nullptr && leftWep == nullptr) {
+	if (leftWep)
 		return true;
-	}
 
-	EnchantmentItem* rightWep;
+	EnchantmentItem* rightWep = nullptr;
 	if (player->rightHandSpell != nullptr)
 		rightWep = DYNAMIC_CAST(player->rightHandSpell, TESForm, EnchantmentItem);
 
-	if (player->rightHandSpell != nullptr && rightWep == nullptr) {
+	if (rightWep)
 		return true;
-	}
 
-	return false;
+	// Or a spell
+	return player->leftHandSpell || player->rightHandSpell;
 }
 
 // Returns true if the player has a ranged weapon drawn
@@ -354,7 +349,7 @@ const bool GameState::IsMountingHorse(const PlayerCharacter* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return (actionBits[3] && actionBits[12] && movementBits[15] || (
 		actionBits[12] && movementBits[15]
-		)) && !movementBits[14];
+	)) && !movementBits[14];
 }
 
 // Returns true if the player is dismounting a horse
@@ -362,4 +357,8 @@ const bool GameState::IsDisMountingHorse(const PlayerCharacter* player) noexcept
 	const auto actionBits = GameState::GetPlayerActionBits(player);
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return actionBits[3] && actionBits[12] && (movementBits[16]);
+}
+
+const bool GameState::InPOVSlideMode() noexcept {
+	return PlayerControls::GetSingleton()->unk04B;
 }

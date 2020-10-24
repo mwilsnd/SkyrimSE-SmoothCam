@@ -1,16 +1,15 @@
 #include "main.h"
-#include "detours.h"
-#include "papyrus.h"
-
-#ifdef _DEBUG
-#   include "debug_drawing.h"
-#endif
 
 PluginHandle g_pluginHandle = kPluginHandle_Invalid;
 const SKSEMessagingInterface* g_messaging = nullptr;
 const SKSEPapyrusInterface* g_papyrus = nullptr;
+static bool hooked = false;
+static bool d3dHooked = false;
+
 std::shared_ptr<Camera::SmoothCamera> g_theCamera = nullptr;
-bool hooked = false;
+#ifdef WITH_D2D
+std::unique_ptr<Render::D2D> g_D2D = nullptr;
+#endif
 
 #pragma warning( push )
 #pragma warning( disable : 26461 ) // skse function pointer is not const
@@ -19,21 +18,45 @@ void SKSEMessageHandler(SKSEMessagingInterface::Message* message) {
 		case SKSEMessagingInterface::kMessage_NewGame:
 		case SKSEMessagingInterface::kMessage_PostLoadGame: {
 			// The game has loaded, go ahead and hook the camera now
-			if (!hooked && g_theCamera) {
-				hooked = Detours::Attach(g_theCamera);
+			if (!hooked) {
+				g_theCamera = std::make_shared<Camera::SmoothCamera>();
+				hooked = Detours::Attach();
 			}
 			break;
 		}
-#ifdef DEBUG_DRAWING
-		case SKSEMessagingInterface::kMessage_InputLoaded: {
-			DebugDrawing::DetourD3D11();
-		}
+		case SKSEMessagingInterface::kMessage_PreLoadGame: {
+			if (!d3dHooked) {
+				// Wait until now to ensure D3D is loaded and we aren't racing it
+				Render::InstallHooks();
+#ifdef WITH_D2D
+				if (Render::HasContext())
+					g_D2D = std::make_unique<Render::D2D>(Render::GetContext());
 #endif
+				d3dHooked = true;
+			}
+		}
 		default:
 			break;
 	}
 }
 #pragma warning( pop )
+
+// Let's be nice and (try to) cleanly release our resources
+// Do this here before the game nukes com
+typedef uintptr_t(*CalledDuringRenderShutdown)();
+static CalledDuringRenderShutdown fnCalledDuringRenderShutdown;
+static std::unique_ptr<BasicDetour> detCalledDuringRenderShutdown;
+static uintptr_t mCalledDuringRenderShutdown() {
+	if (hooked)
+		g_theCamera.reset();
+
+#ifdef WITH_D2D
+	g_D2D.reset();
+#endif
+	Render::Shutdown();
+
+	return fnCalledDuringRenderShutdown();
+}
 
 extern "C" {
 	__declspec(dllexport) bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info) {
@@ -57,7 +80,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 10;
+		info->version = 11;
 
 		g_pluginHandle = skse->GetPluginHandle();
 
@@ -96,7 +119,20 @@ extern "C" {
 		});
 
 		Config::ReadConfigFile();
-		g_theCamera = std::make_shared<Camera::SmoothCamera>();
+
+
+		{
+			fnCalledDuringRenderShutdown = Offsets::Get<CalledDuringRenderShutdown>(75446);
+			detCalledDuringRenderShutdown = std::make_unique<BasicDetour>(
+				reinterpret_cast<void**>(&fnCalledDuringRenderShutdown),
+				mCalledDuringRenderShutdown
+			);
+
+			if (!detCalledDuringRenderShutdown->Attach()) {
+				_ERROR("Failed to place detour on target function, this error is fatal.");
+				FatalError(L"Failed to place detour on target function, this error is fatal.");
+			}
+		}
 
 		_MESSAGE("SmoothCam loaded!");
 		return true;

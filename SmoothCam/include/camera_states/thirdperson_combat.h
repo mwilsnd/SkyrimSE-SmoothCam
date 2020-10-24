@@ -12,9 +12,9 @@ namespace Camera {
 				ThirdpersonCombatState& operator=(ThirdpersonCombatState&&) noexcept = delete;
 
 			public:
-				virtual void OnBegin(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
-				virtual void OnEnd(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
-				virtual void Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) override;
+				virtual void OnBegin(const PlayerCharacter* player, const TESObjectREFR* cameraRef, const CorrectedPlayerCamera* camera) override;
+				virtual void OnEnd(const PlayerCharacter* player, const TESObjectREFR* cameraRef, const CorrectedPlayerCamera* camera) override;
+				virtual void Update(PlayerCharacter* player, const TESObjectREFR* cameraRef, const CorrectedPlayerCamera* camera) override;
 		};
 	}
 }

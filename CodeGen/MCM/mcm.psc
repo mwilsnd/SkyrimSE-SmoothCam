@@ -5,6 +5,7 @@ Import SKSE
 
 string[] interpMethods
 string[] presets
+string[] crosshairTypes
 
 Function SmoothCam_SetIntConfig(string member, int value) global native
 Function SmoothCam_SetStringConfig(string member, string value) global native
@@ -21,13 +22,13 @@ string Function SmoothCam_SaveAsPreset(int index, string name) global native
 bool Function SmoothCam_LoadPreset(int index) global native
 string Function SmoothCam_GetPresetNameAtIndex(int index) global native
 
-int Function GetCurrentInterpIndex(string setting)
+int Function GetCurrentArrayIndex(string setting, string[] array)
 	string value = SmoothCam_GetStringConfig(setting)
 	
-	Int i = interpMethods.Length
+	Int i = array.Length
 	While i
 		i -= 1
-		if (interpMethods[i] == value)
+		if (array[i] == value)
 			return i
 		endIf
 	endWhile
@@ -117,20 +118,21 @@ endFunction
 	string settingName = ""
 	string displayName = ""
 	string desc = ""
+	LITERAL arrayType = 0
 
 	MACRO implControl = {
-		this->ref = AddMenuOption(this->displayName, interpMethods[GetCurrentInterpIndex(this->settingName)])
+		this->ref = AddMenuOption(this->displayName, this->arrayType[GetCurrentArrayIndex(this->settingName, this->arrayType)])
 	}
 
 	MACRO implOpenHandler = {
-		SetMenuDialogStartIndex(GetCurrentInterpIndex(this->settingName))
+		SetMenuDialogStartIndex(GetCurrentArrayIndex(this->settingName, this->arrayType))
 		SetMenuDialogDefaultIndex(0)
-		SetMenuDialogOptions(interpMethods)
+		SetMenuDialogOptions(this->arrayType)
 	}
 
 	MACRO implAcceptHandler = {
-		SetMenuOptionValue(a_option, interpMethods[a_index])
-		SmoothCam_SetStringConfig(this->settingName, interpMethods[a_index])
+		SetMenuOptionValue(a_option, this->arrayType[a_index])
+		SmoothCam_SetStringConfig(this->settingName, this->arrayType[a_index])
 	}
 
 	MACRO implDesc = {
@@ -223,7 +225,7 @@ endFunction
 }
 
 ScriptMeta scriptMetaInfo -> {
-	version: 10
+	version: 11
 }
 
 ; Presets
@@ -366,26 +368,31 @@ ListSetting interpMethod -> {
 	settingName: "InterpolationMethod"
 	displayName: "Interpolation Method"
 	desc: "The scalar method to use for camera smoothing."
+	arrayType: interpMethods
 }
 ListSetting sepZInterpMethod -> {
 	settingName: "SeparateZInterpMethod"
 	displayName: "Sep. Z Interpolation Method"
 	desc: "The scalar method to use for smoothing the camera height (If enabled)."
+	arrayType: interpMethods
 }
 ListSetting sepLocalInterpMethod -> {
 	settingName: "SepLocalInterpMethod"
 	displayName: "Local-Space Interpolation Method"
 	desc: "The scalar method to use for local-space smoothing (If enabled)."
+	arrayType: interpMethods
 }
 ListSetting offsetInterpMethod -> {
 	settingName: "OffsetTransitionMethod"
 	displayName: "Offset Interpolation Method"
 	desc: "The scalar method to use for offset transition smoothing (If enabled)."
+	arrayType: interpMethods
 }
 ListSetting zoomInterpMethod -> {
 	settingName: "ZoomTransitionMethod"
 	displayName: "Zoom Interpolation Method"
 	desc: "The scalar method to use for zoom transition smoothing (If enabled)."
+	arrayType: interpMethods
 }
 
 SliderSetting minCameraFollowRate -> {
@@ -574,6 +581,22 @@ ToggleSetting crosshair3DMagicEnabled -> {
 	displayName: "3D Magic Crosshair Enabled"
 	desc: "Enable the raycasted 3D crosshair when using magic."
 }
+ToggleSetting crosshair3DWorldEnabled -> {
+	settingName: "UseWorldCrosshair"
+	displayName: "Use World-Space Crosshair"
+	desc: "When your crosshair ray has hit something, use a crosshair mesh rendered in-world, not on the HUD."
+}
+ListSetting worldCrosshairType -> {
+	settingName: "WorldCrosshairType"
+	displayName: "Crosshair Type"
+	desc: "Select the style of world-space crosshair to use, if world-space crosshair is enabled."
+	arrayType: crosshairTypes
+}
+ToggleSetting worldCrosshairDepthTest -> {
+	settingName: "WorldCrosshairDepthTest"
+	displayName: "Crosshair Occlusion"
+	desc: "When using the world-space crosshair, disable this option to make it draw on top of everything rather than allow other geometry to cover it."
+}
 ToggleSetting hideCrosshairOutOfCombat -> {
 	settingName: "HideCrosshairOutOfCombat"
 	displayName: "Hide Non-Combat Crosshair"
@@ -615,6 +638,66 @@ SliderSetting crosshairMaxDistSize -> {
 	interval: 1
 	min: 8
 	max: 32
+}
+ToggleSetting enableArrowPrediction -> {
+	settingName: "EnableArrowPrediction"
+	displayName: "Enable Arrow Prediction"
+	desc: "When the 3D crosshair is enabled for ranged combat, the crosshair will account for gravity when aiming with a bow."
+}
+ToggleSetting drawArrowArc -> {
+	settingName: "DrawArrowArc"
+	displayName: "Draw Arrow Prediction Arc"
+	desc: "When the 3D crosshair is enabled for ranged combat and 'Enable Arrow Prediction' is selected, an arc will be drawn while aiming with bows which indicates the flight path your arrow will take."
+}
+SliderSetting maxArrowPredictionRange -> {
+	settingName: "MaxArrowPredictionRange"
+	displayName: "Max Arrow Prediction Distance"
+	desc: "The furthest distance to allow arrow prediction, if enabled, to function."
+	defaultValue: 10000
+	interval: 1
+	min: 500
+	max: 12000
+	displayFormat: "{0}"
+}
+SliderSetting arrowArcColorR -> {
+	settingName: "ArrowArcColorR"
+	displayName: "Arrow Arc Color: Red"
+	desc: "The amount of red coloration to add to the arrow arc."
+	defaultValue: 255.0
+	interval: 1
+	min: 0.0
+	max: 255.0
+	displayFormat: "{0}"
+}
+SliderSetting arrowArcColorG -> {
+	settingName: "ArrowArcColorG"
+	displayName: "Arrow Arc Color: Green"
+	desc: "The amount of green coloration to add to the arrow arc."
+	defaultValue: 255.0
+	interval: 1
+	min: 0.0
+	max: 255.0
+	displayFormat: "{0}"
+}
+SliderSetting arrowArcColorB -> {
+	settingName: "ArrowArcColorB"
+	displayName: "Arrow Arc Color: Blue"
+	desc: "The amount of blue coloration to add to the arrow arc."
+	defaultValue: 255.0
+	interval: 1
+	min: 0.0
+	max: 255.0
+	displayFormat: "{0}"
+}
+SliderSetting arrowArcColorA -> {
+	settingName: "ArrowArcColorA"
+	displayName: "Arrow Arc Color: Transparency"
+	desc: "The amount of transparency coloration to add to the arrow arc."
+	defaultValue: 127.0
+	interval: 1
+	min: 0.0
+	max: 255.0
+	displayFormat: "{0}"
 }
 
 ; Standing
@@ -1387,6 +1470,13 @@ event OnConfigInit()
 		"circularEaseInOut", "exponentialEaseIn", "exponentialEaseOut",
 		"exponentialEaseInOut"
 	}
+	crosshairTypes = new string[] -> {
+		"Skyrim", "Dot"
+	}
+endEvent
+
+event OnVersionUpdate(int version)
+	OnConfigInit()
 endEvent
 
 event OnPageReset(string a_page)
@@ -1447,13 +1537,23 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Crosshair")
 		AddHeaderOption("3D Crosshair Settings")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
-			crosshair3DBowEnabled, crosshair3DMagicEnabled, enableCrosshairSizeManip,
-			crosshairNPCGrowSize, crosshairMinDistSize, crosshairMaxDistSize
+			crosshair3DBowEnabled, crosshair3DMagicEnabled,
+			crosshair3DWorldEnabled, worldCrosshairType, worldCrosshairDepthTest,
+			enableCrosshairSizeManip, crosshairMinDistSize,
+			crosshairMaxDistSize
 		})
 
 		AddHeaderOption("Crosshair Hiding")
 		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
 			hideCrosshairOutOfCombat, hideCrosshairMeleeCombat,
+		})
+
+		SetCursorPosition(1)
+		AddHeaderOption("Archery Features")
+		IMPL_STRUCT_MACRO_INVOKE_GROUP(implControl, {
+			enableArrowPrediction, drawArrowArc, maxArrowPredictionRange,
+			arrowArcColorR, arrowArcColorG, arrowArcColorB,
+			arrowArcColorA,
 		})
 	elseIf (a_page == " Standing")
 		AddHeaderOption("Standing Offsets")

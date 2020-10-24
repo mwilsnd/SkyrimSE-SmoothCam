@@ -52,8 +52,13 @@ namespace mmath {
 	void DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 		glm::vec3& forward, glm::vec3& right, glm::vec3& up, glm::vec3& coef) noexcept;
 
-	glm::vec2 PointToScreen(const glm::vec3& point);
+	glm::vec3 PointToScreen(const glm::vec3& point);
 
+	// Construct a 3D perspective projection matrix that matches what is used by the game
+	glm::mat4 Perspective(float fov, float aspect, const NiFrustum& frustum);
+	// Construct a view matrix
+	glm::mat4 LookAt(const glm::vec3& pos, const glm::vec3& at, const glm::vec3& up);
+	
 	template<typename T, typename S>
 	T Interpolate(const T from, const T to, const S scalar) noexcept {
 		if (scalar > 1.0) return to;
@@ -117,4 +122,89 @@ namespace mmath {
 				return glm::linearInterpolation(interpValue);
 		}
 	};
+
+	// A transition state
+	template<typename T>
+	struct TransitionGroup {
+		T lastPosition = {};
+		T targetPosition = {};
+		T currentPosition = {};
+		bool running = false;
+		double startTime = 0.0;
+	};
+
+	// Run a transition state
+	template<typename T, typename S>
+	void UpdateTransitionState(double curTime, bool enabled, float duration, Config::ScalarMethods method,
+		S& transitionState, const T& currentValue)
+	{
+		// Check our current offset and see if we need to run a transition 
+		if (enabled) {
+			if (currentValue != transitionState.targetPosition) {
+				// Start the task
+				if (transitionState.running)
+					transitionState.lastPosition = transitionState.currentPosition;
+
+				transitionState.running = true;
+				transitionState.startTime = curTime;
+				transitionState.targetPosition = currentValue;
+			}
+
+			if (transitionState.running) {
+				// Update the transition smoothing
+				const auto scalar = glm::clamp(
+					static_cast<float>(curTime - transitionState.startTime) / glm::max(duration, 0.01f),
+					0.0f, 1.0f
+				);
+
+				if (scalar < 1.0f) {
+					transitionState.currentPosition = mmath::Interpolate<T, float>(
+						transitionState.lastPosition,
+						transitionState.targetPosition,
+						mmath::RunScalarFunction<float>(method, scalar)
+						);
+				} else {
+					transitionState.currentPosition = transitionState.targetPosition;
+					transitionState.running = false;
+					transitionState.lastPosition = transitionState.currentPosition;
+				}
+			} else {
+				transitionState.lastPosition = transitionState.targetPosition =
+					transitionState.currentPosition = currentValue;
+			}
+		} else {
+			// Disabled
+			transitionState.running = false;
+			transitionState.lastPosition = transitionState.targetPosition =
+				transitionState.currentPosition = currentValue;
+		}
+	}
+
+	// A fixed-goal transition (from a start position to an end position)
+	template<typename T>
+	struct FixedTransitionGoal {
+		T lastPosition = {};
+		bool running = false;
+		double startTime = 0.0;
+	};
+	
+	template<typename T, typename S>
+	T UpdateFixedTransitionGoal(double curTime, float duration, Config::ScalarMethods method,
+		S& fixedGoalState, const T& currentValue)
+	{
+		if (!fixedGoalState.running) return currentValue;
+
+		const auto scalar = glm::clamp(
+			static_cast<float>(curTime - fixedGoalState.startTime) / glm::max(duration, 0.01f),
+			0.0f, 1.0f
+		);
+		fixedGoalState.lastPosition = mmath::Interpolate<T, float>(
+			fixedGoalState.lastPosition,
+			currentValue,
+			mmath::RunScalarFunction<float>(method, scalar)
+		);
+
+		if (scalar >= 1.0f) fixedGoalState.running = false;
+		return fixedGoalState.lastPosition;
+	}
 }

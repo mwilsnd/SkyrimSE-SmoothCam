@@ -18,9 +18,9 @@ namespace Camera {
 
 			public:
 				virtual ~BaseCameraState();
-				virtual void OnBegin(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) = 0;
-				virtual void OnEnd(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) = 0;
-				virtual void Update(PlayerCharacter* player, const CorrectedPlayerCamera* camera) = 0;
+				virtual void OnBegin(const PlayerCharacter* player, const TESObjectREFR* cameraRef, const CorrectedPlayerCamera* camera) = 0;
+				virtual void OnEnd(const PlayerCharacter* player, const TESObjectREFR* cameraRef, const CorrectedPlayerCamera* camera) = 0;
+				virtual void Update(PlayerCharacter* player, const TESObjectREFR* cameraRef, const CorrectedPlayerCamera* camera) = 0;
 
 			protected:
 				// Returns the current camera state
@@ -36,13 +36,14 @@ namespace Camera {
 				glm::vec3 ComputeRaycast(const glm::vec3& rayStart, const glm::vec3& rayEnd);
 				// Clamps the camera position based on offset clamp settings
 				glm::vec3 ComputeOffsetClamping(
-					PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+					const TESObjectREFR* ref,
 					const glm::vec3& cameraLocalOffset, const glm::vec3& cameraWorldTarget,
 					const glm::vec3& cameraPosition) const;
 				glm::vec3 ComputeOffsetClamping(
-					PlayerCharacter* player, const glm::vec3& cameraWorldTarget,
+					const TESObjectREFR* ref, const glm::vec3& cameraWorldTarget,
 					const glm::vec3& cameraPosition) const;
 
+				// Primary crosshair update method, enables crosshair, performs raycast, sets position
 				void UpdateCrosshair(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const;
 				// Updates the 3D crosshair position, performing all logic internally
 				void UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const;
@@ -54,24 +55,29 @@ namespace Camera {
 				void SetCrosshairEnabled(bool enabled) const;
 
 				// Returns a rotation matrix to use with rotating the camera
-				glm::mat4 GetViewMatrix(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const noexcept;
+				glm::mat4 GetViewMatrix() const noexcept;
 				// Returns the euler rotation of the camera
-				glm::vec2 GetCameraRotation(const CorrectedPlayerCamera* playerCamera) const noexcept;
+				glm::vec2 GetCameraRotation() const noexcept;
 				// Returns the local offsets to apply to the camera
-				glm::vec3 GetCameraLocalPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const noexcept;
+				glm::vec3 GetCameraLocalPosition() const noexcept;
 				// Returns the world position to apply local offsets to
-				glm::vec3 GetCameraWorldPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const;
+				glm::vec3 GetCameraWorldPosition(const TESObjectREFR* ref, const CorrectedPlayerCamera* playerCamera) const;
 				// Performs all camera offset math using the view rotation matrix and local offsets, returns a local position
 				glm::vec3 GetTransformedCameraLocalPosition(PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const;
 				// Interpolates the given position, stores last interpolated rotation
-				glm::vec3 UpdateInterpolatedLocalPosition(PlayerCharacter* player, const glm::vec3& rot);
+				glm::vec3 UpdateInterpolatedLocalPosition(const glm::vec3& rot);
 				// Interpolates the given position, stores last interpolated position
 				glm::vec3 UpdateInterpolatedWorldPosition(PlayerCharacter* player, const glm::vec3& pos, const float distance);
 
+				// Applies a local space offset to the camera to force the interaction raycast to properly align with the crosshair
 				void ApplyLocalSpaceGameOffsets(const glm::vec3& pos, const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera);
+				// Save the given local space position
 				void StoreLastLocalPosition(const glm::vec3& pos);
+				// Save the given world space position
 				void StoreLastWorldPosition(const glm::vec3& pos);
+				// Read the last local space position we saved
 				glm::vec3 GetLastLocalPosition();
+				// Read the last world space position we saved
 				glm::vec3 GetLastWorldPosition();
 
 				// Returns true if the player is moving
@@ -85,6 +91,12 @@ namespace Camera {
 
 			protected:
 				Camera::SmoothCamera* const camera = nullptr;
+
+			private:
+				// Smooth world position when moving from an interp state to a disabled one
+				using InterpSmoother = mmath::FixedTransitionGoal<glm::vec3>;
+				InterpSmoother interpSmoother;
+				bool wasInterpLastFrame = false;
 		};
 	}
 }

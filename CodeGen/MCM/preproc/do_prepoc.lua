@@ -5,6 +5,7 @@
 	Running the preprocessor:
 		lua do_preproc.lua path/to/my/script.psc path/to/my/output.psc
 ]]
+package.path = "../../shared/?.lua;"
 
 local args = { ... }
 assert( args[1] )

@@ -9,5 +9,6 @@ hkp3AxisSweep* Physics::GetBroadphase(const bhkWorld* physicsWorld) {
 }
 
 bhkWorld* Physics::GetWorld(const TESObjectCELL* parentCell) {
-	return Offsets::Get<bhkWorldGetter>(18536)(parentCell); // 0x2654c0
+	static auto getWorld = Offsets::Get<bhkWorldGetter>(18536);
+	return getWorld(parentCell); // 0x2654c0
 }

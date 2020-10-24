@@ -1,3 +1,38 @@
+## Beta 1.2
+* Bumped module and MCM version number to 11
+
+**Fixes:**
+* Added some extra sanity checking in crosshair update code to try and prevent a crash when using bows.
+* Fixed mouse buttons not responding to the shoulder switch command.
+* Fixed broken ranged kill moves.
+* Fixed sneaking offsets taking precedence over bow-aiming offsets.
+* Staves now correctly enable the magic crosshair and offset modes.
+* Fixes for Wrath of Nature, Apocalypse and Triumvirate (And possibly others).
+* Better IFPV compat.
+* Made the HUD code less aggressive about setting crosshair parameters, should hopefully be more compatible with HUD mods.
+* Added loading-screen detection to prevent manipulation of the HUD during cell transitions - Might reduce the chances of a strange Scaleform crash from happening.
+* Fixed camera jitter when closing the tween (inventory) menu.
+* Reduced extreme position change when dismounting horse - now preventing the transition camera from running.
+* Better detection of POV slide mode (Holding F while in third-person), slide mode no longer interferes with the 3D crosshair position.
+* Corrections to crosshair trajectory patch when on horseback.
+* Corrected transitions to free cam mode having the wrong position/rotation (maybe).
+
+**New Stuff:**
+* Added a new system to allow users to specify a list of bone names for the camera to search for, useful for mods that replace the player skeleton with one using names that don't match the regular skeleton. A more detailed description can be found in the new file "SmoothCam_FollowBones_Default.txt".
+* Added smoothing between states when the old state has interpolation enabled and the new one doesn't.
+* Added arrow trajectory prediction to the 3D crosshair (Will now account for gravity over longer distances). This option is separate from the normal raycasting method - If you feel like this option is cheating, you can simply ignore it.
+* Added an arrow trajectory visualization option, drawing an arc that shows where your arrows should go (Requires enabling new option 'EnableArrowPrediction' combined with the 3D ranged crosshair being enabled, Color can be changed in MCM).
+* New 3D crosshair system, independent from the HUD crosshair - Draws genuine 3D crosshair models in game space. A few different styles are included. You can either use this new system or the HUD crosshair - by default, the HUD crosshair is used.
+* Added a D utility to convert a 3D mesh into a text-based hex array, for pasting in header files (Note: Building this is not required in any way to build the mod - If you wish to build this tool, at a minimum you'll need dub, DMD, CMake and a built copy of assimp, statically linked).
+* Debug overlay (with correct build defines set in pch) to help visualize issues.
+
+**Changes:**
+* There has been some confusion about the inclusion of the address library binary file - As of 1.2b, SmoothCam no longer includes this file for you - It is now a genuine dependency.
+* Removed the crosshair size hit character setting (for now), until we can better determine if a ray hit a character.
+* Located the dxgi swapchain global, dropped the memory scanner.
+* Dropped old debug drawing code, wrote new D3D utility code for more general purpose use.
+* Random code base housekeeping. Consolidated MCM code generator with rest of the generators.
+
 ## Beta 1.1
 * Bumped module and MCM version number to 10
 * Added a compatibility patch for Immersive First Person View.
@@ -24,7 +59,7 @@
 * Bumped module and MCM version number to 8
 * Added a "group edit" tab in the MCM, allowing users to edit all offset groups at once.
 * Increased the maximum slider range for "MinFollowDistance" from 64 to 256.
-* Fixed the crosshair position being wrong with ultrawide aspect ratios - TEST WITH ULTRATALL
+* Fixed the crosshair position being wrong with ultrawide aspect ratios.
 * Config now reads Skyrim.ini and will use user supplied `f3PArrowTiltUpAngle` and `f3PBoltTiltUpAngle` if found.
 * Opt-in option for crosshair size manipulation.
 * Added "ZoomOffset" settings to offset groups, allowing the camera to offset the zoom level in/out on different state transitions.

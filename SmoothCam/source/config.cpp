@@ -13,18 +13,23 @@ void Config::to_json(json& j, const OffsetGroup& obj) {
 		CREATE_JSON_VALUE(obj, sideOffset),
 		CREATE_JSON_VALUE(obj, upOffset),
 		CREATE_JSON_VALUE(obj, zoomOffset),
+
 		CREATE_JSON_VALUE(obj, combatRangedSideOffset),
 		CREATE_JSON_VALUE(obj, combatRangedUpOffset),
 		CREATE_JSON_VALUE(obj, combatRangedZoomOffset),
+
 		CREATE_JSON_VALUE(obj, combatMagicSideOffset),
 		CREATE_JSON_VALUE(obj, combatMagicUpOffset),
 		CREATE_JSON_VALUE(obj, combatMagicZoomOffset),
+
 		CREATE_JSON_VALUE(obj, combatMeleeSideOffset),
 		CREATE_JSON_VALUE(obj, combatMeleeUpOffset),
 		CREATE_JSON_VALUE(obj, combatMeleeZoomOffset),
+
 		CREATE_JSON_VALUE(obj, horseSideOffset),
 		CREATE_JSON_VALUE(obj, horseUpOffset),
 		CREATE_JSON_VALUE(obj, horseZoomOffset),
+
 		CREATE_JSON_VALUE(obj, interp),
 		CREATE_JSON_VALUE(obj, interpRangedCombat),
 		CREATE_JSON_VALUE(obj, interpMagicCombat),
@@ -37,18 +42,23 @@ void Config::from_json(const json& j, OffsetGroup& obj) {
 	VALUE_FROM_JSON(obj, sideOffset)
 	VALUE_FROM_JSON(obj, upOffset)
 	VALUE_FROM_JSON(obj, zoomOffset)
+
 	VALUE_FROM_JSON(obj, combatRangedSideOffset)
 	VALUE_FROM_JSON(obj, combatRangedUpOffset)
 	VALUE_FROM_JSON(obj, combatRangedZoomOffset)
+
 	VALUE_FROM_JSON(obj, combatMagicSideOffset)
 	VALUE_FROM_JSON(obj, combatMagicUpOffset)
 	VALUE_FROM_JSON(obj, combatMagicZoomOffset)
+
 	VALUE_FROM_JSON(obj, combatMeleeSideOffset)
 	VALUE_FROM_JSON(obj, combatMeleeUpOffset)
 	VALUE_FROM_JSON(obj, combatMeleeZoomOffset)
+
 	VALUE_FROM_JSON(obj, horseSideOffset)
 	VALUE_FROM_JSON(obj, horseUpOffset)
 	VALUE_FROM_JSON(obj, horseZoomOffset)
+
 	VALUE_FROM_JSON(obj, interp)
 	VALUE_FROM_JSON(obj, interpRangedCombat)
 	VALUE_FROM_JSON(obj, interpMagicCombat)
@@ -58,38 +68,69 @@ void Config::from_json(const json& j, OffsetGroup& obj) {
 
 void Config::to_json(json& j, const UserConfig& obj) {
 	j = json{
-		CREATE_JSON_VALUE(obj, enableInterp),
+		// Crosshair
 		CREATE_JSON_VALUE(obj, use3DBowAimCrosshair),
 		CREATE_JSON_VALUE(obj, use3DMagicCrosshair),
 		CREATE_JSON_VALUE(obj, hideNonCombatCrosshair),
 		CREATE_JSON_VALUE(obj, hideCrosshairMeleeCombat),
 		CREATE_JSON_VALUE(obj, enableCrosshairSizeManip),
-		CREATE_JSON_VALUE(obj, crosshairNPCHitGrowSize),
+		//CREATE_JSON_VALUE(obj, crosshairNPCHitGrowSize),
 		CREATE_JSON_VALUE(obj, crosshairMinDistSize),
 		CREATE_JSON_VALUE(obj, crosshairMaxDistSize),
+		CREATE_JSON_VALUE(obj, useWorldCrosshair),
+		CREATE_JSON_VALUE(obj, worldCrosshairDepthTest),
+		CREATE_JSON_VALUE(obj, worldCrosshairType),
+
+		// Arrow prediction
+		CREATE_JSON_VALUE(obj, useArrowPrediction),
+		CREATE_JSON_VALUE(obj, drawArrowArc),
+		CREATE_JSON_VALUE(obj, arrowArcColor),
+		CREATE_JSON_VALUE(obj, maxArrowPredictionRange),
+
+		// Misc
 		CREATE_JSON_VALUE(obj, disableDeltaTime),
 		CREATE_JSON_VALUE(obj, shoulderSwapKey),
 		CREATE_JSON_VALUE(obj, swapXClamping),
+
+		// Comapt
 		CREATE_JSON_VALUE(obj, disableDuringDialog),
-		CREATE_JSON_VALUE(obj, currentScalar),
 		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonHorse),
 		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonDragon),
 		CREATE_JSON_VALUE(obj, compatIC_FirstPersonSitting),
 		CREATE_JSON_VALUE(obj, compatIFPV),
+
+		// Primary interpolation
+		CREATE_JSON_VALUE(obj, enableInterp),
+		CREATE_JSON_VALUE(obj, currentScalar),
 		CREATE_JSON_VALUE(obj, minCameraFollowDistance),
 		CREATE_JSON_VALUE(obj, minCameraFollowRate),
 		CREATE_JSON_VALUE(obj, maxCameraFollowRate),
 		CREATE_JSON_VALUE(obj, zoomMul),
 		CREATE_JSON_VALUE(obj, zoomMaxSmoothingDistance),
+
+		// Separate local space interpolation
 		CREATE_JSON_VALUE(obj, separateLocalInterp),
 		CREATE_JSON_VALUE(obj, separateLocalScalar),
 		CREATE_JSON_VALUE(obj, localScalarRate),
+
+		// Separate Z
+		CREATE_JSON_VALUE(obj, separateZInterp),
+		CREATE_JSON_VALUE(obj, separateZScalar),
+		CREATE_JSON_VALUE(obj, separateZMaxSmoothingDistance),
+		CREATE_JSON_VALUE(obj, separateZMinFollowRate),
+		CREATE_JSON_VALUE(obj, separateZMaxFollowRate),
+		
+		// Offset interpolation
 		CREATE_JSON_VALUE(obj, enableOffsetInterpolation),
 		CREATE_JSON_VALUE(obj, offsetScalar),
 		CREATE_JSON_VALUE(obj, offsetInterpDurationSecs),
+
+		// Zoom interpolation
 		CREATE_JSON_VALUE(obj, enableZoomInterpolation),
 		CREATE_JSON_VALUE(obj, zoomScalar),
 		CREATE_JSON_VALUE(obj, zoomInterpDurationSecs),
+
+		// Distance clamping
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXEnable),
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXMin),
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXMax),
@@ -99,11 +140,8 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, cameraDistanceClampZEnable),
 		CREATE_JSON_VALUE(obj, cameraDistanceClampZMin),
 		CREATE_JSON_VALUE(obj, cameraDistanceClampZMax),
-		CREATE_JSON_VALUE(obj, separateZInterp),
-		CREATE_JSON_VALUE(obj, separateZMaxSmoothingDistance),
-		CREATE_JSON_VALUE(obj, separateZMinFollowRate),
-		CREATE_JSON_VALUE(obj, separateZMaxFollowRate),
-		CREATE_JSON_VALUE(obj, separateZScalar),
+
+		// Per state positions
 		CREATE_JSON_VALUE(obj, standing),
 		CREATE_JSON_VALUE(obj, walking),
 		CREATE_JSON_VALUE(obj, running),
@@ -118,38 +156,70 @@ void Config::to_json(json& j, const UserConfig& obj) {
 }
 
 void Config::from_json(const json& j, UserConfig& obj) {
-	VALUE_FROM_JSON(obj, enableInterp)
+	// Crosshair
 	VALUE_FROM_JSON(obj, use3DBowAimCrosshair)
 	VALUE_FROM_JSON(obj, use3DMagicCrosshair)
 	VALUE_FROM_JSON(obj, hideNonCombatCrosshair)
 	VALUE_FROM_JSON(obj, hideCrosshairMeleeCombat)
 	VALUE_FROM_JSON(obj, enableCrosshairSizeManip)
-	VALUE_FROM_JSON(obj, crosshairNPCHitGrowSize)
+	//VALUE_FROM_JSON(obj, crosshairNPCHitGrowSize)
 	VALUE_FROM_JSON(obj, crosshairMinDistSize)
 	VALUE_FROM_JSON(obj, crosshairMaxDistSize)
+	VALUE_FROM_JSON(obj, useWorldCrosshair)
+	VALUE_FROM_JSON(obj, worldCrosshairDepthTest)
+	VALUE_FROM_JSON(obj, worldCrosshairType)
+
+	// Arrow prediction
+	VALUE_FROM_JSON(obj, useArrowPrediction)
+	VALUE_FROM_JSON(obj, drawArrowArc)
+	VALUE_FROM_JSON(obj, arrowArcColor)
+	VALUE_FROM_JSON(obj, maxArrowPredictionRange)
+
+	// Misc
 	VALUE_FROM_JSON(obj, disableDeltaTime)
 	VALUE_FROM_JSON(obj, shoulderSwapKey)
 	VALUE_FROM_JSON(obj, swapXClamping)
+
+	// Compat
 	VALUE_FROM_JSON(obj, disableDuringDialog)
-	VALUE_FROM_JSON(obj, currentScalar)
 	VALUE_FROM_JSON(obj, comaptIC_FirstPersonHorse)
 	VALUE_FROM_JSON(obj, comaptIC_FirstPersonDragon)
 	VALUE_FROM_JSON(obj, compatIC_FirstPersonSitting)
 	VALUE_FROM_JSON(obj, compatIFPV)
+
+	// Primary interpolation
+	VALUE_FROM_JSON(obj, enableInterp)
+	VALUE_FROM_JSON(obj, currentScalar)
 	VALUE_FROM_JSON(obj, minCameraFollowDistance)
 	VALUE_FROM_JSON(obj, minCameraFollowRate)
 	VALUE_FROM_JSON(obj, maxCameraFollowRate)
 	VALUE_FROM_JSON(obj, zoomMul)
 	VALUE_FROM_JSON(obj, zoomMaxSmoothingDistance)
+
+	// Separate local space interpolation
 	VALUE_FROM_JSON(obj, separateLocalInterp)
 	VALUE_FROM_JSON(obj, separateLocalScalar)
 	VALUE_FROM_JSON(obj, localScalarRate)
+
+	// Separate Z
+	VALUE_FROM_JSON(obj, separateZInterp)
+	VALUE_FROM_JSON(obj, separateZScalar)
+	VALUE_FROM_JSON(obj, separateZMaxSmoothingDistance)
+	VALUE_FROM_JSON(obj, separateZMinFollowRate)
+	VALUE_FROM_JSON(obj, separateZMaxFollowRate)
+	
+
+	// Offset interpolation
 	VALUE_FROM_JSON(obj, enableOffsetInterpolation)
 	VALUE_FROM_JSON(obj, offsetScalar)
 	VALUE_FROM_JSON(obj, offsetInterpDurationSecs)
+
+	// Zoom interpolation
 	VALUE_FROM_JSON(obj, enableZoomInterpolation)
 	VALUE_FROM_JSON(obj, zoomScalar)
 	VALUE_FROM_JSON(obj, zoomInterpDurationSecs)
+
+	// Distance clamping
 	VALUE_FROM_JSON(obj, cameraDistanceClampXEnable)
 	VALUE_FROM_JSON(obj, cameraDistanceClampXMin)
 	VALUE_FROM_JSON(obj, cameraDistanceClampXMax)
@@ -159,11 +229,8 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, cameraDistanceClampZEnable)
 	VALUE_FROM_JSON(obj, cameraDistanceClampZMin)
 	VALUE_FROM_JSON(obj, cameraDistanceClampZMax)
-	VALUE_FROM_JSON(obj, separateZInterp)
-	VALUE_FROM_JSON(obj, separateZMaxSmoothingDistance)
-	VALUE_FROM_JSON(obj, separateZMinFollowRate)
-	VALUE_FROM_JSON(obj, separateZMaxFollowRate)
-	VALUE_FROM_JSON(obj, separateZScalar)
+
+	// Per state positions
 	VALUE_FROM_JSON(obj, standing)
 	VALUE_FROM_JSON(obj, walking)
 	VALUE_FROM_JSON(obj, running)
@@ -186,6 +253,22 @@ void Config::to_json(json& j, const Preset& obj) {
 void Config::from_json(const json& j, Preset& obj) {
 	VALUE_FROM_JSON(obj, name)
 	VALUE_FROM_JSON(obj, config)
+}
+
+void Config::to_json(json& j, const Color& obj) {
+	j = json{
+		CREATE_JSON_VALUE(obj, r),
+		CREATE_JSON_VALUE(obj, g),
+		CREATE_JSON_VALUE(obj, b),
+		CREATE_JSON_VALUE(obj, a)
+	};
+}
+
+void Config::from_json(const json& j, Color& obj) {
+	VALUE_FROM_JSON(obj, r);
+	VALUE_FROM_JSON(obj, g);
+	VALUE_FROM_JSON(obj, b);
+	VALUE_FROM_JSON(obj, a);
 }
 
 void Config::ReadConfigFile() {
@@ -234,6 +317,9 @@ void Config::ReadConfigFile() {
 			gameConfig.fMinCurrentZoom = std::wcstof(buf, &end);
 		}
 	}
+
+	// Load bone data
+	LoadBonePriorities();
 
 	currentConfig = cfg;
 }
@@ -341,4 +427,43 @@ std::wstring Config::GetPresetPath(int slot) {
 
 const Config::GameConfig* const Config::GetGameConfig() {
 	return &gameConfig;
+}
+
+void trimString(std::string& outStr) {
+	while(outStr.size() && isspace(outStr.front())) 
+		outStr.erase(outStr.begin());
+
+	while(outStr.size() && isspace(outStr.back())) 
+		outStr.pop_back();
+}
+
+static Config::BoneList bonePriorities = {};
+void Config::LoadBonePriorities() {
+	const std::string search = "SmoothCam_FollowBones_";
+	for (const auto& v : std::filesystem::directory_iterator("Data/SKSE/Plugins")) {
+		if (!v.is_regular_file()) continue;
+		const auto name = v.path().filename().string();
+
+		if (name.length() < search.length()) continue;
+		if (search.compare(0, search.length(), name.substr(0, search.length())) == 0) {
+			std::string path = "Data/SKSE/Plugins/";
+			path.append(name);
+
+			std::ifstream ifs(path);
+			if (!ifs.good()) continue;
+
+			std::string line;
+			while (std::getline(ifs, line)) {
+				trimString(line);
+				if (line.length() == 0) continue;
+				if (line.rfind("//", 0) == 0) continue;
+
+				bonePriorities.emplace_back(line.c_str());
+			}
+		}
+	}
+}
+
+Config::BoneList& Config::GetBonePriorities() noexcept {
+	return bonePriorities;
 }

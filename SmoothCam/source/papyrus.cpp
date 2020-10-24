@@ -54,6 +54,14 @@ const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> s
 	IMPL_SCALAR_METHOD_GETTER("SepLocalInterpMethod", separateLocalScalar)
 	IMPL_SCALAR_METHOD_GETTER("OffsetTransitionMethod", offsetScalar)
 	IMPL_SCALAR_METHOD_GETTER("ZoomTransitionMethod", zoomScalar)
+
+	{ "WorldCrosshairType", []() {
+		const auto it = Config::crosshairTypeRevLookup.find(Config::GetCurrentConfig()->worldCrosshairType);
+		if (it != Config::crosshairTypeRevLookup.end()) {
+			return BSFixedString(it->second.c_str());
+		}
+		return BSFixedString("");
+	}},
 };
 
 const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetters = {
@@ -67,6 +75,10 @@ const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetter
 	IMPL_GETTER("DisableDuringDialog",				disableDuringDialog)
 	IMPL_GETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair)
 	IMPL_GETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair)
+	IMPL_GETTER("UseWorldCrosshair",				useWorldCrosshair)
+	IMPL_GETTER("WorldCrosshairDepthTest",			worldCrosshairDepthTest)
+	IMPL_GETTER("EnableArrowPrediction",			useArrowPrediction)
+	IMPL_GETTER("DrawArrowArc",						drawArrowArc)
 	IMPL_GETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip)
 	IMPL_GETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair)
 	IMPL_GETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat)
@@ -116,9 +128,14 @@ const std::unordered_map<std::string_view, std::function<float(void)>> floatGett
 	IMPL_GETTER("MaxSmoothingInterpDistance",			zoomMaxSmoothingDistance)
 	IMPL_GETTER("ZoomMul",								zoomMul)
 
-	IMPL_GETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize)
+	//IMPL_GETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize)
 	IMPL_GETTER("CrosshairMinDistSize",					crosshairMinDistSize)
 	IMPL_GETTER("CrosshairMaxDistSize",					crosshairMaxDistSize)
+	IMPL_GETTER("ArrowArcColorR",						arrowArcColor.r)
+	IMPL_GETTER("ArrowArcColorG",						arrowArcColor.g)
+	IMPL_GETTER("ArrowArcColorB",						arrowArcColor.b)
+	IMPL_GETTER("ArrowArcColorA",						arrowArcColor.a)
+	IMPL_GETTER("MaxArrowPredictionRange",				maxArrowPredictionRange)
 
 	IMPL_GETTER("SepZMaxInterpDistance",				separateZMaxSmoothingDistance)
 	IMPL_GETTER("SepZMinFollowRate",					separateZMinFollowRate)
@@ -242,6 +259,14 @@ const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> s
 	IMPL_SCALAR_METHOD_SETTER("SepLocalInterpMethod", separateLocalScalar)
 	IMPL_SCALAR_METHOD_SETTER("OffsetTransitionMethod", offsetScalar)
 	IMPL_SCALAR_METHOD_SETTER("ZoomTransitionMethod", zoomScalar)
+	
+	{ "WorldCrosshairType", [](BSFixedString& str) {
+		const auto it = Config::crosshairTypeLookup.find(str.c_str());
+		if (it != Config::crosshairTypeLookup.end()) {
+			Config::GetCurrentConfig()->worldCrosshairType = it->second;
+			Config::SaveCurrentConfig();
+		}
+	}},
 };
 
 const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetters = {
@@ -255,6 +280,10 @@ const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetter
 	IMPL_SETTER("DisableDuringDialog",				disableDuringDialog, bool)
 	IMPL_SETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair, bool)
 	IMPL_SETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair, bool)
+	IMPL_SETTER("UseWorldCrosshair",				useWorldCrosshair, bool)
+	IMPL_SETTER("WorldCrosshairDepthTest",			worldCrosshairDepthTest, bool)
+	IMPL_SETTER("EnableArrowPrediction",			useArrowPrediction, bool)
+	IMPL_SETTER("DrawArrowArc",						drawArrowArc, bool)
 	IMPL_SETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip, bool)
 	IMPL_SETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair, bool)
 	IMPL_SETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat, bool)
@@ -304,9 +333,14 @@ const std::unordered_map<std::string_view, std::function<void(float)>> floatSett
 	IMPL_SETTER("MaxSmoothingInterpDistance",			zoomMaxSmoothingDistance, float)
 	IMPL_SETTER("ZoomMul",								zoomMul, float)
 
-	IMPL_SETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize, float)
+	//IMPL_SETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize, float)
 	IMPL_SETTER("CrosshairMinDistSize",					crosshairMinDistSize, float)
 	IMPL_SETTER("CrosshairMaxDistSize",					crosshairMaxDistSize, float)
+	IMPL_SETTER("ArrowArcColorR",						arrowArcColor.r, float)
+	IMPL_SETTER("ArrowArcColorG",						arrowArcColor.g, float)
+	IMPL_SETTER("ArrowArcColorB",						arrowArcColor.b, float)
+	IMPL_SETTER("ArrowArcColorA",						arrowArcColor.a, float)
+	IMPL_SETTER("MaxArrowPredictionRange",				maxArrowPredictionRange, float)
 
 	IMPL_SETTER("SepZMaxInterpDistance",				separateZMaxSmoothingDistance, float)
 	IMPL_SETTER("SepZMinFollowRate",					separateZMinFollowRate, float)

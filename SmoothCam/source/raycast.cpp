@@ -26,7 +26,8 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	{
 		auto physicsWorld = Physics::GetWorld(ply->parentCell);
 		if (physicsWorld) {
-			res.hit = Offsets::Get<RayCastFunType>(32270)( // 0x4f45f0
+			static auto cameraCaster = Offsets::Get<RayCastFunType>(32270);
+			res.hit = cameraCaster( // 0x4f45f0
 				playerCamera->physics, physicsWorld,
 				start, end, static_cast<uint32_t*>(res.data), &res.hitCharacter,
 				traceHullSize
@@ -113,7 +114,8 @@ Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) {
 
 	if (!best.hit) return result;
 	typedef NiAVObject*(__fastcall* _GetUserData)(bhkShapeList*);
-	auto av = Offsets::Get<_GetUserData>(76160)(best.hit);
+	static auto getAVObject = Offsets::Get<_GetUserData>(76160);
+	auto av = getAVObject(best.hit);
 	result.hit = av != nullptr;
 
 	// What a useless function, only returning a valid character if it hits the actor origin?

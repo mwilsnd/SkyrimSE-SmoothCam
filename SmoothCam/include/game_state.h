@@ -138,4 +138,6 @@ namespace GameState {
 	const bool IsMountingHorse(const PlayerCharacter* player) noexcept;
 	// Returns true if the player is dismounting a horse
 	const bool IsDisMountingHorse(const PlayerCharacter* player) noexcept;
+	// Returns true if we are in POV slide mode (Holding F key)
+	const bool InPOVSlideMode() noexcept;
 }

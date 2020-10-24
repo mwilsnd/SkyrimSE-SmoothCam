@@ -123,7 +123,7 @@ void mmath::DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 	};
 }
 
-glm::vec2 mmath::PointToScreen(const glm::vec3& point) {
+glm::vec3 mmath::PointToScreen(const glm::vec3& point) {
 	auto port = NiRect<float>();
 	port.m_left = -1.0f;
 	port.m_right = 1.0f;
@@ -138,8 +138,69 @@ glm::vec2 mmath::PointToScreen(const glm::vec3& point) {
 		&screen.x, &screen.y, &screen.z, 9.99999975e-06
 	);
 
-	if (screen.z < -1.0f)
-		return { -100.0f, -100.0f };
+	return { screen.x, screen.y, screen.z };
+};
 
-	return { screen.x, screen.y };
+glm::mat4 mmath::Perspective(float fov, float aspect, const NiFrustum& frustum) {
+	const auto range = frustum.m_fFar / (frustum.m_fNear - frustum.m_fFar);
+	const auto height = 1.0f / glm::tan(fov * 0.5f);
+
+	glm::mat4 proj;
+	proj[0][0] = height;
+	proj[0][1] = 0.0f;
+	proj[0][2] = 0.0f;
+	proj[0][3] = 0.0f;
+
+	proj[1][0] = 0.0f;
+	proj[1][1] = height * aspect;
+	proj[1][2] = 0.0f;
+	proj[1][3] = 0.0f;
+
+	proj[2][0] = 0.0f;
+	proj[2][1] = 0.0f;
+	proj[2][2] = range * -1.0f;
+	proj[2][3] = 1.0f;
+
+	proj[3][0] = 0.0f;
+	proj[3][1] = 0.0f;
+	proj[3][2] = range * frustum.m_fNear;
+	proj[3][3] = 0.0f;
+	
+	// exact match, save for 2,0 2,1 - looks like XMMatrixPerspectiveOffCenterLH with a slightly
+	// different frustum or something. whatever, close enough.
+	return proj; 
+}
+
+glm::mat4 mmath::LookAt(const glm::vec3& pos, const glm::vec3& at, const glm::vec3& up) {
+	const auto forward = glm::normalize(at - pos);
+	const auto side = glm::normalize(glm::cross(up, forward));
+	const auto u = glm::cross(forward, side);
+
+	const auto negEyePos = pos * -1.0f;
+	const auto sDotEye = glm::dot(side, negEyePos);
+	const auto uDotEye = glm::dot(u, negEyePos);
+	const auto fDotEye = glm::dot(forward, negEyePos);
+
+	glm::mat4 result;
+	result[0][0] = side.x * -1.0f;
+	result[0][1] = side.y * -1.0f;
+	result[0][2] = side.z * -1.0f;
+	result[0][3] = sDotEye *-1.0f;
+
+	result[1][0] = u.x;
+	result[1][1] = u.y;
+	result[1][2] = u.z;
+	result[1][3] = uDotEye;
+
+	result[2][0] = forward.x;
+	result[2][1] = forward.y;
+	result[2][2] = forward.z;
+	result[2][3] = fDotEye;
+
+	result[3][0] = 0.0f;
+	result[3][1] = 0.0f;
+	result[3][2] = 0.0f;
+	result[3][3] = 1.0f;
+
+	return glm::transpose(result);
 }

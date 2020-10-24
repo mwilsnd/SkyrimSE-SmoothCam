@@ -6,14 +6,13 @@
 
 static PLH::VFuncMap origVFuncs_PlayerInput;
 static PLH::VFuncMap origVFuncs_MenuOpenClose;
-std::weak_ptr<Camera::SmoothCamera> g_theCamera;
+extern std::shared_ptr<Camera::SmoothCamera> g_theCamera;
 
 static ITimer timer;
-double curFrame = 0.0;
-double lastFrame = 0.0;
-
-double curQPC = 0.0;
-double lastQPC = 0.0;
+static double curFrame = 0.0;
+static double lastFrame = 0.0;
+static double curQPC = 0.0;
+static double lastQPC = 0.0;
 
 static double GetTime() noexcept {
 	return timer.GetElapsedTime();
@@ -34,10 +33,6 @@ void StepFrameTime() noexcept {
 
 	lastQPC = curQPC;
 	curQPC = GetQPC();
-
-#ifdef DEBUG_DRAWING
-	ArrowFixes::Draw();
-#endif
 }
 
 double CurTime() noexcept {
@@ -58,16 +53,24 @@ double GetQPCDelta() noexcept {
 
 #define CAMERA_UPDATE_DETOUR_IMPL(name)															\
 static PLH::VFuncMap origVFuncs_##name##;														\
-void __fastcall mCameraStateUpdate##name##(TESCameraState* pThis, void* unk) {					\
+void __fastcall mCameraStateUpdate##name##(														\
+	TESCameraState* pThis, BSTSmartPointer<TESCameraState>& nextState)							\
+{																								\
 	StepFrameTime();																			\
-	std::shared_ptr<Camera::SmoothCamera> lockedPtr;											\
 	auto player = *g_thePlayer;																	\
 	auto camera = CorrectedPlayerCamera::GetSingleton();										\
-	if ((camera && player); lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)				\
-	lockedPtr->PreGameUpdate(player, camera);													\
-	reinterpret_cast<Detours::CameraOnUpdate>(origVFuncs_##name##.at(3))(pThis, unk);			\
-	if ((camera && player); lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)				\
-		lockedPtr->UpdateCamera(player, camera);												\
+	player->IncRef();																			\
+	if (g_theCamera != nullptr)	{																\
+		if (g_theCamera->PreGameUpdate(player, camera, nextState)) {							\
+			player->DecRef();																	\
+			return;																				\
+		}																						\
+	}																							\
+	reinterpret_cast<Detours::CameraOnUpdate>(origVFuncs_##name##.at(3))(pThis, nextState);		\
+	if (g_theCamera != nullptr)	{																\
+		g_theCamera->UpdateCamera(player, camera, nextState);									\
+	}																							\
+	player->DecRef();																			\
 }
 
 #define DO_CAMERA_UPDATE_DETOUR_IMPL(name, state)				\
@@ -94,23 +97,20 @@ CAMERA_UPDATE_DETOUR_IMPL(Transition);
 typedef uintptr_t(__thiscall* OnInput)(PlayerInputHandler*, InputEvent*);
 uintptr_t __fastcall mOnInput(PlayerInputHandler* pThis, InputEvent* input) {
 	if (input) {
-		switch (input->deviceType) {
+		switch (input->eventType) {
 			case InputEvent::kEventType_Button: {
 				const auto ev = reinterpret_cast<ButtonEvent*>(input);
 				const BSFixedString* const id = ev->GetControlID();
-				if (!id || !id->data) break;
-
-				if (strcmp(id->data, "Toggle POV") == 0) {
-					std::shared_ptr<Camera::SmoothCamera> lockedPtr;
-					if (!g_theCamera.expired() && (lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)) {
-						lockedPtr->OnTogglePOV(ev);
-					}
-				} else {
-					std::shared_ptr<Camera::SmoothCamera> lockedPtr;
-					if (!g_theCamera.expired() && (lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)) {
-						lockedPtr->OnKeyPress(ev);
+				if (id && id->data) {
+					if (strcmp(id->data, "Toggle POV") == 0) {
+						if (g_theCamera)
+							g_theCamera->OnTogglePOV(ev);
+						break;
 					}
 				}
+
+				if (g_theCamera)
+					g_theCamera->OnKeyPress(ev);
 				
 				break;
 			}
@@ -124,18 +124,28 @@ uintptr_t __fastcall mOnInput(PlayerInputHandler* pThis, InputEvent* input) {
 typedef EventResult(__thiscall* MenuOpenCloseHandler)(uintptr_t pThis, MenuOpenCloseEvent* ev, EventDispatcher<MenuOpenCloseEvent>* dispatcher);
 EventResult __fastcall mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent* ev, EventDispatcher<MenuOpenCloseEvent>* dispatcher) {
 	if (pThis == (uintptr_t)&(*g_thePlayer)->menuOpenCloseEvent) {
-		if (ev->menuName != nullptr && strcmp(ev->menuName, "Dialogue Menu") == 0) {
-			std::shared_ptr<Camera::SmoothCamera> lockedPtr;
-			if (!g_theCamera.expired() && (lockedPtr = g_theCamera.lock(), lockedPtr != nullptr)) {
-				lockedPtr->OnDialogMenuChanged(ev);
-			}
+		if (ev->menuName.data && g_theCamera) {
+			auto id = Camera::MenuID::None;
+
+			if (strcmp(ev->menuName.data, "Dialogue Menu") == 0)
+				id = Camera::MenuID::DialogMenu;
+			else if (strcmp(ev->menuName.data, "Loading Menu") == 0)
+				id = Camera::MenuID::LoadingMenu;
+			else if (strcmp(ev->menuName.data, "Mist Menu") == 0)
+				id = Camera::MenuID::MistMenu;
+			else if (strcmp(ev->menuName.data, "Fader Menu") == 0)
+				id = Camera::MenuID::FaderMenu;
+			else if (strcmp(ev->menuName.data, "LoadWaitSpinner") == 0)
+				id = Camera::MenuID::LoadWaitSpinner;
+
+			if (id != Camera::MenuID::None)
+				g_theCamera->OnMenuOpenClose(id, ev);
 		}
 	}
 	return reinterpret_cast<MenuOpenCloseHandler>(origVFuncs_MenuOpenClose[1])(pThis, ev, dispatcher);
 }
 
-bool Detours::Attach(std::shared_ptr<Camera::SmoothCamera> theCamera) {
-	g_theCamera = theCamera;
+bool Detours::Attach() {
 	timer.Start();
 
 	{

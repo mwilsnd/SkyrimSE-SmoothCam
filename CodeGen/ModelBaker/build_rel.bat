@@ -1,0 +1,2 @@
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+C:\D\dmd2\windows\bin\dub.exe run --compiler=C:\D\ldc\bin\ldc2 --arch=x86_64 --build=release --config=application-release
