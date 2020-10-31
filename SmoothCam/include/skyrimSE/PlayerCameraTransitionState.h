@@ -1,4 +1,5 @@
 #pragma once
+
 class CorrectedPlayerCameraTransitionState : public TESCameraState {
 	public:
 		CorrectedPlayerCameraTransitionState();

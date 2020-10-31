@@ -18,13 +18,18 @@ project "PolyHook2"
 		loc.. "/polyhook2/Enums.hpp",
 		loc.. "/polyhook2/IHook.hpp",
 		loc.. "/polyhook2/MemProtector.hpp",
+		loc.. "/polyhook2/MemAccessor.hpp",
 		loc.. "/polyhook2/Misc.hpp",
 		loc.. "/polyhook2/Instruction.hpp",
 		loc.. "/polyhook2/ADisassembler.hpp",
+		loc.. "/polyhook2/ErrorLog.hpp",
 
 		loc.. "/sources/VTableSwapHook.cpp",
 		loc.. "/sources/VFuncSwapHook.cpp",
 		loc.. "/sources/MemProtector.cpp",
+		loc.. "/sources/MemAccessor.cpp",
+		loc.. "/sources/Misc.cpp",
+		loc.. "/sources/ErrorLog.cpp",
 	}
 
 	includedirs {
@@ -49,6 +54,7 @@ project "PolyHook2"
 		editandcontinue "On"
 		floatingpoint "Strict"
 		functionlevellinking "On"
+		flags { "MultiProcessorCompile" }
 
 	filter "configurations:Release"
 		defines { "NODEBUG", "NDEBUG" }
@@ -60,6 +66,7 @@ project "PolyHook2"
 		functionlevellinking "Off"
 		runtime "Release"
 		omitframepointer "On"
+		flags { "MultiProcessorCompile" }
 
 		flags {
 			"LinkTimeOptimization", "NoBufferSecurityCheck",

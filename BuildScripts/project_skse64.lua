@@ -1,5 +1,5 @@
 local outputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-local parent = "../Deps/skse64_2_00_17/src/skse64"
+local parent = "../Deps/skse64_2_00_19/src/skse64"
 local loc = parent.. "/skse64"
 
 project "skse64"
@@ -20,7 +20,7 @@ project "skse64"
 		loc.. "/**.cpp",
 	}
 	forceincludes {
-		"../Deps/skse64_2_00_17/src/common/IPrefix.h",
+		"../Deps/skse64_2_00_19/src/common/IPrefix.h",
 		"../SmoothCam/include/addrlib/skse_macros.h",
 	}
 	includedirs {
@@ -54,13 +54,14 @@ project "skse64"
 		editandcontinue "On"
 		floatingpoint "Strict"
 		functionlevellinking "On"
+		flags { "MultiProcessorCompile" }
 
 		libdirs {
 			parent.. "/../common/bin/Debug-windows-x86_64/common_skse64",
-			parent.. "/skse64_common/bin/Debug-windows-x86_64/skse64_common",
+			--parent.. "/skse64_common/bin/Debug-windows-x86_64/skse64_common",
 		}
 		links {
-			"skse64_common.lib",
+			--"skse64_common.lib",
 		}
 
 	filter "configurations:Release"
@@ -80,8 +81,8 @@ project "skse64"
 
 		libdirs {
 			parent.. "/../common/bin/Release-windows-x86_64/common_skse64",
-			parent.. "/skse64_common/bin/Release-windows-x86_64/skse64_common",
+			--parent.. "/skse64_common/bin/Release-windows-x86_64/skse64_common",
 		}
 		links {
-			"skse64_common.lib",
+			--"skse64_common.lib",
 		}

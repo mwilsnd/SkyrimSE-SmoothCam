@@ -19,7 +19,7 @@ return function( tempLocation, extractLocation, fileName, url )
 	end
 
 	local ok = os.executef(
-		"7z x \"%s\" -o\"%s\" skse64_2_00_17\\src\\* -r",
+		"7z x \"%s\" -o\"%s\" skse64_2_00_19\\src\\* -r",
 		cwd.. "/".. tempLocation.. "/".. fileName,
 		cwd.. "/".. extractLocation
 	)

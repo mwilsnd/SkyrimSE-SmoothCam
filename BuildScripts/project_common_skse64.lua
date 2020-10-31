@@ -1,5 +1,5 @@
 local outputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-local loc = "../Deps/skse64_2_00_17/src/common"
+local loc = "../Deps/skse64_2_00_19/src/common"
 
 project "common_skse64"
 	location( loc )
@@ -43,6 +43,7 @@ project "common_skse64"
 		editandcontinue "On"
 		floatingpoint "Strict"
 		functionlevellinking "On"
+		flags { "MultiProcessorCompile" }
 
 	filter "configurations:Release"
 		defines { "NODEBUG", "NDEBUG" }
@@ -56,5 +57,5 @@ project "common_skse64"
 		omitframepointer "On"
 		flags {
 			"LinkTimeOptimization", "NoBufferSecurityCheck",
-			"NoMinimalRebuild", "NoRuntimeChecks",
+			"NoMinimalRebuild", "NoRuntimeChecks", "MultiProcessorCompile"
 		}

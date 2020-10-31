@@ -1,3 +1,4 @@
+#ifdef WITH_D2D
 #include "render/d2d.h"
 #include "render/render_target.h"
 #include "render/texture2d.h"
@@ -39,9 +40,9 @@ Render::D2D::D2D(D3DContext& ctx) {
 
 	// And the whole reason we have to make our own device
 	uint32_t flags = D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#ifdef _DEBUG
+/*#ifdef _DEBUG
 	flags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
-#endif
+#endif*/
 
 	if (!SUCCEEDED(D3D11CreateDevice(
 		gameAdapter.get(),
@@ -285,10 +286,11 @@ void Render::D2D::CreateRenderTarget(D3DContext& ctx, D3DContext& renderingCtx) 
 	sharedColorBuffer = std::make_shared<Texture2D>(renderingCtx, sharedTex, texInfo);
 
 	SRVCreateInfo srv;
-	srv.dimensions = D3D11_SRV_DIMENSION::D3D10_1_SRV_DIMENSION_TEXTURE2D;
+	srv.dimensions = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D;
 	srv.format = texInfo.format;
 	srv.texture = sharedColorBuffer;
 	srv.texture2D.MipLevels = 1;
 	srv.texture2D.MostDetailedMip = 0;
 	colorSRV = std::make_unique<Render::SRV>(renderingCtx, srv);
 }
+#endif

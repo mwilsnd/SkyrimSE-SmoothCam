@@ -1,4 +1,5 @@
 #pragma once
+#ifdef WITH_D2D
 #include <d2d1_2.h>
 #include <winrt/base.h>
 #include "render/d3d_context.h"
@@ -17,12 +18,14 @@ namespace Render {
 		glm::vec4 color;
 
 		size_t Hash() const {
-			return std::hash<float>()(color.x) ^ std::hash<float>()(color.y) ^
-				std::hash<float>()(color.z) ^ std::hash<float>()(color.w);
+			return std::hash<glm::vec4>()(color);
 		}
 
 		bool operator==(const ColorBrushKey& other) const {
-			return color == other.color;
+			return color.x == other.color.x &&
+				color.y == other.color.y &&
+				color.z == other.color.z &&
+				color.w == other.color.w;
 		}
 	} ColorBrushKey;
 
@@ -92,3 +95,4 @@ namespace Render {
 			friend class DWrite;
 	};
 }
+#endif

@@ -46,6 +46,8 @@ lava.loadClass "preproc_constexpr_struct.lua"
 lava.loadClass "preproc_ifchain_macro_invoke.lua"
 lava.loadClass "preproc_all_of_struct_impl.lua"
 lava.loadClass "preproc_group_struct_macro_invoke.lua"
+lava.loadClass "preproc_generate_offsetGroup.lua"
+lava.loadClass "preproc_impl_offsetGroup_page.lua"
 
 local function readFile( strPath )
 	local f = io.open( strPath, "r" )
@@ -71,8 +73,12 @@ end
 local function run()
 	local src = readFile(args[1])
 
+	-- Group generators
+	local groupGen = papyrus.preproc.GenerateOffsetGroup:New( src )
+	local groupPageImpl = papyrus.preproc.ImplOffsetGroupPage:New( groupGen:GetParsed(), groupGen )
+
 	-- Run the array initializer list tool
-	local initList = papyrus.preproc.ArrayInitList:New( src )
+	local initList = papyrus.preproc.ArrayInitList:New( groupPageImpl:GetParsed() )
 
 	-- Run the parsing part of the struct tool
 	local structParser = papyrus.preproc.StructToVars:New( initList:GetParsed() )
@@ -89,7 +95,7 @@ local function run()
 	local groupMacroInvoke = papyrus.preproc.GroupStructMacroInvoke:New( allOfStructParser:GetParsed() )
 
 	-- Feed the processed code into the if chain macro tool
-	local ifChainParser = papyrus.preproc.IfChainMacroInvoke:New( groupMacroInvoke:GetParsed() )
+	local ifChainParser = papyrus.preproc.IfChainMacroInvoke:New( groupMacroInvoke:GetParsed(), constStructParser )
 
 	-- Now re-parse and apply the struct tool
 	structParser:SetSource( ifChainParser:GetParsed() )

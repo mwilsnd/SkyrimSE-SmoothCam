@@ -5,14 +5,14 @@
 namespace Render {
 	using IALayout = std::vector<D3D11_INPUT_ELEMENT_DESC>;
 	struct VertexBufferCreateInfo {
-		size_t elementSize;
-		size_t numElements;
+		size_t elementSize = 0;
+		size_t numElements = 0;
 		D3D11_SUBRESOURCE_DATA* elementData = nullptr;
-		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		D3D11_USAGE bufferUsage = D3D11_USAGE_IMMUTABLE;
 		uint32_t cpuAccessFlags = 0;
 		std::shared_ptr<Shader> vertexProgram;
-		IALayout iaLayout;
+		IALayout iaLayout = {};
 	};
 
 	class VertexBuffer {

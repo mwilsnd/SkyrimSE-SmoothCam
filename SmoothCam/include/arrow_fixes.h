@@ -22,7 +22,4 @@ namespace ArrowFixes {
 	};
 
 	bool Attach();
-#ifdef _DEBUG
-	void Draw();
-#endif
 }

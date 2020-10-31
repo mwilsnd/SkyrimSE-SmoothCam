@@ -2,61 +2,20 @@
 #include "camera.h"
 #include "arrow_fixes.h"
 
-#include <common/ITimer.h>
-
 static PLH::VFuncMap origVFuncs_PlayerInput;
 static PLH::VFuncMap origVFuncs_MenuOpenClose;
+
+static std::unique_ptr<PLH::VFuncSwapHook> playerInputHooks;
+static std::unique_ptr<PLH::VFuncSwapHook> menuOpenCloseHooks;
+
 extern std::shared_ptr<Camera::SmoothCamera> g_theCamera;
-
-static ITimer timer;
-static double curFrame = 0.0;
-static double lastFrame = 0.0;
-static double curQPC = 0.0;
-static double lastQPC = 0.0;
-
-static double GetTime() noexcept {
-	return timer.GetElapsedTime();
-}
-
-static double GetQPC() noexcept {
-	LARGE_INTEGER f, i;
-	if (QueryPerformanceCounter(&i) && QueryPerformanceFrequency(&f)) {
-		auto frequency = 1.0 / static_cast<double>(f.QuadPart);
-		return static_cast<double>(i.QuadPart) * frequency;
-	}
-	return 0.0;
-}
-
-void StepFrameTime() noexcept {
-	lastFrame = curFrame;
-	curFrame = GetTime();
-
-	lastQPC = curQPC;
-	curQPC = GetQPC();
-}
-
-double CurTime() noexcept {
-	return curFrame;
-}
-
-double CurQPC() noexcept {
-	return curQPC;
-}
-
-double GetFrameDelta() noexcept {
-	return curFrame - lastFrame;
-}
-
-double GetQPCDelta() noexcept {
-	return curQPC - lastQPC;
-}
 
 #define CAMERA_UPDATE_DETOUR_IMPL(name)															\
 static PLH::VFuncMap origVFuncs_##name##;														\
 void __fastcall mCameraStateUpdate##name##(														\
 	TESCameraState* pThis, BSTSmartPointer<TESCameraState>& nextState)							\
 {																								\
-	StepFrameTime();																			\
+	GameTime::StepFrameTime();																	\
 	auto player = *g_thePlayer;																	\
 	auto camera = CorrectedPlayerCamera::GetSingleton();										\
 	player->IncRef();																			\
@@ -74,7 +33,7 @@ void __fastcall mCameraStateUpdate##name##(														\
 }
 
 #define DO_CAMERA_UPDATE_DETOUR_IMPL(name, state)				\
-auto detour_##name## = Detours::CameraStateDetour(				\
+static auto detour_##name## = Detours::CameraStateDetour(		\
 	CorrectedPlayerCamera::GetSingleton()->cameraStates[state],	\
 	static_cast<uint16_t>(3),									\
 	reinterpret_cast<uint64_t>(&mCameraStateUpdate##name##),	\
@@ -146,36 +105,36 @@ EventResult __fastcall mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent
 }
 
 bool Detours::Attach() {
-	timer.Start();
+	GameTime::Initialize();
 
 	{
-		PLH::VFuncSwapHook playerInputHooks(
+		playerInputHooks = std::make_unique<PLH::VFuncSwapHook>(
 			(uint64_t)PlayerControls::GetSingleton()->togglePOVHandler,
-			{
+			PLH::VFuncMap{
 				{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mOnInput) },
 			},
 			&origVFuncs_PlayerInput
 		);
 
-		if (!playerInputHooks.hook()) {
-			_ERROR("Failed to place detour on target virtual function, this error is fatal.");
-			FatalError(L"Failed to place detour on target virtual function, this error is fatal.");
+		if (!playerInputHooks->hook()) {
+			_ERROR("Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
+			FatalError(L"Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
 		}
 	}
 
 	{
 		// Intercept menu open/close events
-		PLH::VFuncSwapHook menuOpenCloseHooks(
+		menuOpenCloseHooks = std::make_unique<PLH::VFuncSwapHook>(
 			(uint64_t)&(*g_thePlayer)->menuOpenCloseEvent,
-			{
+			PLH::VFuncMap{
 				{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mMenuOpenCloseHandler) },
 			},
 			&origVFuncs_MenuOpenClose
 		);
 
-		if (!menuOpenCloseHooks.hook()) {
-			_ERROR("Failed to place detour on target virtual function, this error is fatal.");
-			FatalError(L"Failed to place detour on target virtual function, this error is fatal.");
+		if (!menuOpenCloseHooks->hook()) {
+			_ERROR("Failed to place detour on target virtual function(menuOpenCloseEvent), this error is fatal.");
+			FatalError(L"Failed to place detour on target virtual function(menuOpenCloseEvent), this error is fatal.");
 		}
 	}
 

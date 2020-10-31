@@ -1,5 +1,9 @@
 #pragma once
-#include "versiondb.h"
+#include "code_analysis.h"
+SILENCE_CODE_ANALYSIS;
+#   include "versiondb.h"
+RESTORE_CODE_ANALYSIS;
+
 #include "offsets.h"
 
 // A custom relocation impl that translates 1.5.97 offsets to address IDs

@@ -39,7 +39,7 @@ namespace Raycast {
 		glm::vec4 hitPos;
 
 		// pad to 128
-		uint64_t _pad[3];
+		uint64_t _pad;
 
 		bhkRayResult() noexcept : hit(false), hitCharacter(nullptr) {}
 	} RayResult;

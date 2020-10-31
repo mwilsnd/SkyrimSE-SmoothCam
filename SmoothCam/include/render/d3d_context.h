@@ -8,11 +8,11 @@ namespace Render {
 	typedef struct _D3DContext {
 		// @Note: we don't want to refCount the swap chain - Let skyrim manage the lifetime.
 		// As long as the game is running, we have a valid swapchain.
-		IDXGISwapChain* swapChain;
+		IDXGISwapChain* swapChain = nullptr;
 		winrt::com_ptr<ID3D11Device> device;
 		winrt::com_ptr<ID3D11DeviceContext> context;
 		// Size of the output window in pixels
-		glm::vec2 windowSize;
+		glm::vec2 windowSize = {};
 	} D3DContext;
 
 	// The present hook

@@ -74,7 +74,7 @@ void Render::GradBox::MakeBackgroundVerts(D3DContext& ctx) noexcept {
 		vbInfo.elementSize = sizeof(float) * 8;
 		vbInfo.numElements = 6;
 		vbInfo.elementData = &data;
-		vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		vbInfo.bufferUsage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
 		vbInfo.cpuAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		vbInfo.vertexProgram = vsBackground;
@@ -82,11 +82,11 @@ void Render::GradBox::MakeBackgroundVerts(D3DContext& ctx) noexcept {
 		vbInfo.iaLayout.emplace_back(D3D11_INPUT_ELEMENT_DESC{
 			"POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,
 			0, D3D11_INPUT_PER_VERTEX_DATA, 0
-			});
+		});
 		vbInfo.iaLayout.emplace_back(D3D11_INPUT_ELEMENT_DESC{
 			"COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,
 			D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0
-			});
+		});
 
 		vboBackground = std::make_unique<Render::VertexBuffer>(vbInfo, ctx);
 	} else {

@@ -13,22 +13,27 @@ void Config::to_json(json& j, const OffsetGroup& obj) {
 		CREATE_JSON_VALUE(obj, sideOffset),
 		CREATE_JSON_VALUE(obj, upOffset),
 		CREATE_JSON_VALUE(obj, zoomOffset),
+		CREATE_JSON_VALUE(obj, fovOffset),
 
 		CREATE_JSON_VALUE(obj, combatRangedSideOffset),
 		CREATE_JSON_VALUE(obj, combatRangedUpOffset),
 		CREATE_JSON_VALUE(obj, combatRangedZoomOffset),
+		CREATE_JSON_VALUE(obj, combatRangedFOVOffset),
 
 		CREATE_JSON_VALUE(obj, combatMagicSideOffset),
 		CREATE_JSON_VALUE(obj, combatMagicUpOffset),
 		CREATE_JSON_VALUE(obj, combatMagicZoomOffset),
+		CREATE_JSON_VALUE(obj, combatMagicFOVOffset),
 
 		CREATE_JSON_VALUE(obj, combatMeleeSideOffset),
 		CREATE_JSON_VALUE(obj, combatMeleeUpOffset),
 		CREATE_JSON_VALUE(obj, combatMeleeZoomOffset),
+		CREATE_JSON_VALUE(obj, combatMeleeFOVOffset),
 
 		CREATE_JSON_VALUE(obj, horseSideOffset),
 		CREATE_JSON_VALUE(obj, horseUpOffset),
 		CREATE_JSON_VALUE(obj, horseZoomOffset),
+		CREATE_JSON_VALUE(obj, horseFOVOffset),
 
 		CREATE_JSON_VALUE(obj, interp),
 		CREATE_JSON_VALUE(obj, interpRangedCombat),
@@ -42,22 +47,27 @@ void Config::from_json(const json& j, OffsetGroup& obj) {
 	VALUE_FROM_JSON(obj, sideOffset)
 	VALUE_FROM_JSON(obj, upOffset)
 	VALUE_FROM_JSON(obj, zoomOffset)
+	VALUE_FROM_JSON(obj, fovOffset)
 
 	VALUE_FROM_JSON(obj, combatRangedSideOffset)
 	VALUE_FROM_JSON(obj, combatRangedUpOffset)
 	VALUE_FROM_JSON(obj, combatRangedZoomOffset)
+	VALUE_FROM_JSON(obj, combatRangedFOVOffset)
 
 	VALUE_FROM_JSON(obj, combatMagicSideOffset)
 	VALUE_FROM_JSON(obj, combatMagicUpOffset)
 	VALUE_FROM_JSON(obj, combatMagicZoomOffset)
+	VALUE_FROM_JSON(obj, combatMagicFOVOffset)
 
 	VALUE_FROM_JSON(obj, combatMeleeSideOffset)
 	VALUE_FROM_JSON(obj, combatMeleeUpOffset)
 	VALUE_FROM_JSON(obj, combatMeleeZoomOffset)
+	VALUE_FROM_JSON(obj, combatMeleeFOVOffset)
 
 	VALUE_FROM_JSON(obj, horseSideOffset)
 	VALUE_FROM_JSON(obj, horseUpOffset)
 	VALUE_FROM_JSON(obj, horseZoomOffset)
+	VALUE_FROM_JSON(obj, horseFOVOffset)
 
 	VALUE_FROM_JSON(obj, interp)
 	VALUE_FROM_JSON(obj, interpRangedCombat)
@@ -74,7 +84,7 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, hideNonCombatCrosshair),
 		CREATE_JSON_VALUE(obj, hideCrosshairMeleeCombat),
 		CREATE_JSON_VALUE(obj, enableCrosshairSizeManip),
-		//CREATE_JSON_VALUE(obj, crosshairNPCHitGrowSize),
+		CREATE_JSON_VALUE(obj, crosshairNPCHitGrowSize),
 		CREATE_JSON_VALUE(obj, crosshairMinDistSize),
 		CREATE_JSON_VALUE(obj, crosshairMaxDistSize),
 		CREATE_JSON_VALUE(obj, useWorldCrosshair),
@@ -93,11 +103,10 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, swapXClamping),
 
 		// Comapt
-		CREATE_JSON_VALUE(obj, disableDuringDialog),
-		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonHorse),
-		CREATE_JSON_VALUE(obj, comaptIC_FirstPersonDragon),
-		CREATE_JSON_VALUE(obj, compatIC_FirstPersonSitting),
+		CREATE_JSON_VALUE(obj, compatACC),
+		CREATE_JSON_VALUE(obj, compatIC),
 		CREATE_JSON_VALUE(obj, compatIFPV),
+		CREATE_JSON_VALUE(obj, compatAGO),
 
 		// Primary interpolation
 		CREATE_JSON_VALUE(obj, enableInterp),
@@ -130,6 +139,11 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, zoomScalar),
 		CREATE_JSON_VALUE(obj, zoomInterpDurationSecs),
 
+		// FOV interpolation
+		CREATE_JSON_VALUE(obj, enableFOVInterpolation),
+		CREATE_JSON_VALUE(obj, fovScalar),
+		CREATE_JSON_VALUE(obj, fovInterpDurationSecs),
+
 		// Distance clamping
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXEnable),
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXMin),
@@ -151,7 +165,9 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, bowAim),
 		CREATE_JSON_VALUE(obj, sitting),
 		CREATE_JSON_VALUE(obj, horseback),
-		CREATE_JSON_VALUE(obj, dragon)
+		CREATE_JSON_VALUE(obj, dragon),
+		CREATE_JSON_VALUE(obj, vampireLord),
+		CREATE_JSON_VALUE(obj, werewolf)
 	};
 }
 
@@ -162,7 +178,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, hideNonCombatCrosshair)
 	VALUE_FROM_JSON(obj, hideCrosshairMeleeCombat)
 	VALUE_FROM_JSON(obj, enableCrosshairSizeManip)
-	//VALUE_FROM_JSON(obj, crosshairNPCHitGrowSize)
+	VALUE_FROM_JSON(obj, crosshairNPCHitGrowSize)
 	VALUE_FROM_JSON(obj, crosshairMinDistSize)
 	VALUE_FROM_JSON(obj, crosshairMaxDistSize)
 	VALUE_FROM_JSON(obj, useWorldCrosshair)
@@ -181,11 +197,10 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, swapXClamping)
 
 	// Compat
-	VALUE_FROM_JSON(obj, disableDuringDialog)
-	VALUE_FROM_JSON(obj, comaptIC_FirstPersonHorse)
-	VALUE_FROM_JSON(obj, comaptIC_FirstPersonDragon)
-	VALUE_FROM_JSON(obj, compatIC_FirstPersonSitting)
+	VALUE_FROM_JSON(obj, compatACC)
+	VALUE_FROM_JSON(obj, compatIC)
 	VALUE_FROM_JSON(obj, compatIFPV)
+	VALUE_FROM_JSON(obj, compatAGO)
 
 	// Primary interpolation
 	VALUE_FROM_JSON(obj, enableInterp)
@@ -207,7 +222,6 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, separateZMaxSmoothingDistance)
 	VALUE_FROM_JSON(obj, separateZMinFollowRate)
 	VALUE_FROM_JSON(obj, separateZMaxFollowRate)
-	
 
 	// Offset interpolation
 	VALUE_FROM_JSON(obj, enableOffsetInterpolation)
@@ -218,6 +232,11 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, enableZoomInterpolation)
 	VALUE_FROM_JSON(obj, zoomScalar)
 	VALUE_FROM_JSON(obj, zoomInterpDurationSecs)
+
+	// FOV interpolation
+	VALUE_FROM_JSON(obj, enableFOVInterpolation)
+	VALUE_FROM_JSON(obj, fovScalar)
+	VALUE_FROM_JSON(obj, fovInterpDurationSecs)
 
 	// Distance clamping
 	VALUE_FROM_JSON(obj, cameraDistanceClampXEnable)
@@ -241,6 +260,21 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, sitting)
 	VALUE_FROM_JSON(obj, horseback)
 	VALUE_FROM_JSON(obj, dragon)
+	VALUE_FROM_JSON(obj, vampireLord)
+	VALUE_FROM_JSON(obj, werewolf)
+
+	obj.standing.id = OffsetGroupID::Standing;
+	obj.walking.id = OffsetGroupID::Walking;
+	obj.running.id = OffsetGroupID::Running;
+	obj.sprinting.id = OffsetGroupID::Sprinting;
+	obj.sneaking.id = OffsetGroupID::Sneaking;
+	obj.swimming.id = OffsetGroupID::Swimming;
+	obj.bowAim.id = OffsetGroupID::BowAim;
+	obj.sitting.id = OffsetGroupID::Sitting;
+	obj.horseback.id = OffsetGroupID::Horseback;
+	obj.dragon.id = OffsetGroupID::Dragon;
+	obj.vampireLord.id = OffsetGroupID::VampireLord;
+	obj.werewolf.id = OffsetGroupID::Werewolf;
 }
 
 void Config::to_json(json& j, const Preset& obj) {
@@ -461,6 +495,13 @@ void Config::LoadBonePriorities() {
 				bonePriorities.emplace_back(line.c_str());
 			}
 		}
+	}
+
+	if (bonePriorities.size() == 0) {
+		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_FollowBones_Default.txt present in the SKSE plugins directory?
+Will fall back to default third-person camera bone.
+To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
+		bonePriorities.emplace_back("Camera3rd [Cam3]");
 	}
 }
 

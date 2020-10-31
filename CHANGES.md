@@ -1,3 +1,41 @@
+## Beta 1.3
+* Bumped module and MCM version number to 12
+
+**Fixes:**
+* Fixes for camera rotation getting messed up when using Alternate Conversation Camera.
+* Fixes for settings changing other values in the MCM - oversight in the MCM script design.
+* Patches for Wrath of Nature, Apocalypse and Triumvirate failed to merge in last update, now patched for real(tm).
+  * Spells not yet compatible: Apocalypse - Mind Vision
+* Now looking at a different node for detecting IFPV first-person mode, should be more reliable.
+* Extra sanity checking when trying to obtain an NiCamera reference.
+* Fixed auto-complete errors using D3D10 enums rather than D3D11.
+
+**New Stuff:**
+* Added FOV settings to all offset groups.
+* New offset groups for vampire lord and werewolf.
+* Added back the npc hit-size crosshair option, now working properly.
+* New compat option for Archery Gameplay Overhaul when using 3D crosshair features (You will still need to disable AGO's camera features).
+* New compat option for Alternate Conversation Camera. Removed "Disable during dialog" option.
+* Reduced Improved Camera compat options to a single on/off, using method similar to IFPV for compat checks.
+
+**Changes:**
+* Now only enabling magic offsets for "combat" magic (Ice spike, flames, and so on) - Spells like healing and wards no longer count.
+* Enchanted items no longer count as "magic" combat - unless the item is a staff or you also have a "combat" spell equipped.
+* Worked some more on horse->thirdperson transition
+* Code refactoring and cleanup, general improvements to overall camera behavior.
+* Added a warning message when no bones were able to be loaded - In this case the camera will insert a fallback bone and let the game continue.
+* Added a warning message when the mod fails to hook directX. Now showing D3D hook status in the info page of the MCM.
+* Added extra information to detour failure messages, to indicate more clearly where the problem function is.
+* Added more code generation utilities for the MCM.
+* Missed a few WITH_D2D guards on some files.
+* Added an extra debug overlay for showing in-depth camera state.
+* Updated to SKSE64 2.0.19 (SmoothCam will still work fine for users on older SKSE versions).
+* Updated Microsoft Detours to master.
+* Updated GLM to master.
+* Updated nlohmann/json to master.
+* Updated PolyHook 2 to master.
+* Updated build scripts.
+
 ## Beta 1.2
 * Bumped module and MCM version number to 11
 

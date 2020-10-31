@@ -11,13 +11,12 @@
 #include <array>
 #include <tuple>
 #include <filesystem>
+#include <xmmintrin.h>
 
-#include <codeanalysis\warnings.h>
-#pragma warning( push )
+#include "code_analysis.h"
+
 // Ignore all warnings from external code
-#   pragma warning( disable : ALL_CODE_ANALYSIS_WARNINGS )
-#   pragma warning( disable : ALL_CPPCORECHECK_WARNINGS )
-#   pragma warning( disable : 26812 4244 4267 )
+SILENCE_CODE_ANALYSIS;
 #   define WIN32_LEAN_AND_MEAN
 #   define NOMINMAX
 #   undef CreateFont
@@ -38,7 +37,7 @@
 #   include <skse64/GameAPI.h>
 #   include <skse64/GameRTTI.h>
 #   include <skse64_common/skse_version.h>
-    
+
 #   include <skse64/NiTypes.h>
 #   include <skse64/NiNodes.h>
 #   include <skse64/NiObjects.h>
@@ -74,6 +73,8 @@
 
 #   include "addrlib/versiondb.h"
 
+#   define GLM_FORCE_INLINE
+#   define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #   define GLM_FORCE_INTRINSICS
 #   define GLM_FORCE_LEFT_HANDED
 #   define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -87,7 +88,16 @@
 #   include <glm/gtx/easing.hpp>
 #   include <glm/gtx/spline.hpp>
 #   include <glm/gtx/norm.hpp>
-#pragma warning( pop )
+#   include <glm/gtx/hash.hpp>
+
+using vec2u = glm::vec<2, float, glm::highp>;
+using vec3u = glm::vec<3, float, glm::highp>;
+using vec4u = glm::vec<4, float, glm::highp>;
+
+using vec2ui = glm::vec<2, int, glm::highp>;
+using vec3ui = glm::vec<3, int, glm::highp>;
+using vec4ui = glm::vec<4, int, glm::highp>;
+RESTORE_CODE_ANALYSIS;
 
 // Trying to use code analysis on a project like this is like thinking a high-visibility vest
 // will make you safer when jumping out of a burning building.
@@ -106,10 +116,7 @@
 #pragma warning( disable : 26486 ) // invalid pointer passing - also busted?
 
 #include "addrlib/offsets.h"
-
-#ifdef _DEBUG
-#   include "profile.h"
-#endif
+#include "timer.h"
 
 //#define WITH_D2D
 #ifdef WITH_D2D
@@ -129,6 +136,7 @@
 #include "skyrimSE/PlayerCamera.h"
 #include "skyrimSE/ThirdPersonState.h"
 #include "skyrimSE/PlayerCameraTransitionState.h"
+#include "skyrimSE/HorseCameraState.h"
 #include "skyrimSE/ArrowProjectile.h"
 
 #include "arrow_fixes.h"
@@ -145,6 +153,11 @@
 #include "render/vertex_buffer.h"
 
 static inline void FatalError(const wchar_t* message) noexcept {
-	MessageBox(nullptr, message, L"SmoothCamera", MB_ICONERROR);
-	exit(-1);
+    ShowCursor(true);
+    FatalAppExit(0, message);
+}
+
+static inline void WarningPopup(const wchar_t* message) noexcept {
+    ShowCursor(true);
+    MessageBox(nullptr, message, L"SmoothCamera", MB_ICONERROR);
 }

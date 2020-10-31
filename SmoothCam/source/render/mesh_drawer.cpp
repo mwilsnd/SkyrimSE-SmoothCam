@@ -27,7 +27,7 @@ void Render::MeshDrawer::CreateObjects(std::vector<Model::Vertex>& vertices, D3D
 	vbInfo.elementSize = sizeof(Model::Vertex);
 	vbInfo.numElements = vertices.size();
 	vbInfo.elementData = &data;
-	vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	vbInfo.bufferUsage = D3D11_USAGE::D3D11_USAGE_IMMUTABLE;
 	vbInfo.cpuAccessFlags = 0;
 	vbInfo.vertexProgram = vs;

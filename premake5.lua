@@ -68,11 +68,11 @@ newaction {
 		local deps = {
 			{
 				ok = false, name = "SKSE64", path = "BuildScripts/download_file.lua",
-				args = { "Deps/temp_downloads", "Deps", "skse64_2_00_17.7z", "https://skse.silverlock.org/beta/skse64_2_00_17.7z" },
+				args = { "Deps/temp_downloads", "Deps", "skse64_2_00_19.7z", "http://skse.silverlock.org/beta/skse64_2_00_19.7z" },
 				postExec = function(tbl)
 					--Gross hack to deal with SKSE macros and our use of versionlib
 					--We blank the macros from this file, then force include our own version with the edits we need
-					local root = tbl.args[2].. "/skse64_2_00_17/src"
+					local root = tbl.args[2].. "/skse64_2_00_19/src"
 					rewriteFile(root.. "/skse64/skse64_common/Utilities.h", [[
 #pragma once
 // this is the solution to getting a pointer-to-member-function pointer
@@ -180,14 +180,14 @@ project "SmoothCam"
 	pchheader "pch.h"
 	pchsource "SmoothCam/source/pch.cpp"
 	forceincludes {
-		"../Deps/skse64_2_00_17/src/common/IPrefix.h",
+		"../Deps/skse64_2_00_19/src/common/IPrefix.h",
 		"../SmoothCam/include/addrlib/skse_macros.h",
 		"pch.h"
 	}
 	includedirs {
 		"./SmoothCam/include",
-		"Deps/skse64_2_00_17/src/skse64",
-		"Deps/skse64_2_00_17/src",
+		"Deps/skse64_2_00_19/src/skse64",
+		"Deps/skse64_2_00_19/src",
 		"Deps/glm",
 		"Deps/PolyHook_2_0",
 		"Deps/eternal/include",
@@ -204,15 +204,19 @@ project "SmoothCam"
 
 	filter "configurations:Debug"
 		defines { "DEBUG", "SMOOTHCAM_IMPL" }
+		buildoptions { "/bigobj" }
 		symbols "On"
 		editandcontinue "On"
 		floatingpoint "Strict"
 		functionlevellinking "On"
+		flags {
+			"MultiProcessorCompile"
+		}
 
 		libdirs {
-			"Deps/skse64_2_00_17/src/common/bin/Debug-windows-x86_64/common_skse64",
-			"Deps/skse64_2_00_17/src/skse64/skse64_common/bin/Debug-windows-x86_64/skse64_common",
-			"Deps/skse64_2_00_17/src/skse64/skse64/bin/Debug-windows-x86_64/skse64",
+			"Deps/skse64_2_00_19/src/common/bin/Debug-windows-x86_64/common_skse64",
+			"Deps/skse64_2_00_19/src/skse64/skse64_common/bin/Debug-windows-x86_64/skse64_common",
+			"Deps/skse64_2_00_19/src/skse64/skse64/bin/Debug-windows-x86_64/skse64",
 
 			"Deps/Detours/lib.X64",
 			"Deps/PolyHook_2_0/bin/Debug-windows-x86_64/PolyHook2",
@@ -239,13 +243,13 @@ project "SmoothCam"
 		omitframepointer "On"
 		flags {
 			"LinkTimeOptimization", "FatalWarnings", "NoBufferSecurityCheck",
-			"NoMinimalRebuild", "NoRuntimeChecks",
+			"NoMinimalRebuild", "NoRuntimeChecks", "MultiProcessorCompile"
 		}
 
 		libdirs {
-			"Deps/skse64_2_00_17/src/common/bin/Release-windows-x86_64/common_skse64",
-			"Deps/skse64_2_00_17/src/skse64/skse64_common/bin/Release-windows-x86_64/skse64_common",
-			"Deps/skse64_2_00_17/src/skse64/skse64/bin/Release-windows-x86_64/skse64",
+			"Deps/skse64_2_00_19/src/common/bin/Release-windows-x86_64/common_skse64",
+			"Deps/skse64_2_00_19/src/skse64/skse64_common/bin/Release-windows-x86_64/skse64_common",
+			"Deps/skse64_2_00_19/src/skse64/skse64/bin/Release-windows-x86_64/skse64",
 
 			"Deps/Detours/lib.X64",
 			"Deps/PolyHook_2_0/bin/Release-windows-x86_64/PolyHook2",

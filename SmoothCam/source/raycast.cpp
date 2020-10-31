@@ -118,16 +118,15 @@ Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) {
 	auto av = getAVObject(best.hit);
 	result.hit = av != nullptr;
 
-	// What a useless function, only returning a valid character if it hits the actor origin?
-	/*
-	typedef Character*(__fastcall* ExtractCharacterFromTraceRes)(NiAVObject*);
 	if (result.hit) {
-		auto character = Offsets::Get<ExtractCharacterFromTraceRes>(19323)(av);
-		if (character && *reinterpret_cast<char*>(reinterpret_cast<intptr_t>(character) + 0x1a) == '>') {
-			result.hitCharacter = character;
+		auto ref = av->m_owner; // Yay, updates //*reinterpret_cast<TESObjectREFR**>(&av->unkF8);
+		if (ref && ref->formType == kFormType_Character) {
+			// This might not *always* be a valid cast, but I've only ever seen valid data
+			// and the dynamic cast _always_ fails. For now, we just check that this isn't null -
+			// if we ever want to read from it we have to be sure this is always legal.
+			result.hitCharacter = reinterpret_cast<Character*>(ref);
 		}
 	}
-	*/
 
 	return result; 
 }

@@ -28,12 +28,17 @@ void SKSEMessageHandler(SKSEMessagingInterface::Message* message) {
 			if (!d3dHooked) {
 				// Wait until now to ensure D3D is loaded and we aren't racing it
 				Render::InstallHooks();
+				if (!Render::HasContext()) {
+					WarningPopup(L"SmoothCam: Failed to hook DirectX, Rendering features will be disabled. Try running with overlay software disabled if this warning keeps occurring.");
+				}
+
 #ifdef WITH_D2D
 				if (Render::HasContext())
 					g_D2D = std::make_unique<Render::D2D>(Render::GetContext());
 #endif
 				d3dHooked = true;
 			}
+			break;
 		}
 		default:
 			break;
@@ -80,7 +85,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 11;
+		info->version = 12;
 
 		g_pluginHandle = skse->GetPluginHandle();
 
@@ -129,8 +134,8 @@ extern "C" {
 			);
 
 			if (!detCalledDuringRenderShutdown->Attach()) {
-				_ERROR("Failed to place detour on target function, this error is fatal.");
-				FatalError(L"Failed to place detour on target function, this error is fatal.");
+				_ERROR("Failed to place detour on target function(Render Shutdown), this error is fatal.");
+				FatalError(L"Failed to place detour on target function(Render Shutdown), this error is fatal.");
 			}
 		}
 

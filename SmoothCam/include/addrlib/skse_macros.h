@@ -1,7 +1,15 @@
 #pragma once
-#include "versiondb.h"
+#include "code_analysis.h"
+SILENCE_CODE_ANALYSIS;
+#   include "versiondb.h"
+RESTORE_CODE_ANALYSIS;
+
 #include "offsets.h"
-#include "skse64_common/Relocation.h"
+
+SILENCE_CODE_ANALYSIS;
+#   include "skse64_common/Relocation.h"
+RESTORE_CODE_ANALYSIS;
+
 
 // A custom member fn impl that translates 1.5.97 offsets to address IDs
 

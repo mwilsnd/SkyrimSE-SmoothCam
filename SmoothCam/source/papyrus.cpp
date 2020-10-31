@@ -48,12 +48,61 @@ using namespace PapyrusBindings;
         Config::SaveCurrentConfig();            \
     } },
 
+#define IMPL_OFFSET_GROUP_FLOAT_GETTERS(GroupVarName, GroupNamePrefix)                            \
+	IMPL_GETTER(GroupNamePrefix##":SideOffset", GroupVarName.sideOffset)                          \
+	IMPL_GETTER(GroupNamePrefix##":UpOffset", GroupVarName.upOffset)                              \
+	IMPL_GETTER(GroupNamePrefix##":ZoomOffset", GroupVarName.zoomOffset)                          \
+	IMPL_GETTER(GroupNamePrefix##":FOVOffset", GroupVarName.fovOffset)                            \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Ranged:SideOffset", GroupVarName.combatRangedSideOffset) \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Ranged:UpOffset", GroupVarName.combatRangedUpOffset)     \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Ranged:ZoomOffset", GroupVarName.combatRangedZoomOffset) \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Ranged:FOVOffset", GroupVarName.combatRangedFOVOffset)   \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Magic:SideOffset", GroupVarName.combatMagicSideOffset)   \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Magic:UpOffset", GroupVarName.combatMagicUpOffset)       \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Magic:ZoomOffset", GroupVarName.combatMagicZoomOffset)   \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Magic:FOVOffset", GroupVarName.combatMagicFOVOffset)     \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Melee:SideOffset", GroupVarName.combatMeleeSideOffset)   \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Melee:UpOffset", GroupVarName.combatMeleeUpOffset)       \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Melee:ZoomOffset", GroupVarName.combatMeleeZoomOffset)   \
+	IMPL_GETTER(GroupNamePrefix##"Combat:Melee:FOVOffset", GroupVarName.combatMeleeFOVOffset)
+
+#define IMPL_OFFSET_GROUP_FLOAT_SETTERS(GroupVarName, GroupNamePrefix)                                   \
+	IMPL_SETTER(GroupNamePrefix##":SideOffset", GroupVarName.sideOffset, float)                          \
+	IMPL_SETTER(GroupNamePrefix##":UpOffset", GroupVarName.upOffset, float)                              \
+	IMPL_SETTER(GroupNamePrefix##":ZoomOffset", GroupVarName.zoomOffset, float)                          \
+	IMPL_SETTER(GroupNamePrefix##":FOVOffset", GroupVarName.fovOffset, float)                            \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Ranged:SideOffset", GroupVarName.combatRangedSideOffset, float) \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Ranged:UpOffset", GroupVarName.combatRangedUpOffset, float)     \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Ranged:ZoomOffset", GroupVarName.combatRangedZoomOffset, float) \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Ranged:FOVOffset", GroupVarName.combatRangedFOVOffset, float)   \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Magic:SideOffset", GroupVarName.combatMagicSideOffset, float)   \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Magic:UpOffset", GroupVarName.combatMagicUpOffset, float)       \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Magic:ZoomOffset", GroupVarName.combatMagicZoomOffset, float)   \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Magic:FOVOffset", GroupVarName.combatMagicFOVOffset, float)     \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Melee:SideOffset", GroupVarName.combatMeleeSideOffset, float)   \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Melee:UpOffset", GroupVarName.combatMeleeUpOffset, float)       \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Melee:ZoomOffset", GroupVarName.combatMeleeZoomOffset, float)   \
+	IMPL_SETTER(GroupNamePrefix##"Combat:Melee:FOVOffset", GroupVarName.combatMeleeFOVOffset, float)
+
+#define IMPL_OFFSET_GROUP_BOOL_GETTERS(GroupVarName, GroupNamePrefix)                         \
+	IMPL_GETTER("Interp"##GroupNamePrefix,					GroupVarName.interp)              \
+	IMPL_GETTER("Interp"##GroupNamePrefix##"RangedCombat",	GroupVarName.interpRangedCombat)  \
+	IMPL_GETTER("Interp"##GroupNamePrefix##"MagicCombat",	GroupVarName.interpMagicCombat)   \
+	IMPL_GETTER("Interp"##GroupNamePrefix##"MeleeCombat",	GroupVarName.interpMeleeCombat)   
+
+#define IMPL_OFFSET_GROUP_BOOL_SETTERS(GroupVarName, GroupNamePrefix)                               \
+	IMPL_SETTER("Interp"##GroupNamePrefix,					GroupVarName.interp, bool)              \
+	IMPL_SETTER("Interp"##GroupNamePrefix##"RangedCombat",	GroupVarName.interpRangedCombat, bool)  \
+	IMPL_SETTER("Interp"##GroupNamePrefix##"MagicCombat",	GroupVarName.interpMagicCombat, bool)   \
+	IMPL_SETTER("Interp"##GroupNamePrefix##"MeleeCombat",	GroupVarName.interpMeleeCombat, bool)   
+
 const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> stringGetters = {
 	IMPL_SCALAR_METHOD_GETTER("InterpolationMethod", currentScalar)
 	IMPL_SCALAR_METHOD_GETTER("SeparateZInterpMethod", separateZScalar)
 	IMPL_SCALAR_METHOD_GETTER("SepLocalInterpMethod", separateLocalScalar)
 	IMPL_SCALAR_METHOD_GETTER("OffsetTransitionMethod", offsetScalar)
 	IMPL_SCALAR_METHOD_GETTER("ZoomTransitionMethod", zoomScalar)
+	IMPL_SCALAR_METHOD_GETTER("FOVTransitionMethod", fovScalar)
 
 	{ "WorldCrosshairType", []() {
 		const auto it = Config::crosshairTypeRevLookup.find(Config::GetCurrentConfig()->worldCrosshairType);
@@ -65,14 +114,19 @@ const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> s
 };
 
 const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetters = {
-	IMPL_GETTER("FirstPersonHorse",					comaptIC_FirstPersonHorse)
-	IMPL_GETTER("FirstPersonDragon",				comaptIC_FirstPersonDragon)
-	IMPL_GETTER("FirstPersonSitting",				compatIC_FirstPersonSitting)
+	{
+		"D3DHooked", []() noexcept {
+		return Render::HasContext();
+		}
+	},
+	
+	// Comapt
+	IMPL_GETTER("ACCCompat",						compatACC)
+	IMPL_GETTER("ICCompat",							compatIC)
 	IMPL_GETTER("IFPVCompat",						compatIFPV)
-	IMPL_GETTER("InterpolationEnabled",				enableInterp)
-	IMPL_GETTER("SeparateLocalInterpolation",		separateLocalInterp)
-	IMPL_GETTER("DisableDeltaTime",					disableDeltaTime)
-	IMPL_GETTER("DisableDuringDialog",				disableDuringDialog)
+	IMPL_GETTER("AGOCompat",						compatAGO)
+
+	// Crosshair
 	IMPL_GETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair)
 	IMPL_GETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair)
 	IMPL_GETTER("UseWorldCrosshair",				useWorldCrosshair)
@@ -82,53 +136,61 @@ const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetter
 	IMPL_GETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip)
 	IMPL_GETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair)
 	IMPL_GETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat)
+
+	// Primary interpolation
+	IMPL_GETTER("InterpolationEnabled",				enableInterp)
+	IMPL_GETTER("DisableDeltaTime",					disableDeltaTime)
+
+	// Separate local interpolation
+	IMPL_GETTER("SeparateLocalInterpolation",		separateLocalInterp)
+
+	// Separate Z interpolation
 	IMPL_GETTER("SeparateZInterpEnabled",			separateZInterp)
+
+	// Offset interpolation
 	IMPL_GETTER("OffsetTransitionEnabled",			enableOffsetInterpolation)
+
+	// Zoom interpolation
 	IMPL_GETTER("ZoomTransitionEnabled",			enableZoomInterpolation)
 
+	// FOV interpolation
+	IMPL_GETTER("FOVTransitionEnabled",				enableFOVInterpolation)
+
+	// Distance clamping
 	IMPL_GETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable)
 	IMPL_GETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable)
 	IMPL_GETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable)
 	IMPL_GETTER("ShoulderSwapXClamping",			swapXClamping)
 
-	IMPL_GETTER("InterpStanding",					standing.interp)
-	IMPL_GETTER("InterpStandingRangedCombat",		standing.interpRangedCombat)
-	IMPL_GETTER("InterpStandingMagicCombat",		standing.interpMagicCombat)
-	IMPL_GETTER("InterpStandingMeleeCombat",		standing.interpMeleeCombat)
-	IMPL_GETTER("InterpWalking",					walking.interp)
-	IMPL_GETTER("InterpWalkingRangedCombat",		walking.interpRangedCombat)
-	IMPL_GETTER("InterpWalkingMagicCombat",			walking.interpMagicCombat)
-	IMPL_GETTER("InterpWalkingMeleeCombat",			walking.interpMeleeCombat)
-	IMPL_GETTER("InterpRunning",					running.interp)
-	IMPL_GETTER("InterpRunningRangedCombat",		running.interpRangedCombat)
-	IMPL_GETTER("InterpRunningMagicCombat",			running.interpMagicCombat)
-	IMPL_GETTER("InterpRunningMeleeCombat",			running.interpMeleeCombat)
-	IMPL_GETTER("InterpSprinting",					sprinting.interp)
-	IMPL_GETTER("InterpSprintingRangedCombat",		sprinting.interpRangedCombat)
-	IMPL_GETTER("InterpSprintingMagicCombat",		sprinting.interpMagicCombat)
-	IMPL_GETTER("InterpSprintingMeleeCombat",		sprinting.interpMeleeCombat)
-	IMPL_GETTER("InterpSneaking",					sneaking.interp)
-	IMPL_GETTER("InterpSneakingRangedCombat",		sneaking.interpRangedCombat)
-	IMPL_GETTER("InterpSneakingMagicCombat",		sneaking.interpMagicCombat)
-	IMPL_GETTER("InterpSneakingMeleeCombat",		sneaking.interpMeleeCombat)
-	IMPL_GETTER("InterpSwimming",					swimming.interp)
+	// Offset groups
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(standing, "Standing")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(walking, "Walking")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(running, "Running")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(sprinting, "Sprinting")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(sneaking, "Sneaking")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(swimming, "Swimming")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(sitting, "Sitting")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(horseback, "Horseback")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(dragon, "Dragon")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(vampireLord, "VampireLord")
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(werewolf, "Werewolf")
+
 	IMPL_GETTER("InterpBowAim",						bowAim.interpRangedCombat)
 	IMPL_GETTER("InterpBowAimHorseback",			bowAim.interpHorseback)
-	IMPL_GETTER("InterpSitting",					sitting.interp)
-	IMPL_GETTER("InterpHorseback",					horseback.interp)
-	IMPL_GETTER("InterpHorsebackRangedCombat",		horseback.interpRangedCombat)
-	IMPL_GETTER("InterpHorsebackMagicCombat",		horseback.interpMagicCombat)
-	IMPL_GETTER("InterpHorsebackMeleeCombat",		horseback.interpMeleeCombat)
+	// @Note:BowAim: Just repurpose another combat group for sneaking
+	IMPL_GETTER("InterpBowAimSneaking",				bowAim.interpMeleeCombat)
 };
 
 const std::unordered_map<std::string_view, std::function<float(void)>> floatGetters = {
+	// Primary interpolation
 	IMPL_GETTER("MinFollowDistance",					minCameraFollowDistance)
 	IMPL_GETTER("MinCameraFollowRate",					minCameraFollowRate)
 	IMPL_GETTER("MaxCameraFollowRate",					maxCameraFollowRate)
 	IMPL_GETTER("MaxSmoothingInterpDistance",			zoomMaxSmoothingDistance)
 	IMPL_GETTER("ZoomMul",								zoomMul)
 
-	//IMPL_GETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize)
+	// Crosshair
+	IMPL_GETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize)
 	IMPL_GETTER("CrosshairMinDistSize",					crosshairMinDistSize)
 	IMPL_GETTER("CrosshairMaxDistSize",					crosshairMaxDistSize)
 	IMPL_GETTER("ArrowArcColorR",						arrowArcColor.r)
@@ -137,14 +199,24 @@ const std::unordered_map<std::string_view, std::function<float(void)>> floatGett
 	IMPL_GETTER("ArrowArcColorA",						arrowArcColor.a)
 	IMPL_GETTER("MaxArrowPredictionRange",				maxArrowPredictionRange)
 
+	// Separate local interpolation
+	IMPL_GETTER("SepLocalInterpRate",					localScalarRate)
+	
+	// Separate Z interpolation
 	IMPL_GETTER("SepZMaxInterpDistance",				separateZMaxSmoothingDistance)
 	IMPL_GETTER("SepZMinFollowRate",					separateZMinFollowRate)
 	IMPL_GETTER("SepZMaxFollowRate",					separateZMaxFollowRate)
-	IMPL_GETTER("SepLocalInterpRate",					localScalarRate)
-
+	
+	// Offset interpolation
 	IMPL_GETTER("OffsetTransitionDuration",				offsetInterpDurationSecs)
+
+	// Zoom interpolation
 	IMPL_GETTER("ZoomTransitionDuration",				zoomInterpDurationSecs)
 
+	// FOV interpolation
+	IMPL_GETTER("FOVTransitionDuration",				fovInterpDurationSecs)
+
+	// Distance clamping
 	IMPL_GETTER("CameraDistanceClampXMin",				cameraDistanceClampXMin)
 	IMPL_GETTER("CameraDistanceClampXMax",				cameraDistanceClampXMax)
 	IMPL_GETTER("CameraDistanceClampYMin",				cameraDistanceClampYMin)
@@ -152,101 +224,32 @@ const std::unordered_map<std::string_view, std::function<float(void)>> floatGett
 	IMPL_GETTER("CameraDistanceClampZMin",				cameraDistanceClampZMin)
 	IMPL_GETTER("CameraDistanceClampZMax",				cameraDistanceClampZMax)
 
-	IMPL_GETTER("Standing:SideOffset", 					standing.sideOffset)
-	IMPL_GETTER("Standing:UpOffset", 					standing.upOffset)
-	IMPL_GETTER("Standing:ZoomOffset", 					standing.zoomOffset)
-	IMPL_GETTER("StandingCombat:Ranged:SideOffset",		standing.combatRangedSideOffset)
-	IMPL_GETTER("StandingCombat:Ranged:UpOffset", 		standing.combatRangedUpOffset)
-	IMPL_GETTER("StandingCombat:Ranged:ZoomOffset",		standing.combatRangedZoomOffset)
-	IMPL_GETTER("StandingCombat:Magic:SideOffset", 		standing.combatMagicSideOffset)
-	IMPL_GETTER("StandingCombat:Magic:UpOffset", 		standing.combatMagicUpOffset)
-	IMPL_GETTER("StandingCombat:Magic:ZoomOffset", 		standing.combatMagicZoomOffset)
-	IMPL_GETTER("StandingCombat:Melee:SideOffset",		standing.combatMeleeSideOffset)
-	IMPL_GETTER("StandingCombat:Melee:UpOffset", 		standing.combatMeleeUpOffset)
-	IMPL_GETTER("StandingCombat:Melee:ZoomOffset", 		standing.combatMeleeZoomOffset)
-
-	IMPL_GETTER("Walking:SideOffset", 					walking.sideOffset)
-	IMPL_GETTER("Walking:UpOffset", 					walking.upOffset)
-	IMPL_GETTER("Walking:ZoomOffset", 					walking.zoomOffset)
-	IMPL_GETTER("WalkingCombat:Ranged:SideOffset",		walking.combatRangedSideOffset)
-	IMPL_GETTER("WalkingCombat:Ranged:UpOffset",		walking.combatRangedUpOffset)
-	IMPL_GETTER("WalkingCombat:Ranged:ZoomOffset",		walking.combatRangedZoomOffset)
-	IMPL_GETTER("WalkingCombat:Magic:SideOffset",		walking.combatMagicSideOffset)
-	IMPL_GETTER("WalkingCombat:Magic:UpOffset",			walking.combatMagicUpOffset)
-	IMPL_GETTER("WalkingCombat:Magic:ZoomOffset",		walking.combatMagicZoomOffset)
-	IMPL_GETTER("WalkingCombat:Melee:SideOffset",		walking.combatMeleeSideOffset)
-	IMPL_GETTER("WalkingCombat:Melee:UpOffset",			walking.combatMeleeUpOffset)
-	IMPL_GETTER("WalkingCombat:Melee:ZoomOffset",		walking.combatMeleeZoomOffset)
-
-	IMPL_GETTER("Running:SideOffset",					running.sideOffset)
-	IMPL_GETTER("Running:UpOffset",						running.upOffset)
-	IMPL_GETTER("Running:ZoomOffset",					running.zoomOffset)
-	IMPL_GETTER("RunningCombat:Ranged:SideOffset",		running.combatRangedSideOffset)
-	IMPL_GETTER("RunningCombat:Ranged:UpOffset",		running.combatRangedUpOffset)
-	IMPL_GETTER("RunningCombat:Ranged:ZoomOffset",		running.combatRangedZoomOffset)
-	IMPL_GETTER("RunningCombat:Magic:SideOffset",		running.combatMagicSideOffset)
-	IMPL_GETTER("RunningCombat:Magic:UpOffset",			running.combatMagicUpOffset)
-	IMPL_GETTER("RunningCombat:Magic:ZoomOffset",		running.combatMagicZoomOffset)
-	IMPL_GETTER("RunningCombat:Melee:SideOffset",		running.combatMeleeSideOffset)
-	IMPL_GETTER("RunningCombat:Melee:UpOffset",			running.combatMeleeUpOffset)
-	IMPL_GETTER("RunningCombat:Melee:ZoomOffset",		running.combatMeleeZoomOffset)
-
-	IMPL_GETTER("Sprinting:SideOffset",					sprinting.sideOffset)
-	IMPL_GETTER("Sprinting:UpOffset",					sprinting.upOffset)
-	IMPL_GETTER("Sprinting:ZoomOffset",					sprinting.zoomOffset)
-	IMPL_GETTER("SprintingCombat:Ranged:SideOffset",	sprinting.combatRangedSideOffset)
-	IMPL_GETTER("SprintingCombat:Ranged:UpOffset",		sprinting.combatRangedUpOffset)
-	IMPL_GETTER("SprintingCombat:Ranged:ZoomOffset",	sprinting.combatRangedZoomOffset)
-	IMPL_GETTER("SprintingCombat:Magic:SideOffset",		sprinting.combatMagicSideOffset)
-	IMPL_GETTER("SprintingCombat:Magic:UpOffset",		sprinting.combatMagicUpOffset)
-	IMPL_GETTER("SprintingCombat:Magic:ZoomOffset",		sprinting.combatMagicZoomOffset)
-	IMPL_GETTER("SprintingCombat:Melee:SideOffset",		sprinting.combatMeleeSideOffset)
-	IMPL_GETTER("SprintingCombat:Melee:UpOffset",		sprinting.combatMeleeUpOffset)
-	IMPL_GETTER("SprintingCombat:Melee:ZoomOffset",		sprinting.combatMeleeZoomOffset)
-
-	IMPL_GETTER("Sneaking:SideOffset",					sneaking.sideOffset)
-	IMPL_GETTER("Sneaking:UpOffset",					sneaking.upOffset)
-	IMPL_GETTER("Sneaking:ZoomOffset",					sneaking.zoomOffset)
-	IMPL_GETTER("SneakingCombat:Ranged:SideOffset",		sneaking.combatRangedSideOffset)
-	IMPL_GETTER("SneakingCombat:Ranged:UpOffset",		sneaking.combatRangedUpOffset)
-	IMPL_GETTER("SneakingCombat:Ranged:ZoomOffset",		sneaking.combatRangedZoomOffset)
-	IMPL_GETTER("SneakingCombat:Magic:SideOffset",		sneaking.combatMagicSideOffset)
-	IMPL_GETTER("SneakingCombat:Magic:UpOffset",		sneaking.combatMagicUpOffset)
-	IMPL_GETTER("SneakingCombat:Magic:ZoomOffset",		sneaking.combatMagicZoomOffset)
-	IMPL_GETTER("SneakingCombat:Melee:SideOffset",		sneaking.combatMeleeSideOffset)
-	IMPL_GETTER("SneakingCombat:Melee:UpOffset",		sneaking.combatMeleeUpOffset)
-	IMPL_GETTER("SneakingCombat:Melee:ZoomOffset",		sneaking.combatMeleeZoomOffset)
-
-	IMPL_GETTER("Swimming:SideOffset",					swimming.sideOffset)
-	IMPL_GETTER("Swimming:UpOffset",					swimming.upOffset)
-	IMPL_GETTER("Swimming:ZoomOffset",					swimming.zoomOffset)
+	// Offset groups
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(standing, "Standing")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(walking, "Walking")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(running, "Running")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(sprinting, "Sprinting")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(sneaking, "Sneaking")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(horseback, "Horseback")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(swimming, "Swimming")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(sitting, "Sitting")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(dragon, "Dragon")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(vampireLord, "VampireLord")
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(werewolf, "Werewolf")
 
 	IMPL_GETTER("Bowaim:SideOffset",					bowAim.sideOffset)
 	IMPL_GETTER("Bowaim:UpOffset",						bowAim.upOffset)
 	IMPL_GETTER("Bowaim:ZoomOffset",					bowAim.zoomOffset)
+	IMPL_GETTER("Bowaim:FOVOffset",						bowAim.fovOffset)
 	IMPL_GETTER("BowaimHorse:SideOffset",				bowAim.horseSideOffset)
 	IMPL_GETTER("BowaimHorse:UpOffset",					bowAim.horseUpOffset)
 	IMPL_GETTER("BowaimHorse:ZoomOffset",				bowAim.horseZoomOffset)
-
-	IMPL_GETTER("Sitting:SideOffset",					sitting.sideOffset)
-	IMPL_GETTER("Sitting:UpOffset",						sitting.upOffset)
-	IMPL_GETTER("Sitting:ZoomOffset",					sitting.zoomOffset)
-
-	IMPL_GETTER("Horseback:SideOffset",					horseback.sideOffset)
-	IMPL_GETTER("Horseback:UpOffset",					horseback.upOffset)
-	IMPL_GETTER("Horseback:ZoomOffset",					horseback.zoomOffset)
-	IMPL_GETTER("HorsebackCombat:Ranged:SideOffset",	horseback.combatRangedSideOffset)
-	IMPL_GETTER("HorsebackCombat:Ranged:UpOffset",		horseback.combatRangedUpOffset)
-	IMPL_GETTER("HorsebackCombat:Ranged:ZoomOffset",	horseback.combatRangedZoomOffset)
-	IMPL_GETTER("HorsebackCombat:Magic:SideOffset",		horseback.combatMagicSideOffset)
-	IMPL_GETTER("HorsebackCombat:Magic:UpOffset",		horseback.combatMagicUpOffset)
-	IMPL_GETTER("HorsebackCombat:Magic:ZoomOffset",		horseback.combatMagicZoomOffset)
-	IMPL_GETTER("HorsebackCombat:Melee:SideOffset",		horseback.combatMeleeSideOffset)
-	IMPL_GETTER("HorsebackCombat:Melee:UpOffset",		horseback.combatMeleeUpOffset)
-	IMPL_GETTER("HorsebackCombat:Melee:ZoomOffset",		horseback.combatMeleeZoomOffset)
-
-	IMPL_GETTER("Dragon:SideOffset",					dragon.sideOffset)
-	IMPL_GETTER("Dragon:UpOffset",						dragon.upOffset)
+	IMPL_GETTER("BowaimHorse:FOVOffset",				bowAim.horseFOVOffset)
+	// @Note:BowAim: Just repurpose another combat group for sneaking
+	IMPL_GETTER("BowaimSneak:SideOffset",				bowAim.combatMeleeSideOffset)
+	IMPL_GETTER("BowaimSneak:UpOffset",					bowAim.combatMeleeUpOffset)
+	IMPL_GETTER("BowaimSneak:ZoomOffset",				bowAim.combatMeleeZoomOffset)
+	IMPL_GETTER("BowaimSneak:FOVOffset",				bowAim.combatMeleeFOVOffset)
 };
 
 const std::unordered_map<std::string_view, std::function<int(void)>> intGetters = {
@@ -259,6 +262,7 @@ const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> s
 	IMPL_SCALAR_METHOD_SETTER("SepLocalInterpMethod", separateLocalScalar)
 	IMPL_SCALAR_METHOD_SETTER("OffsetTransitionMethod", offsetScalar)
 	IMPL_SCALAR_METHOD_SETTER("ZoomTransitionMethod", zoomScalar)
+	IMPL_SCALAR_METHOD_SETTER("FOVTransitionMethod", fovScalar)
 	
 	{ "WorldCrosshairType", [](BSFixedString& str) {
 		const auto it = Config::crosshairTypeLookup.find(str.c_str());
@@ -270,14 +274,13 @@ const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> s
 };
 
 const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetters = {
-	IMPL_SETTER("FirstPersonHorse",					comaptIC_FirstPersonHorse, bool)
-	IMPL_SETTER("FirstPersonDragon",				comaptIC_FirstPersonDragon, bool)
-	IMPL_SETTER("FirstPersonSitting",				compatIC_FirstPersonSitting, bool)
-	IMPL_SETTER("IFPVCompat",						compatIFPV, bool)	
-	IMPL_SETTER("InterpolationEnabled",				enableInterp, bool)
-	IMPL_SETTER("SeparateLocalInterpolation",		separateLocalInterp, bool)
-	IMPL_SETTER("DisableDeltaTime",					disableDeltaTime, bool)
-	IMPL_SETTER("DisableDuringDialog",				disableDuringDialog, bool)
+	// Compat
+	IMPL_SETTER("ACCCompat",						compatACC, bool)
+	IMPL_SETTER("ICCompat",							compatIC, bool)
+	IMPL_SETTER("IFPVCompat",						compatIFPV, bool)
+	IMPL_SETTER("AGOCompat",						compatAGO, bool)
+
+	// Crosshair
 	IMPL_SETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair, bool)
 	IMPL_SETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair, bool)
 	IMPL_SETTER("UseWorldCrosshair",				useWorldCrosshair, bool)
@@ -287,53 +290,61 @@ const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetter
 	IMPL_SETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip, bool)
 	IMPL_SETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair, bool)
 	IMPL_SETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat, bool)
+
+	// Primary interpolation
+	IMPL_SETTER("InterpolationEnabled",				enableInterp, bool)
+	IMPL_SETTER("DisableDeltaTime",					disableDeltaTime, bool)
+	
+	// Separate local interpolation
+	IMPL_SETTER("SeparateLocalInterpolation",		separateLocalInterp, bool)
+
+	// Separate Z interpolation
 	IMPL_SETTER("SeparateZInterpEnabled",			separateZInterp, bool)
+
+	// Offset interpolation
 	IMPL_SETTER("OffsetTransitionEnabled",			enableOffsetInterpolation, bool)
+
+	// Zoom interpolation
 	IMPL_SETTER("ZoomTransitionEnabled",			enableZoomInterpolation, bool)
 
+	// FOV interpolation
+	IMPL_SETTER("FOVTransitionEnabled",				enableFOVInterpolation, bool)
+
+	// Distance clamping
 	IMPL_SETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable, bool)
 	IMPL_SETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable, bool)
 	IMPL_SETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable, bool)
 	IMPL_SETTER("ShoulderSwapXClamping",			swapXClamping, bool)
 
-	IMPL_SETTER("InterpStanding",					standing.interp, bool)
-	IMPL_SETTER("InterpStandingRangedCombat",		standing.interpRangedCombat, bool)
-	IMPL_SETTER("InterpStandingMagicCombat",		standing.interpMagicCombat, bool)
-	IMPL_SETTER("InterpStandingMeleeCombat",		standing.interpMeleeCombat, bool)
-	IMPL_SETTER("InterpWalking",					walking.interp, bool)
-	IMPL_SETTER("InterpWalkingRangedCombat",		walking.interpRangedCombat, bool)
-	IMPL_SETTER("InterpWalkingMagicCombat",			walking.interpMagicCombat, bool)
-	IMPL_SETTER("InterpWalkingMeleeCombat",			walking.interpMeleeCombat, bool)
-	IMPL_SETTER("InterpRunning",					running.interp, bool)
-	IMPL_SETTER("InterpRunningRangedCombat",		running.interpRangedCombat, bool)
-	IMPL_SETTER("InterpRunningMagicCombat",			running.interpMagicCombat, bool)
-	IMPL_SETTER("InterpRunningMeleeCombat",			running.interpMeleeCombat, bool)
-	IMPL_SETTER("InterpSprinting",					sprinting.interp, bool)
-	IMPL_SETTER("InterpSprintingRangedCombat",		sprinting.interpRangedCombat, bool)
-	IMPL_SETTER("InterpSprintingMagicCombat",		sprinting.interpMagicCombat, bool)
-	IMPL_SETTER("InterpSprintingMeleeCombat",		sprinting.interpMeleeCombat, bool)
-	IMPL_SETTER("InterpSneaking",					sneaking.interp, bool)
-	IMPL_SETTER("InterpSneakingRangedCombat",		sneaking.interpRangedCombat, bool)
-	IMPL_SETTER("InterpSneakingMagicCombat",		sneaking.interpMagicCombat, bool)
-	IMPL_SETTER("InterpSneakingMeleeCombat",		sneaking.interpMeleeCombat, bool)
-	IMPL_SETTER("InterpSwimming",					swimming.interp, bool)
+	// Offset groups
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(standing, "Standing")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(walking, "Walking")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(running, "Running")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(sprinting, "Sprinting")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(sneaking, "Sneaking")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(swimming, "Swimming")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(sitting, "Sitting")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(horseback, "Horseback")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(dragon, "Dragon")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(vampireLord, "VampireLord")
+	IMPL_OFFSET_GROUP_BOOL_SETTERS(werewolf, "Werewolf")
+
 	IMPL_SETTER("InterpBowAim",						bowAim.interpRangedCombat, bool)
 	IMPL_SETTER("InterpBowAimHorseback",			bowAim.interpHorseback, bool)
-	IMPL_SETTER("InterpSitting",					sitting.interp, bool)
-	IMPL_SETTER("InterpHorseback",					horseback.interp, bool)
-	IMPL_SETTER("InterpHorsebackRangedCombat",		horseback.interpRangedCombat, bool)
-	IMPL_SETTER("InterpHorsebackMagicCombat",		horseback.interpMagicCombat, bool)
-	IMPL_SETTER("InterpHorsebackMeleeCombat",		horseback.interpMeleeCombat, bool)
+	// @Note:BowAim: Just repurpose another combat group for sneaking
+	IMPL_SETTER("InterpBowAimSneaking",				bowAim.interpMeleeCombat, bool)
 };
 
 const std::unordered_map<std::string_view, std::function<void(float)>> floatSetters = {
+	// Primary interpolation
 	IMPL_SETTER("MinFollowDistance",					minCameraFollowDistance, float)
 	IMPL_SETTER("MinCameraFollowRate",					minCameraFollowRate, float)
 	IMPL_SETTER("MaxCameraFollowRate",					maxCameraFollowRate, float)
 	IMPL_SETTER("MaxSmoothingInterpDistance",			zoomMaxSmoothingDistance, float)
 	IMPL_SETTER("ZoomMul",								zoomMul, float)
 
-	//IMPL_SETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize, float)
+	// Crosshair
+	IMPL_SETTER("CrosshairNPCGrowSize",					crosshairNPCHitGrowSize, float)
 	IMPL_SETTER("CrosshairMinDistSize",					crosshairMinDistSize, float)
 	IMPL_SETTER("CrosshairMaxDistSize",					crosshairMaxDistSize, float)
 	IMPL_SETTER("ArrowArcColorR",						arrowArcColor.r, float)
@@ -342,14 +353,24 @@ const std::unordered_map<std::string_view, std::function<void(float)>> floatSett
 	IMPL_SETTER("ArrowArcColorA",						arrowArcColor.a, float)
 	IMPL_SETTER("MaxArrowPredictionRange",				maxArrowPredictionRange, float)
 
+	// Separate local interpolation
+	IMPL_SETTER("SepLocalInterpRate",					localScalarRate, float)
+
+	// Separate Z interpolation
 	IMPL_SETTER("SepZMaxInterpDistance",				separateZMaxSmoothingDistance, float)
 	IMPL_SETTER("SepZMinFollowRate",					separateZMinFollowRate, float)
 	IMPL_SETTER("SepZMaxFollowRate",					separateZMaxFollowRate, float)
-	IMPL_SETTER("SepLocalInterpRate",					localScalarRate, float)
-
+	
+	// Offset interpolation
 	IMPL_SETTER("OffsetTransitionDuration",				offsetInterpDurationSecs, float)
+
+	// Zoom interpolation
 	IMPL_SETTER("ZoomTransitionDuration",				zoomInterpDurationSecs, float)
 
+	// FOV interpolation
+	IMPL_SETTER("FOVTransitionDuration",				fovInterpDurationSecs, float)
+
+	// Distance clamping
 	IMPL_SETTER("CameraDistanceClampXMin",				cameraDistanceClampXMin, float)
 	IMPL_SETTER("CameraDistanceClampXMax",				cameraDistanceClampXMax, float)
 	IMPL_SETTER("CameraDistanceClampYMin",				cameraDistanceClampYMin, float)
@@ -357,115 +378,53 @@ const std::unordered_map<std::string_view, std::function<void(float)>> floatSett
 	IMPL_SETTER("CameraDistanceClampZMin",				cameraDistanceClampZMin, float)
 	IMPL_SETTER("CameraDistanceClampZMax",				cameraDistanceClampZMax, float)
 
-	IMPL_SETTER("Standing:SideOffset", 					standing.sideOffset, float)
-	IMPL_SETTER("Standing:UpOffset", 					standing.upOffset, float)
-	IMPL_SETTER("Standing:ZoomOffset", 					standing.zoomOffset, float)
-	IMPL_SETTER("StandingCombat:Ranged:SideOffset",		standing.combatRangedSideOffset, float)
-	IMPL_SETTER("StandingCombat:Ranged:UpOffset", 		standing.combatRangedUpOffset, float)
-	IMPL_SETTER("StandingCombat:Ranged:ZoomOffset",		standing.combatRangedZoomOffset, float)
-	IMPL_SETTER("StandingCombat:Magic:SideOffset", 		standing.combatMagicSideOffset, float)
-	IMPL_SETTER("StandingCombat:Magic:UpOffset", 		standing.combatMagicUpOffset, float)
-	IMPL_SETTER("StandingCombat:Magic:ZoomOffset", 		standing.combatMagicZoomOffset, float)
-	IMPL_SETTER("StandingCombat:Melee:SideOffset",		standing.combatMeleeSideOffset, float)
-	IMPL_SETTER("StandingCombat:Melee:UpOffset", 		standing.combatMeleeUpOffset, float)
-	IMPL_SETTER("StandingCombat:Melee:ZoomOffset", 		standing.combatMeleeZoomOffset, float)
-
-	IMPL_SETTER("Walking:SideOffset", 					walking.sideOffset, float)
-	IMPL_SETTER("Walking:UpOffset", 					walking.upOffset, float)
-	IMPL_SETTER("Walking:ZoomOffset", 					walking.zoomOffset, float)
-	IMPL_SETTER("WalkingCombat:Ranged:SideOffset",		walking.combatRangedSideOffset, float)
-	IMPL_SETTER("WalkingCombat:Ranged:UpOffset",		walking.combatRangedUpOffset, float)
-	IMPL_SETTER("WalkingCombat:Ranged:ZoomOffset",		walking.combatRangedZoomOffset, float)
-	IMPL_SETTER("WalkingCombat:Magic:SideOffset",		walking.combatMagicSideOffset, float)
-	IMPL_SETTER("WalkingCombat:Magic:UpOffset",			walking.combatMagicUpOffset, float)
-	IMPL_SETTER("WalkingCombat:Magic:ZoomOffset",		walking.combatMagicZoomOffset, float)
-	IMPL_SETTER("WalkingCombat:Melee:SideOffset",		walking.combatMeleeSideOffset, float)
-	IMPL_SETTER("WalkingCombat:Melee:UpOffset",			walking.combatMeleeUpOffset, float)
-	IMPL_SETTER("WalkingCombat:Melee:ZoomOffset",		walking.combatMeleeZoomOffset, float)
-
-	IMPL_SETTER("Running:SideOffset",					running.sideOffset, float)
-	IMPL_SETTER("Running:UpOffset",						running.upOffset, float)
-	IMPL_SETTER("Running:ZoomOffset",					running.zoomOffset, float)
-	IMPL_SETTER("RunningCombat:Ranged:SideOffset",		running.combatRangedSideOffset, float)
-	IMPL_SETTER("RunningCombat:Ranged:UpOffset",		running.combatRangedUpOffset, float)
-	IMPL_SETTER("RunningCombat:Ranged:ZoomOffset",		running.combatRangedZoomOffset, float)
-	IMPL_SETTER("RunningCombat:Magic:SideOffset",		running.combatMagicSideOffset, float)
-	IMPL_SETTER("RunningCombat:Magic:UpOffset",			running.combatMagicUpOffset, float)
-	IMPL_SETTER("RunningCombat:Magic:ZoomOffset",		running.combatMagicZoomOffset, float)
-	IMPL_SETTER("RunningCombat:Melee:SideOffset",		running.combatMeleeSideOffset, float)
-	IMPL_SETTER("RunningCombat:Melee:UpOffset",			running.combatMeleeUpOffset, float)
-	IMPL_SETTER("RunningCombat:Melee:ZoomOffset",		running.combatMeleeZoomOffset, float)
-
-	IMPL_SETTER("Sprinting:SideOffset",					sprinting.sideOffset, float)
-	IMPL_SETTER("Sprinting:UpOffset",					sprinting.upOffset, float)
-	IMPL_SETTER("Sprinting:ZoomOffset",					sprinting.zoomOffset, float)
-	IMPL_SETTER("SprintingCombat:Ranged:SideOffset",	sprinting.combatRangedSideOffset, float)
-	IMPL_SETTER("SprintingCombat:Ranged:UpOffset",		sprinting.combatRangedUpOffset, float)
-	IMPL_SETTER("SprintingCombat:Ranged:ZoomOffset",	sprinting.combatRangedZoomOffset, float)
-	IMPL_SETTER("SprintingCombat:Magic:SideOffset",		sprinting.combatMagicSideOffset, float)
-	IMPL_SETTER("SprintingCombat:Magic:UpOffset",		sprinting.combatMagicUpOffset, float)
-	IMPL_SETTER("SprintingCombat:Magic:ZoomOffset",		sprinting.combatMagicZoomOffset, float)
-	IMPL_SETTER("SprintingCombat:Melee:SideOffset",		sprinting.combatMeleeSideOffset, float)
-	IMPL_SETTER("SprintingCombat:Melee:UpOffset",		sprinting.combatMeleeUpOffset, float)
-	IMPL_SETTER("SprintingCombat:Melee:ZoomOffset",		sprinting.combatMeleeZoomOffset, float)
-
-	IMPL_SETTER("Sneaking:SideOffset",					sneaking.sideOffset, float)
-	IMPL_SETTER("Sneaking:UpOffset",					sneaking.upOffset, float)
-	IMPL_SETTER("Sneaking:ZoomOffset",					sneaking.zoomOffset, float)
-	IMPL_SETTER("SneakingCombat:Ranged:SideOffset",		sneaking.combatRangedSideOffset, float)
-	IMPL_SETTER("SneakingCombat:Ranged:UpOffset",		sneaking.combatRangedUpOffset, float)
-	IMPL_SETTER("SneakingCombat:Ranged:ZoomOffset",		sneaking.combatRangedZoomOffset, float)
-	IMPL_SETTER("SneakingCombat:Magic:SideOffset",		sneaking.combatMagicSideOffset, float)
-	IMPL_SETTER("SneakingCombat:Magic:UpOffset",		sneaking.combatMagicUpOffset, float)
-	IMPL_SETTER("SneakingCombat:Magic:ZoomOffset",		sneaking.combatMagicZoomOffset, float)
-	IMPL_SETTER("SneakingCombat:Melee:SideOffset",		sneaking.combatMeleeSideOffset, float)
-	IMPL_SETTER("SneakingCombat:Melee:UpOffset",		sneaking.combatMeleeUpOffset, float)
-	IMPL_SETTER("SneakingCombat:Melee:ZoomOffset",		sneaking.combatMeleeZoomOffset, float)
-
-	IMPL_SETTER("Swimming:SideOffset",					swimming.sideOffset, float)
-	IMPL_SETTER("Swimming:UpOffset",					swimming.upOffset, float)
-	IMPL_SETTER("Swimming:ZoomOffset",					swimming.zoomOffset, float)
+	// Offset groups
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(standing, "Standing")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(walking, "Walking")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(running, "Running")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(sprinting, "Sprinting")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(sneaking, "Sneaking")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(horseback, "Horseback")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(swimming, "Swimming")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(sitting, "Sitting")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(dragon, "Dragon")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(vampireLord, "VampireLord")
+	IMPL_OFFSET_GROUP_FLOAT_SETTERS(werewolf, "Werewolf")
 
 	IMPL_SETTER("Bowaim:SideOffset",					bowAim.sideOffset, float)
 	IMPL_SETTER("Bowaim:UpOffset",						bowAim.upOffset, float)
 	IMPL_SETTER("Bowaim:ZoomOffset",					bowAim.zoomOffset, float)
+	IMPL_SETTER("Bowaim:FOVOffset",						bowAim.fovOffset, float)
 	IMPL_SETTER("BowaimHorse:SideOffset",				bowAim.horseSideOffset, float)
 	IMPL_SETTER("BowaimHorse:UpOffset",					bowAim.horseUpOffset, float)
 	IMPL_SETTER("BowaimHorse:ZoomOffset",				bowAim.horseZoomOffset, float)
-
-	IMPL_SETTER("Sitting:SideOffset",					sitting.sideOffset, float)
-	IMPL_SETTER("Sitting:UpOffset",						sitting.upOffset, float)
-	IMPL_SETTER("Sitting:ZoomOffset",					sitting.zoomOffset, float)
-
-	IMPL_SETTER("Horseback:SideOffset",					horseback.sideOffset, float)
-	IMPL_SETTER("Horseback:UpOffset",					horseback.upOffset, float)
-	IMPL_SETTER("Horseback:ZoomOffset",					horseback.zoomOffset, float)
-	IMPL_SETTER("HorsebackCombat:Ranged:SideOffset",	horseback.combatRangedSideOffset, float)
-	IMPL_SETTER("HorsebackCombat:Ranged:UpOffset",		horseback.combatRangedUpOffset, float)
-	IMPL_SETTER("HorsebackCombat:Ranged:ZoomOffset",	horseback.combatRangedZoomOffset, float)
-	IMPL_SETTER("HorsebackCombat:Magic:SideOffset",		horseback.combatMagicSideOffset, float)
-	IMPL_SETTER("HorsebackCombat:Magic:UpOffset",		horseback.combatMagicUpOffset, float)
-	IMPL_SETTER("HorsebackCombat:Magic:ZoomOffset",		horseback.combatMagicZoomOffset, float)
-	IMPL_SETTER("HorsebackCombat:Melee:SideOffset",		horseback.combatMeleeSideOffset, float)
-	IMPL_SETTER("HorsebackCombat:Melee:UpOffset",		horseback.combatMeleeUpOffset, float)
-	IMPL_SETTER("HorsebackCombat:Melee:ZoomOffset",		horseback.combatMeleeZoomOffset, float)
-
-	IMPL_SETTER("Dragon:SideOffset",					dragon.sideOffset, float)
-	IMPL_SETTER("Dragon:UpOffset",						dragon.upOffset, float)
+	IMPL_SETTER("BowaimHorse:FOVOffset",				bowAim.horseFOVOffset, float)
+	// @Note:BowAim: Just repurpose another combat group for sneaking
+	IMPL_SETTER("BowaimSneak:SideOffset",				bowAim.combatMeleeSideOffset, float)
+	IMPL_SETTER("BowaimSneak:UpOffset",					bowAim.combatMeleeUpOffset, float)
+	IMPL_SETTER("BowaimSneak:ZoomOffset",				bowAim.combatMeleeZoomOffset, float)
+	IMPL_SETTER("BowaimSneak:FOVOffset",				bowAim.combatMeleeFOVOffset, float)
 
 	// We can ignore getters for these as we just return 0.0f if not found, which is what we want in this case
 	IMPL_GROUP_SETTER("Group:SideOffset",				sideOffset, float)
 	IMPL_GROUP_SETTER("Group:UpOffset",					upOffset, float)
 	IMPL_GROUP_SETTER("Group:ZoomOffset",				zoomOffset, float)
-	IMPL_GROUP_SETTER("Group:Ranged:SideOffset",		combatRangedSideOffset, float)
-	IMPL_GROUP_SETTER("Group:Ranged:UpOffset",			combatRangedUpOffset, float)
-	IMPL_GROUP_SETTER("Group:Ranged:ZoomOffset",		combatRangedZoomOffset, float)
-	IMPL_GROUP_SETTER("Group:Magic:SideOffset",			combatMagicSideOffset, float)
-	IMPL_GROUP_SETTER("Group:Magic:UpOffset",			combatMagicUpOffset, float)
-	IMPL_GROUP_SETTER("Group:Magic:ZoomOffset",			combatMagicZoomOffset, float)
-	IMPL_GROUP_SETTER("Group:Melee:SideOffset",			combatMeleeSideOffset, float)
-	IMPL_GROUP_SETTER("Group:Melee:UpOffset",			combatMeleeUpOffset, float)
-	IMPL_GROUP_SETTER("Group:Melee:ZoomOffset",			combatMeleeZoomOffset, float)
+	IMPL_GROUP_SETTER("Group:FOVOffset",				fovOffset, float)
+
+	IMPL_GROUP_SETTER("GroupCombat:Ranged:SideOffset",	combatRangedSideOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Ranged:UpOffset",	combatRangedUpOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Ranged:ZoomOffset",	combatRangedZoomOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Ranged:FOVOffset",	combatRangedFOVOffset, float)
+
+	IMPL_GROUP_SETTER("GroupCombat:Magic:SideOffset",	combatMagicSideOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Magic:UpOffset",		combatMagicUpOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Magic:ZoomOffset",	combatMagicZoomOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Magic:FOVOffset",	combatMagicFOVOffset, float)
+
+	IMPL_GROUP_SETTER("GroupCombat:Melee:SideOffset",	combatMeleeSideOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Melee:UpOffset",		combatMeleeUpOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Melee:ZoomOffset",	combatMeleeZoomOffset, float)
+	IMPL_GROUP_SETTER("GroupCombat:Melee:FOVOffset",	combatMeleeFOVOffset, float)
 };
 
 const std::unordered_map<std::string_view, std::function<void(int)>> intSetters = {

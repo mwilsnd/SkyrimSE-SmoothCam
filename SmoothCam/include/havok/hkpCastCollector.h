@@ -9,7 +9,7 @@ typedef struct bhkShapeList {
 	uint64_t unk0;
 	void* shapeInfo;
 	bhkShapeList* next;
-	glm::vec3 unk1;
+	vec3u unk1;
 	uint32_t flags;
 	uint32_t unk2;
 	uint32_t unk3;
@@ -71,7 +71,7 @@ class hkpCastCollector {
 		uint32_t unk0 = 0;								//0x24
 		hkpShapeKey shapeKey;							//0x28
 		uint32_t pad2;									//0x2C
-		hkpShapeKey m_shapeKeys[MAX_HIERARCHY_DEPTH];
+		hkpShapeKey m_shapeKeys[MAX_HIERARCHY_DEPTH] = {};
 		uint32_t m_shapeKeyIndex = 0;
 		uint32_t pad3;
 		uint64_t unk1 = 0;
@@ -82,8 +82,8 @@ class hkpCastCollector {
 };
 
 typedef __declspec(align(16)) struct hkpRayCastInfo {
-	glm::vec4 start;					// 0x0
-	glm::vec4 unkVec;					// 0x10
+	glm::vec4 start = {};				// 0x0
+	glm::vec4 unkVec = {};				// 0x10
 	bool unk0 = false;					// 0x20
 
 	// auVar11 = subps(*(undefined *)(param_2 + 0x24),(undefined  [16])0x0);
@@ -100,7 +100,7 @@ typedef __declspec(align(16)) struct hkpRayCastInfo {
 	uint64_t unk1_1 = 0;
 	uint64_t unk1_2 = 0;
 	float unk2 = 1.0f;					// 0x40
-	glm::ivec3 unk3 = { -1, -1, -1 };	// 0x44
+	vec3ui unk3 = { -1, -1, -1 };		// 0x44
 	uint64_t unk4_0 = 0;
 	uint64_t unk4_1 = 0;
 	uint64_t unk4_2 = 0;
@@ -110,7 +110,7 @@ typedef __declspec(align(16)) struct hkpRayCastInfo {
 	uint64_t unk7 = 0;					// 0x80
 	uintptr_t unk8 = 0;
 
-	glm::vec4 end;						// 0x90
+	glm::vec4 end = {};					// 0x90
 
 	// collector = *(longlong *)(param_2 + 0x2c);
 	// lVar2 = *(longlong *)(param_2 + 0x2e);

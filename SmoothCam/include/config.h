@@ -1,5 +1,8 @@
 #pragma once
-#include "nlohmann/json.hpp"
+#include "code_analysis.h"
+SILENCE_CODE_ANALYSIS;
+#   include "nlohmann/json.hpp"
+RESTORE_CODE_ANALYSIS;
 
 namespace Config {
 	using json = nlohmann::json;
@@ -26,6 +29,23 @@ namespace Config {
 		OK,
 		MISSING,
 		FAILED
+	};
+
+	enum class OffsetGroupID {
+		Standing,
+		Walking,
+		Running,
+		Sprinting,
+		Sneaking,
+		Swimming,
+		BowAim,
+		Sitting,
+		Horseback,
+		Dragon,
+		VampireLord,
+		Werewolf,
+		Unknown,
+		MAX_OFS
 	};
 
 	constexpr auto scalarMethods = mapbox::eternal::hash_map<mapbox::eternal::string, ScalarMethods>({
@@ -99,28 +119,35 @@ namespace Config {
 		float sideOffset = 25.0;
 		float upOffset = 0.0;
 		float zoomOffset = 0.0f;
+		float fovOffset = 0.0f;
 
 		float combatRangedSideOffset = 25.0f;
 		float combatRangedUpOffset = 0.0f;
 		float combatRangedZoomOffset = 0.0f;
+		float combatRangedFOVOffset = 0.0f;
 
 		float combatMagicSideOffset = 25.0f;
 		float combatMagicUpOffset = 0.0f;
 		float combatMagicZoomOffset = 0.0f;
+		float combatMagicFOVOffset = 0.0f;
 
 		float combatMeleeSideOffset = 25.0f;
 		float combatMeleeUpOffset = 0.0f;
 		float combatMeleeZoomOffset = 0.0f;
+		float combatMeleeFOVOffset = 0.0f;
 
 		float horseSideOffset = 25.0f;
 		float horseUpOffset = 0.0f;
 		float horseZoomOffset = 0.0f;
+		float horseFOVOffset = 0.0f;
 
 		bool interp = true;
 		bool interpRangedCombat = true;
 		bool interpMagicCombat = true;
 		bool interpMeleeCombat = true;
 		bool interpHorseback = true;
+
+		OffsetGroupID id = OffsetGroupID::Unknown;
 	} OffsetGroup;
 	void to_json(json& j, const OffsetGroup& obj);
 	void from_json(const json& j, OffsetGroup& obj);
@@ -142,7 +169,7 @@ namespace Config {
 		bool hideNonCombatCrosshair = false;
 		bool hideCrosshairMeleeCombat = false;
 		bool enableCrosshairSizeManip = false;
-		/*float crosshairNPCHitGrowSize = 16.0f;*/
+		float crosshairNPCHitGrowSize = 16.0f;
 		float crosshairMinDistSize = 16.0f;
 		float crosshairMaxDistSize = 24.0f;
 		bool useWorldCrosshair = false;
@@ -160,12 +187,11 @@ namespace Config {
 		int shoulderSwapKey = -1;
 		bool swapXClamping = true;
 		
-		// Comapt
-		bool disableDuringDialog = false;
-		bool comaptIC_FirstPersonHorse = false;
-		bool comaptIC_FirstPersonDragon = false;
-		bool compatIC_FirstPersonSitting = false;
+		// Compat
+		bool compatIC = false;
 		bool compatIFPV = false;
+		bool compatAGO = false;
+		bool compatACC = false;
 
 		// Primary interpolation
 		bool enableInterp = true;
@@ -198,6 +224,11 @@ namespace Config {
 		ScalarMethods zoomScalar = ScalarMethods::LINEAR;
 		float zoomInterpDurationSecs = 0.1f;
 
+		// FOV interpolation
+		bool enableFOVInterpolation = true;
+		ScalarMethods fovScalar = ScalarMethods::LINEAR;
+		float fovInterpDurationSecs = 0.1f;
+
 		// Distance clamping
 		bool cameraDistanceClampXEnable = true;
 		float cameraDistanceClampXMin = -75.0f;
@@ -220,6 +251,8 @@ namespace Config {
 		OffsetGroup sitting;
 		OffsetGroup horseback;
 		OffsetGroup dragon; // @TODO
+		OffsetGroup vampireLord;
+		OffsetGroup werewolf;
 	} UserConfig;
 	void to_json(json& j, const UserConfig& obj);
 	void from_json(const json& j, UserConfig& obj);

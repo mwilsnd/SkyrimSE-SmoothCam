@@ -4,7 +4,7 @@
 
 namespace Render {
 	typedef struct CBufferCreateInfo {
-		size_t size;
+		size_t size = 0;
 		void* initialData = nullptr;
 		D3D11_USAGE bufferUsage = D3D11_USAGE_DYNAMIC;
 		uint32_t cpuAccessFlags = D3D11_CPU_ACCESS_WRITE;

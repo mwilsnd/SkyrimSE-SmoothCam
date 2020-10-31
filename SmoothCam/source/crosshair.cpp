@@ -3,14 +3,7 @@
 #include "crosshair/skyrim.h"
 #include "crosshair/dot.h"
 
-double CurTime() noexcept;
-double CurQPC() noexcept;
-double GetFrameDelta() noexcept;
-double GetQPCDelta() noexcept;
-
 Crosshair::Manager::Manager() {
-	weapon = "WEAPON";
-
 	ReadInitialCrosshairInfo();
 
 	if (!Render::HasContext()) return;
@@ -57,7 +50,7 @@ void Crosshair::Manager::TickProjectilePath(glm::vec3& position, glm::vec3& vel,
 	position += vel * dt;
 }
 
-glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 	const TESAmmo* ammo, float gravity, const glm::vec2& aimRotation) noexcept
 {
 	// Read the tilt angle
@@ -107,11 +100,11 @@ glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(PlayerCharacter* p
 	};
 }
 
-bool Crosshair::Manager::ProjectilePredictionCurve(PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-	const glm::vec2& aimRotation, const glm::vec3& startPos, glm::vec3& hitPos) noexcept
+bool Crosshair::Manager::ProjectilePredictionCurve(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+	const glm::vec2& aimRotation, const glm::vec3& startPos, glm::vec3& hitPos, bool& hitCharacter) noexcept
 {
 	// Get the ammo we are using
-	typedef TESAmmo*(__thiscall PlayerCharacter::* GetAmmo)();
+	typedef TESAmmo*(__thiscall PlayerCharacter::* GetAmmo)() const;
 	const auto ammo = (player->*reinterpret_cast<GetAmmo>(&PlayerCharacter::Unk_9E))();
 	if (ammo == nullptr) return false;
 
@@ -147,6 +140,7 @@ bool Crosshair::Manager::ProjectilePredictionCurve(PlayerCharacter* player, cons
 			points[i] = { lastPos, hitPos };
 			entries++;
 			hit = true;
+			hitCharacter = result.hitCharacter != nullptr;
 			break;
 		}
 
@@ -205,7 +199,7 @@ bool Crosshair::Manager::ProjectilePredictionCurve(PlayerCharacter* player, cons
 	return hit;
 }
 
-void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 	const glm::vec2& aimRotation, mmath::NiMatrix44& worldToScaleform)
 {
 	if (!player->loadedState || !player->loadedState->node) return;
@@ -215,6 +209,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 	glm::vec3 hitPos = { 0, 0, 0 };
 	float rayLength = 0.0f;
 	bool hit = false;
+	bool hitCharacter = false;
 
 	if (GameState::IsBowDrawn(player) && weapon.data) {
 		const auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&weapon.data), NiAVObject, NiNode);
@@ -231,7 +226,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 				// Now select the method to use
 				if (config->useArrowPrediction) {
 					maxRayLength = config->maxArrowPredictionRange;
-					if (ProjectilePredictionCurve(player, camera, aimRotation, pos, hitPos)) {
+					if (ProjectilePredictionCurve(player, camera, aimRotation, pos, hitPos, hitCharacter)) {
 						hit = true;
 						rayLength = glm::length(hitPos - pos);
 					}
@@ -251,6 +246,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 					hit = result.hit;
 					hitPos = result.hitPos;
 					rayLength = result.rayLength;
+					hitCharacter = result.hitCharacter != nullptr;
 				}
 			}
 		}
@@ -258,7 +254,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 		NiPoint3 niOrigin = { 0.01f, 0.01f, 0.01f };
 		glm::vec3 normal = { 0.0f, 1.00f, 0.0f };
 
-		const auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&weapon.data), NiAVObject, NiNode);
+		const auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&magic.data), NiAVObject, NiNode);
 		if (handNode)
 			niOrigin = { handNode->m_worldTransform.pos.x,handNode->m_worldTransform.pos.y,handNode->m_worldTransform.pos.z };
 		normal = GetCrosshairTargetNormal(aimRotation);
@@ -270,6 +266,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 		hit = result.hit;
 		hitPos = result.hitPos;
 		rayLength = result.rayLength;
+		hitCharacter = result.hitCharacter != nullptr;
 	}
 
 	// Now set the crosshair
@@ -286,20 +283,6 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 			port.m_bottom = rect.top;
 		}
 
-		auto pt = NiPoint3(
-			hitPos.x,
-			hitPos.y,
-			hitPos.z
-		);
-
-		auto rangeScalar = glm::clamp((maxRayLength - rayLength) / maxRayLength, 0.0f, 1.0f);
-		auto sz = mmath::Remap(rangeScalar, 0.0f, 1.0f, config->crosshairMinDistSize, config->crosshairMaxDistSize);
-		crosshairSize = { sz, sz };
-
-		// Until we can actually detect this, forget about it
-		//if (result.hitCharacter)
-		//	crosshairSize += config->crosshairNPCHitGrowSize * rangeScalar;
-
 		// Flag our crosshair for drawing, if we have one
 		if (config->useWorldCrosshair && renderables.curCrosshair) {
 			SetCrosshairEnabled(false);
@@ -309,6 +292,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 			if (GameState::IsBowDrawn(player) && rayLength <= 15.0f) return;
 
 			renderables.drawCrosshair = true;
+			renderables.hitCharacter = hitCharacter;
 			renderables.curCrosshair->SetPosition(hitPos);
 
 			// We want the crosshair to face the player
@@ -320,26 +304,42 @@ void Crosshair::Manager::UpdateCrosshairPosition(PlayerCharacter* player, const 
 
 			renderables.curCrosshair->SetRotation(bilboard);
 			return;
-
-		} else {
-			// Use the HUD crosshair
-			glm::vec3 screen = {};
-			(*WorldPtToScreenPt3_Internal)(
-				reinterpret_cast<float*>(&worldToScaleform),
-				&port, &pt,
-				&screen.x, &screen.y, &screen.z, 9.99999975e-06
-			);
-
-			crosshairPos = {
-				screen.x,
-				screen.y
-			};
 		}
-	}
+			
+		auto pt = NiPoint3(
+			hitPos.x,
+			hitPos.y,
+			hitPos.z
+		);
 
-	SetCrosshairEnabled(true);
-	SetCrosshairPosition(crosshairPos);
-	SetCrosshairSize(crosshairSize);
+		auto rangeScalar = glm::clamp((maxRayLength - rayLength) / maxRayLength, 0.0f, 1.0f);
+		auto sz = mmath::Remap(rangeScalar, 0.0f, 1.0f, config->crosshairMinDistSize, config->crosshairMaxDistSize);
+		crosshairSize = { sz, sz };
+
+		// Use the HUD crosshair
+		glm::vec3 screen = {};
+		(*WorldPtToScreenPt3_Internal)(
+			reinterpret_cast<float*>(&worldToScaleform),
+			&port, &pt,
+			&screen.x, &screen.y, &screen.z, 9.99999975e-06
+		);
+
+		if (hitCharacter)
+			crosshairSize += config->crosshairNPCHitGrowSize * rangeScalar;
+
+		crosshairPos = {
+			screen.x,
+			screen.y
+		};
+
+		SetCrosshairEnabled(true);
+		SetCrosshairPosition(crosshairPos);
+		SetCrosshairSize(crosshairSize);
+	} else {
+		SetCrosshairEnabled(true);
+		CenterCrosshair();
+		SetDefaultSize();
+	}
 }
 
 void Crosshair::Manager::ReadInitialCrosshairInfo() {
@@ -366,8 +366,8 @@ void Crosshair::Manager::ReadInitialCrosshairInfo() {
 	baseCrosshairData.captured = true;
 
 	currentCrosshairData.position = {
-		baseCrosshairData.xOff,
-		baseCrosshairData.yOff
+		baseCrosshairData.xCenter,
+		baseCrosshairData.yCenter
 	};
 	currentCrosshairData.scale = {
 		baseCrosshairData.xScale,
@@ -382,8 +382,10 @@ void Crosshair::Manager::SetCrosshairPosition(const glm::dvec2& pos) {
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
 	if (menu && menu->view) {
 		const auto rect = menu->view->GetVisibleFrameRect();
-		const auto half_x = pos.x - ((rect.right + rect.left) * 0.5);
-		const auto half_y = pos.y - ((rect.bottom + rect.top) * 0.5);
+		const auto half_x = pos.x -
+			((static_cast<double>(rect.right) + static_cast<double>(rect.left)) * 0.5);
+		const auto half_y = pos.y -
+			((static_cast<double>(rect.bottom) + static_cast<double>(rect.top)) * 0.5);
 
 		const auto x = half_x + baseCrosshairData.xOff;
 		const auto y = half_y + baseCrosshairData.yOff;
@@ -429,7 +431,7 @@ void Crosshair::Manager::SetDefaultSize() {
 }
 
 void Crosshair::Manager::SetCrosshairEnabled(bool enabled) {
-	if (currentCrosshairData.enabled == enabled) return;
+	if (currentCrosshairData.enabled == enabled && !currentCrosshairData.invalidated) return;
 
 	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
 	if (menu && menu->view) {
@@ -440,6 +442,7 @@ void Crosshair::Manager::SetCrosshairEnabled(bool enabled) {
 		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 2);
 		
 		currentCrosshairData.enabled = enabled;
+		currentCrosshairData.invalidated = false;
 	}
 }
 
@@ -464,6 +467,10 @@ void Crosshair::Manager::Set3DCrosshairType(Config::CrosshairType type) {
 	renderables.crosshairType = type;
 }
 
+void Crosshair::Manager::InvalidateEnablementCache() {
+	currentCrosshairData.invalidated = true;
+}
+
 void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& cameraPosition, const glm::vec2& cameraRotation,
 	const NiFrustum& frustum) noexcept
 {
@@ -474,7 +481,7 @@ void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& camera
 	const auto matView = Render::BuildViewMatrix(cameraPosition, cameraRotation);
 	renderables.cbufPerFrameStaging.matProjView = matProj * matView;
 
-	renderables.cbufPerFrameStaging.curTime = static_cast<float>(CurTime());
+	renderables.cbufPerFrameStaging.curTime = static_cast<float>(GameTime::CurTime());
 	renderables.cbufPerFrame->Update(
 		&renderables.cbufPerFrameStaging, 0,
 		sizeof(decltype(renderables.cbufPerFrameStaging)), ctx
@@ -509,17 +516,24 @@ void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& camera
 			auto rangeScalar = glm::clamp((8000.0f - d) / 8000.0f, 0.0f, 1.0f);
 			auto sz = mmath::Remap(rangeScalar, 0.0f, 1.0f, config->crosshairMinDistSize, config->crosshairMaxDistSize);
 			s = sz;
+
+			if (renderables.hitCharacter) {
+				s += config->crosshairNPCHitGrowSize;
+			}
 		}
 
+		const auto aspect = ctx.windowSize.x / ctx.windowSize.y;
+
 		renderables.curCrosshair->SetScale({
-			pScale * 0.001f * s * 0.04f,
-			pScale * 0.001f * s * 0.04f,
+			(pScale * 0.001f) * s * 0.0055f,
+			(pScale * 0.001f) * s * 0.0055f,
 			1.0f
 		});
 
 		renderables.curCrosshair->Render(
-			ctx, renderables.cbufPerFrameStaging.curTime, GetFrameDelta(), config->worldCrosshairDepthTest
+			ctx, renderables.cbufPerFrameStaging.curTime, GameTime::GetFrameDelta(), config->worldCrosshairDepthTest
 		);
 		renderables.drawCrosshair = false;
+		renderables.hitCharacter = false;
 	}
 }

@@ -7,11 +7,11 @@ namespace Render {
 	class SRV;
 
 	typedef struct Texture2DCreateInfo {
-		uint32_t width;
-		uint32_t height;
+		uint32_t width = 0;
+		uint32_t height = 0;
 		uint32_t mipLivels = 1;
 		uint32_t arraySize = 1;
-		DXGI_FORMAT format;
+		DXGI_FORMAT format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 		D3D11_USAGE usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
 		uint32_t bindFlags = D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE;
 		uint32_t cpuAccessFlags = 0;

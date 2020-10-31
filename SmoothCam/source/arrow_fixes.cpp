@@ -19,7 +19,8 @@ static void mFactorCameraOffset(CorrectedPlayerCamera* camera, NiPoint3& pos, bo
 	}
 
 	// Only run in states we care about
-	if (!GameState::IsThirdPerson(camera) && !GameState::IsInHorseCamera(camera) && !GameState::IsInDragonCamera(camera)) {
+	static const auto ply = *g_thePlayer;
+	if (!GameState::IsThirdPerson(ply, camera) && !GameState::IsInHorseCamera(ply, camera) && !GameState::IsInDragonCamera(camera)) {
 		fnFactorCameraOffset(camera, pos, fac);
 		return;
 	}
@@ -51,8 +52,7 @@ static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 
 	// @Note: Don't run our trajectory correction while in a kill move
 	// Only run it in the primary states we care about
-	//if (!GameState::IsThirdPerson(camera) && !GameState::IsInHorseCamera(camera) && !GameState::IsInDragonCamera(camera))
-	const auto state = g_theCamera->GetCurrentCameraState(ply, camera);
+	const auto state = g_theCamera->GetCurrentCameraState();
 	if (state != GameState::CameraState::ThirdPerson && state != GameState::CameraState::ThirdPersonCombat
 		&& state != GameState::CameraState::Horseback && state != GameState::CameraState::IronSights)
 	{
@@ -151,8 +151,8 @@ bool ArrowFixes::Attach() {
 		);
 
 		if (!detFactorCameraOffset->Attach()) {
-			_ERROR("Failed to place detour on target function, this error is fatal.");
-			FatalError(L"Failed to place detour on target function, this error is fatal.");
+			_ERROR("Failed to place detour on target function(49,866), this error is fatal.");
+			FatalError(L"Failed to place detour on target function(49,866), this error is fatal.");
 		}
 	}
 
@@ -165,8 +165,8 @@ bool ArrowFixes::Attach() {
 		);
 
 		if (!detArrowFlightPath->Attach()) {
-			_ERROR("Failed to place detour on target function, this error is fatal.");
-			FatalError(L"Failed to place detour on target function, this error is fatal.");
+			_ERROR("Failed to place detour on target function(42,998), this error is fatal.");
+			FatalError(L"Failed to place detour on target function(42,998), this error is fatal.");
 		}
 	}
 

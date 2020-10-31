@@ -1,13 +1,19 @@
 #pragma once
+
 namespace Render {
 	// If we don't downscale positions we will run in to precision issues on the GPU when
 	// near the edges of the map. World positions and camera must all be scaled by the same amount!
 	// I'm a bit surprised a game of this scale wouldn't use some kind of origin re-basing.
-	constexpr auto RenderScale = 0.1f;
+	constexpr auto RenderScale = 0.0142875f;
 
 	// Convert a world position to our render scale
 	__forceinline glm::vec3 ToRenderScale(const glm::vec3& position) {
 		return position * RenderScale;
+	}
+
+	// And convert back
+	__forceinline glm::vec3 FromRenderScale(const glm::vec3& position) {
+		return position / RenderScale;
 	}
 
 	// Get the current FOV

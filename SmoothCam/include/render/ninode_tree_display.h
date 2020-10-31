@@ -2,6 +2,7 @@
 #ifdef WITH_D2D
 #include "render/d3d_context.h"
 #include "render/gradbox.h"
+#include "string_builder.h"
 
 namespace Render {
 	class NiNodeTreeDisplay : public GradBox {
@@ -17,17 +18,20 @@ namespace Render {
 			void SetPosition(uint32_t x, uint32_t y) noexcept;
 			// Set the size of the graph
 			void SetSize(uint32_t w, uint32_t h) noexcept;
-
 			// Draw the chart
 			void Draw(D3DContext& ctx, NiNode* node) noexcept;
 
 		private:
-			void DrawNode(D3DContext& ctx, NiNode* no, float indent, float line, uint32_t level);
+			void DrawNode(D3DContext& ctx, NiNode* no, float indent, float line, float& maxWidth, uint32_t level);
 
-			uint32_t width;
-			uint32_t height;
-			uint32_t xPos;
-			uint32_t yPos;
+			uint32_t width = 0;
+			uint32_t height = 0;
+			uint32_t xPos = 0;
+			uint32_t yPos = 0;
+			
+			StringBuilder<std::wstring> builder;
+			wchar_t* buffer = nullptr;
+			size_t bufSize = 0;
 	};
 }
 

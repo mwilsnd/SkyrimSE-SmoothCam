@@ -1,5 +1,5 @@
 local outputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-local parent = "../Deps/skse64_2_00_17/src/skse64"
+local parent = "../Deps/skse64_2_00_19/src/skse64"
 local loc = parent.. "/skse64_common"
 
 project "skse64_common"
@@ -20,7 +20,7 @@ project "skse64_common"
 		loc.. "/**.cpp",
 	}
 	forceincludes {
-		"../Deps/skse64_2_00_17/src/common/IPrefix.h",
+		"../Deps/skse64_2_00_19/src/common/IPrefix.h",
 		"../SmoothCam/include/addrlib/skse_macros.h",
 	}
 	includedirs {

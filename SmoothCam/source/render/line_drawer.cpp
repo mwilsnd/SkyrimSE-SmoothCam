@@ -29,7 +29,7 @@ void Render::LineDrawer::CreateObjects(D3DContext& ctx) {
 	Render::VertexBufferCreateInfo vbInfo;
 	vbInfo.elementSize = sizeof(Point);
 	vbInfo.numElements = LineDrawPointBatchSize * 2;
-	vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_LINELIST;
+	vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
 	vbInfo.bufferUsage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
 	vbInfo.cpuAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE;
 	vbInfo.vertexProgram = vs;

@@ -2,23 +2,24 @@
 SmoothCam adds a frame-interpolated third-person camera to Skyrim Special Edition. After trying other third-person camera mods I decided to try and make something better, and this is the result. If I actually achieved my goal in making a better camera is up for you to decide.
 
 ## Compatibility
-* SmoothCam is going to have issues with any other mod that tries to position the third-person camera (Other third-person mods, likely some lock-on mods, etc).
+SmoothCam is going to have issues with any other mod that tries to position the third-person camera (Other third-person mods, likely some lock-on mods, etc).
 
-* As I use ImprovedCamera myself, I've been slowly adding some compatibility patches for it over time. Note that currently interactions between both mods aren't perfect.
-
-* Alternate Conversation Camera is supported, just make sure "Disable During Dialog" is selected in the MCM.
+The following mods are supported, with patches that can be enabled in the MCM:
+* Improved Camera
+* Immersive First Person View
+* Alternate Conversation Camera
+* Archery Gameplay Overhaul
 
 ## Runtime Requirements
-SmoothCam only requires SKSE64. SkyUI is optional if using the MCM esp.
-SmoothCam uses [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444) as of Alpha 1.3, allowing the mod to run on many different versions of the game. SmoothCam includes the 1.5.97 database file, for older versions refer to the link for the correct database.
-**Note:** I only offer active support for SKSE 2.0.17 (1.5.97), using SmoothCam on older versions may cause unforeseen issues.
+SmoothCam requires SKSE64 and [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444). If you wish to use the MCM esp, SkyUI is also required.
 
 #### Notice:
 Depending on the age of your processor (~2011 and earlier), you might need to use the SSE version (Streaming SIMD Extensions). Most people can use the normal version without issue.
 
 ## Installing
 If using one of the pre-compiled releases, just copy the `Data` folder in the archive into your skyrim folder or install via a mod manager.
-If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins` (along with the address library database file), `SmoothCam.esp` to `Data/` and `SmoothCamMCM.pex` to `Data/Scripts`. Enable the esp file if you wish to use the MCM, otherwise the module will generate a json file in the plugins folder you can edit to manually configure the camera.
+
+If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins` (along with the address library database file and `ExtraData/SmoothCam_FollowBones_Default.txt`), `SmoothCam.esp` to `Data/` and `SmoothCamMCM.pex` to `Data/Scripts`. Enable the esp file if you wish to use the MCM, otherwise the module will generate a json file in the plugins folder you can edit to manually configure the camera.
 
 ## Building
 To build the project, clone the repo (remember to include `--recurse-submodules`), then run `make_vs2019.bat` or `make_vs2017.bat`.
@@ -31,10 +32,11 @@ Built files are placed in `SmoothCam/bin/<target>/SmoothCam`.
 To build the papyrus script, you'll need `lua` on the system path. To run the code generation just run `MCM/run_preprocess.bat` which will generate `SmoothCamMCM.psc`.
 From there just compile the generated code like any normal papyrus script.
 
-## Known Issues
-Improved Camera issues - Switching POV on horseback is buggy. Moving from first person to thirdperson must be done via the `Switch POV` key, rather than scrolling the camera.
+To generate the offset map, run `lua run.lua "path/to/skse/src"` from the directory `CodeGen/gen_addrmap`. You will need `offsets.txt` in the same folder, which can be exported from address library.
 
-Improved Camera issues - Sitting is even more buggy. This might be wholly an Improved Camera issue, however once in first person while sitting you cannot re-enter third person.
+To generate crosshair model file headers, navigate to `CodeGen/ModelBaker` and run `ModelBaker "path/to/input.ply" "output_name".
+
+To build the model baker, you will need dub, DMD or LDC, a copy of assimp which you have compiled as a static library and optionally VSCode with the code-d extension. Make a folder in `ModelBaker` named `compiled_libs` (or `compiled_libs_debug` if making a debug build) and copy all assimp libraries to that location.
 
 ## Configuration
 The easiest way to configure the camera is by using the SmoothCam MCM menu. If you do not have SkyUI, or wish to manually edit the json settings, here is a description of each value:
@@ -50,11 +52,18 @@ enableCrosshairSizeManip | Enable size manipulation of the crosshair
 crosshairNPCHitGrowSize | When the 3D crosshair is over an NPC, grow the size of the crosshair by this amount
 crosshairMinDistSize | Sets the size of the 3D crosshair when the player's aim ray is at the maximum distance
 crosshairMaxDistSize | Sets the size of the 3D crosshair when the player's aim ray is at the minimum distance
+useWorldCrosshair | Use a custom 3D rendered crosshair instead of the HUD crosshair
+worldCrosshairDepthTest | Enable depth testing when using the world crosshair
+worldCrosshairType | The style of crosshair to use when using the world crosshair mode
+useArrowPrediction | Enable arrow trajectory prediction
+drawArrowArc | Draw an arc when using arrow prediction
+arrowArcColor | The color of the arrow arc
+maxArrowPredictionRange | The maximum range to run arrow trajectory prediction code
 disableDeltaTime | Disables frame time factoring in the smoothing math
-disableDuringDialog | Disables SmoothCam during character-NPC conversations
-comaptIC_FirstPersonHorse | Enables compat code for dealing with issue when running the Improved Camera mod
-comaptIC_FirstPersonDragon | Enables compat code for dealing with issue when running the Improved Camera mod
-compatIC_FirstPersonSitting | Enables compat code for dealing with issue when running the Improved Camera mod
+compatIC | Enables compat code for dealing with issue when running the Improved Camera mod
+compatACC | Enables compat code for dealing with issues when running the Alternate Conversation Camera mod
+compatIFPV | Enables compat code for dealing with issues when running the Immersive First Person View mod
+compatAGO | Enables compat code for dealing with issues when running the Archery Gameplay Overhaul mod
 shoulderSwapKey | The key code used for swapping the X axis when pressed
 swapXClamping | When swapping the shoulder/X axis, also flips the distance clamping X values
 currentScalar | A value from 0 - 21: The scalar function to use for interpolation
@@ -77,6 +86,9 @@ offsetInterpDurationSecs | The smoothing duration to use when the camera changes
 enableZoomInterpolation | Enable smoothing of camera zoom state transitions
 zoomScalar | A value from 0 - 21: The scalar method to use for zoom transition smoothing
 zoomInterpDurationSecs | The smoothing duration to use when the camera changes zoom distance (In seconds)
+enableFOVInterpolation | Enable smoothing of camera fov state transitions
+fovScalar | A value from 0 - 21: The scalar method to use for fov transition smoothing
+fovInterpDurationSecs | The smoothing duration to use when the camera changes fov (In seconds)
 cameraDistanceClampXEnable | Enable distance clamping on the local X axis
 cameraDistanceClampXMin | The minimum value the camera position may reach on the X axis
 cameraDistanceClampXMax | The maximum value the camera position may reach on the X axis
@@ -95,6 +107,8 @@ swimming | The offset collection to use when swimming
 bowAim | The offset collection to use when aiming with a bow
 sitting | The offset collection to use when sitting
 horseback | The offset collection to use when on horseback
+vampireLord | The offset collection to use when playing as a vampire lord
+werewolf | The offset collection to use when playing as a werewolf
 dragon | Not yet implemented
 
 An offset group is just a collection of common values used for a camera state. Note that not all values are used for each state.
@@ -104,18 +118,23 @@ OffsetSetting | Description
 sideOffset | The amount to move the camera to the right
 upOffset | The amount to move the camera up
 zoomOffset | The amount to zoom the camera by
+fovOffset | The amount to offset the FOV by
 combatRangedSideOffset | The amount to move the camera to the right during ranged combat
 combatRangedUpOffset | The amount to move the camera up during ranged combat
-combatRangedZoomOffset | The amount to zoom the camera by
+combatRangedZoomOffset | The amount to zoom the camera by during ranged combat
+combatRangedFOVOffset | The amount to offset the FOV by during ranged combat
 combatMagicSideOffset | The amount to move the camera to the right during magic combat
 combatMagicUpOffset | The amount to move the camera up during magic combat
-combatMagicZoomOffset | The amount to zoom the camera by
+combatMagicZoomOffset | The amount to zoom the camera by during magic combat
+combatMagicFOVOffset | The amount to offset the FOV by during magic combat
 combatMeleeSideOffset | The amount to move the camera to the right during melee combat
 combatMeleeUpOffset | The amount to move the camera up during melee combat
-combatMeleeZoomOffset | The amount to zoom the camera by
+combatMeleeZoomOffset | The amount to zoom the camera by during melee combat
+combatMeleeFOVOffset | The amount to offset the FOV by during melee combat
 horseSideOffset | The amount to move the camera to the right when on horseback
 horseUpOffset | The amount to move the camera up when on horseback
-horseZoomOffset | The amount to zoom the camera by
+horseZoomOffset | The amount to zoom the camera by when on horseback
+horseFOVOffset | The amount to offset the FOV by when on horseback
 interp | Enable smoothing during this state
 interpRangedCombat | Enable smoothing during this state when in ranged combat
 interpMagicCombat | Enable smoothing during this state when in magic combat

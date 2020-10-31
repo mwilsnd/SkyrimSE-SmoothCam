@@ -20,6 +20,7 @@ do class "GroupStructMacroInvoke" : namespace "papyrus.preproc" {
 	function GenerateCalls( self )
 		for indent, macro, structs in self.m_strSource:gmatch( self.m_strPattern ) do
 			indent = indent:gsub( "\n", "" )
+
 			local t = {}
 			local first = true
 			local cleaned = structs:gsub("\n", ""):gsub("\r", ""):gsub("\t", "")
