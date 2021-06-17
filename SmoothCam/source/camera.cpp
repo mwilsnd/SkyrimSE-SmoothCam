@@ -875,17 +875,18 @@ glm::vec2 Camera::SmoothCamera::GetAimRotation(const TESObjectREFR* ref, const C
 			rotation.euler.x,
 			yaw + clampedLocal
 		};
-
-	} else if (GameState::InPOVSlideMode()) {
-		// In POV slide mode aim yaw is locked to player rotation
-		return {
-			rotation.euler.x,
-			ref->rot.z
-		};
-
 	} else {
-		return rotation.euler;
+		const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraStates[CorrectedPlayerCamera::kCameraState_ThirdPerson2]);
+		if (tps && tps->freeRotationEnabled) {
+			// In free rotation mode aim yaw is locked to player rotation
+			return {
+				rotation.euler.x,
+				ref->rot.z
+			};
+		}
 	}
+
+	return rotation.euler;
 }
 
 const mmath::Rotation& Camera::SmoothCamera::GetCameraRotation() const noexcept {
