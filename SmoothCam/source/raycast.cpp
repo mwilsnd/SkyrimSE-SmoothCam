@@ -119,7 +119,7 @@ Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) {
 	result.hit = av != nullptr;
 
 	if (result.hit) {
-		auto ref = av->m_owner; // Yay, updates //*reinterpret_cast<TESObjectREFR**>(&av->unkF8);
+		auto ref = av->m_owner;
 		if (ref && ref->formType == kFormType_Character) {
 			// This might not *always* be a valid cast, but I've only ever seen valid data
 			// and the dynamic cast _always_ fails. For now, we just check that this isn't null -

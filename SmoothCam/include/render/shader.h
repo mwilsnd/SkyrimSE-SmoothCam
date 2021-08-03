@@ -1,6 +1,7 @@
 #pragma once
 #include "render/d3d_context.h"
 #include <d3dcompiler.h>
+#include "render/shaders/shader_decl.h"
 
 namespace Render {
 	class VertexBuffer;
@@ -11,15 +12,29 @@ namespace Render {
 	};
 
 	struct ShaderCreateInfo {
-		std::string source;
-		std::string entryName = "main";
-		std::string version;
+		Shaders::ShaderDecl source;
+		eastl::string entryName = "main";
+		eastl::string version;
 		PipelineStage stage;
 
-		ShaderCreateInfo(std::string&& source, PipelineStage stage,
-			std::string&& entryName = "main", std::string&& version = "5_0")
+		ShaderCreateInfo(const Shaders::ShaderDecl& source, PipelineStage stage,
+			eastl::string&& entryName = "main", eastl::string&& version = "5_0")
 			: source(source), entryName(entryName), version(version), stage(stage)
 		{}
+
+		size_t Hash() const {
+			size_t seed = source.uid;
+			Util::HashCombine(seed, entryName);
+			Util::HashCombine(seed, version);
+			Util::HashCombine(seed, stage);
+			return seed;
+		}
+
+		bool operator==(const ShaderCreateInfo& other) const {
+			return
+				stage == other.stage && version == other.version &&
+				entryName == other.entryName && source.uid == other.source.uid;
+		}
 	};
 
 	class Shader {
@@ -49,7 +64,7 @@ namespace Render {
 				ID3D11PixelShader* fragment;
 			} program;
 
-			bool Compile(const std::string& source, const std::string& entryName, const std::string& version) noexcept;
+			bool Compile(const eastl::string& source, const eastl::string& entryName, const eastl::string& version) noexcept;
 
 			friend class VertexBuffer;
 	};

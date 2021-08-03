@@ -1,61 +1,53 @@
 #include "detours.h"
 #include "camera.h"
 #include "arrow_fixes.h"
+#include "debug/eh.h"
 
-static PLH::VFuncMap origVFuncs_PlayerInput;
-static PLH::VFuncMap origVFuncs_MenuOpenClose;
+extern eastl::unique_ptr<Camera::Camera> g_theCamera;
 
-static std::unique_ptr<PLH::VFuncSwapHook> playerInputHooks;
-static std::unique_ptr<PLH::VFuncSwapHook> menuOpenCloseHooks;
+static eastl::unique_ptr<PolymorphicVTableDetour<TESCameraState, 13>> cameraUpdateHooks;
+static eastl::unique_ptr<VTableDetour<PlayerInputHandler>> playerInputHook;
+static eastl::unique_ptr<VTableDetour<BSTEventSink<void*>>> menuOpenCloseHook;
 
-extern std::shared_ptr<Camera::SmoothCamera> g_theCamera;
+// Camera update
+typedef void(__thiscall* CameraOnUpdate)(TESCameraState*, BSTSmartPointer<TESCameraState>&);
+void mCameraUpdate(TESCameraState* state, BSTSmartPointer<TESCameraState>& nextState) {
+	const auto mdmp = Debug::MiniDumpScope();
 
-#define CAMERA_UPDATE_DETOUR_IMPL(name)															\
-static PLH::VFuncMap origVFuncs_##name##;														\
-void __fastcall mCameraStateUpdate##name##(														\
-	TESCameraState* pThis, BSTSmartPointer<TESCameraState>& nextState)							\
-{																								\
-	GameTime::StepFrameTime();																	\
-	auto player = *g_thePlayer;																	\
-	auto camera = CorrectedPlayerCamera::GetSingleton();										\
-	player->IncRef();																			\
-	if (g_theCamera != nullptr)	{																\
-		if (g_theCamera->PreGameUpdate(player, camera, nextState)) {							\
-			player->DecRef();																	\
-			return;																				\
-		}																						\
-	}																							\
-	reinterpret_cast<Detours::CameraOnUpdate>(origVFuncs_##name##.at(3))(pThis, nextState);		\
-	if (g_theCamera != nullptr)	{																\
-		g_theCamera->UpdateCamera(player, camera, nextState);									\
-	}																							\
-	player->DecRef();																			\
+	GameTime::StepFrameTime();
+
+	auto player = *g_thePlayer;
+	player->IncRef();
+	auto camera = CorrectedPlayerCamera::GetSingleton();
+
+	if (g_theCamera) {
+		if (g_theCamera->PreGameUpdate(player, camera, nextState)) {
+			player->DecRef();
+			return;
+		}
+	}
+
+	// TPS1&2 share the same vtable
+	TESCameraState* selector;
+	if (state == camera->cameraStates[CorrectedPlayerCamera::kCameraState_ThirdPerson1])
+		selector = camera->cameraStates[CorrectedPlayerCamera::kCameraState_ThirdPerson2];
+	else
+		selector = state;
+
+	cameraUpdateHooks->GetBase<CameraOnUpdate>(selector, 3)(state, nextState);
+
+	if (g_theCamera)
+		g_theCamera->UpdateCamera(player, camera, nextState);
+
+	player->DecRef();
 }
-
-#define DO_CAMERA_UPDATE_DETOUR_IMPL(name, state)				\
-static auto detour_##name## = Detours::CameraStateDetour(		\
-	CorrectedPlayerCamera::GetSingleton()->cameraStates[state],	\
-	static_cast<uint16_t>(3),									\
-	reinterpret_cast<uint64_t>(&mCameraStateUpdate##name##),	\
-	origVFuncs_##name##											\
-);
-
-CAMERA_UPDATE_DETOUR_IMPL(FPS);
-CAMERA_UPDATE_DETOUR_IMPL(TPS);
-CAMERA_UPDATE_DETOUR_IMPL(Dragon);
-CAMERA_UPDATE_DETOUR_IMPL(Horse);
-CAMERA_UPDATE_DETOUR_IMPL(Tween);
-CAMERA_UPDATE_DETOUR_IMPL(VATS);
-CAMERA_UPDATE_DETOUR_IMPL(Free);
-CAMERA_UPDATE_DETOUR_IMPL(Vanity);
-CAMERA_UPDATE_DETOUR_IMPL(Furniture);
-CAMERA_UPDATE_DETOUR_IMPL(Bleedout);
-CAMERA_UPDATE_DETOUR_IMPL(Transition);
 
 // POV Handler
 typedef uintptr_t(__thiscall* OnInput)(PlayerInputHandler*, InputEvent*);
-uintptr_t __fastcall mOnInput(PlayerInputHandler* pThis, InputEvent* input) {
+uintptr_t mOnInput(PlayerInputHandler* pThis, InputEvent* input) {
 	if (input) {
+		const auto mdmp = Debug::MiniDumpScope();
+
 		switch (input->eventType) {
 			case InputEvent::kEventType_Button: {
 				const auto ev = reinterpret_cast<ButtonEvent*>(input);
@@ -77,13 +69,19 @@ uintptr_t __fastcall mOnInput(PlayerInputHandler* pThis, InputEvent* input) {
 				break;
 		}
 	}
-	return reinterpret_cast<OnInput>(origVFuncs_PlayerInput[1])(pThis, input);
+	return playerInputHook->GetBase<OnInput>(1)(pThis, input);
 }
 
-typedef EventResult(__thiscall* MenuOpenCloseHandler)(uintptr_t pThis, MenuOpenCloseEvent* ev, EventDispatcher<MenuOpenCloseEvent>* dispatcher);
-EventResult __fastcall mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent* ev, EventDispatcher<MenuOpenCloseEvent>* dispatcher) {
+typedef EventResult(__thiscall* MenuOpenCloseHandler)(uintptr_t pThis, MenuOpenCloseEvent* ev,
+	EventDispatcher<MenuOpenCloseEvent>* dispatcher);
+EventResult mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent* ev,
+	EventDispatcher<MenuOpenCloseEvent>* dispatcher)
+{
 	if (pThis == (uintptr_t)&(*g_thePlayer)->menuOpenCloseEvent) {
+		const auto mdmp = Debug::MiniDumpScope();
+
 		if (ev->menuName.data && g_theCamera) {
+			DebugPrint("Menu %s is %s\n", ev->menuName.data, ev->opening ? "opening" : "closing");
 			auto id = Camera::MenuID::None;
 
 			if (strcmp(ev->menuName.data, "Dialogue Menu") == 0)
@@ -96,59 +94,56 @@ EventResult __fastcall mMenuOpenCloseHandler(uintptr_t pThis, MenuOpenCloseEvent
 				id = Camera::MenuID::FaderMenu;
 			else if (strcmp(ev->menuName.data, "LoadWaitSpinner") == 0)
 				id = Camera::MenuID::LoadWaitSpinner;
+			else if (strcmp(ev->menuName.data, "MapMenu") == 0)
+				id = Camera::MenuID::MapMenu;
+			else if (strcmp(ev->menuName.data, "InventoryMenu") == 0)
+				id = Camera::MenuID::InventoryMenu;
 
 			if (id != Camera::MenuID::None)
 				g_theCamera->OnMenuOpenClose(id, ev);
 		}
 	}
-	return reinterpret_cast<MenuOpenCloseHandler>(origVFuncs_MenuOpenClose[1])(pThis, ev, dispatcher);
+	return menuOpenCloseHook->GetBase<MenuOpenCloseHandler>(1)(pThis, ev, dispatcher);
 }
 
 bool Detours::Attach() {
 	GameTime::Initialize();
 
-	{
-		playerInputHooks = std::make_unique<PLH::VFuncSwapHook>(
-			(uint64_t)PlayerControls::GetSingleton()->togglePOVHandler,
-			PLH::VFuncMap{
-				{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mOnInput) },
-			},
-			&origVFuncs_PlayerInput
-		);
-
-		if (!playerInputHooks->hook()) {
-			_ERROR("Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
-			FatalError(L"Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
-		}
+	playerInputHook = eastl::make_unique<VTableDetour<PlayerInputHandler>>(PlayerControls::GetSingleton()->togglePOVHandler);
+	playerInputHook->Add(1, mOnInput);
+	if (!playerInputHook->Attach()) {
+		_ERROR("Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
+		FatalError(L"Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
 	}
 
-	{
-		// Intercept menu open/close events
-		menuOpenCloseHooks = std::make_unique<PLH::VFuncSwapHook>(
-			(uint64_t)&(*g_thePlayer)->menuOpenCloseEvent,
-			PLH::VFuncMap{
-				{ static_cast<uint16_t>(1), reinterpret_cast<uint64_t>(&mMenuOpenCloseHandler) },
-			},
-			&origVFuncs_MenuOpenClose
-		);
-
-		if (!menuOpenCloseHooks->hook()) {
-			_ERROR("Failed to place detour on target virtual function(menuOpenCloseEvent), this error is fatal.");
-			FatalError(L"Failed to place detour on target virtual function(menuOpenCloseEvent), this error is fatal.");
-		}
+	menuOpenCloseHook = eastl::make_unique<VTableDetour<BSTEventSink<void*>>>(&(*g_thePlayer)->menuOpenCloseEvent);
+	menuOpenCloseHook->Add(1, mMenuOpenCloseHandler);
+	if (!menuOpenCloseHook->Attach()) {
+		_ERROR("Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
+		FatalError(L"Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
 	}
 
-	DO_CAMERA_UPDATE_DETOUR_IMPL(FPS, CorrectedPlayerCamera::kCameraState_FirstPerson);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(TPS, CorrectedPlayerCamera::kCameraState_ThirdPerson2);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Dragon, CorrectedPlayerCamera::kCameraState_Dragon);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Horse, CorrectedPlayerCamera::kCameraState_Horse);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Tween, CorrectedPlayerCamera::kCameraState_TweenMenu);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(VATS, CorrectedPlayerCamera::kCameraState_VATS);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Free, CorrectedPlayerCamera::kCameraState_Free);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Vanity, CorrectedPlayerCamera::kCameraState_AutoVanity);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Furniture, CorrectedPlayerCamera::kCameraState_Furniture);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Bleedout, CorrectedPlayerCamera::kCameraState_Bleedout);
-	DO_CAMERA_UPDATE_DETOUR_IMPL(Transition, CorrectedPlayerCamera::kCameraState_Transition);
+	auto states = CorrectedPlayerCamera::GetSingleton()->cameraStates;
+	cameraUpdateHooks = eastl::make_unique<PolymorphicVTableDetour<TESCameraState, 13>>();
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_FirstPerson], 3, mCameraUpdate);
+	//cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_ThirdPerson1], 3, mCameraUpdate); // 1 and 2 share the same vtbl
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_ThirdPerson2], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_Dragon], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_Horse], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_TweenMenu], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_VATS], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_Free], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_AutoVanity], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_Furniture], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_Bleedout], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_Transition], 3, mCameraUpdate);
+	cameraUpdateHooks->Add(states[CorrectedPlayerCamera::kCameraState_IronSights], 3, mCameraUpdate);
+
+	DebugPrint("Hooking camera state update methods\n");
+	if (!cameraUpdateHooks->Attach()) {
+		_ERROR("Failed to place detour on target virtual function(TESCameraState Update), this error is fatal.");
+		FatalError(L"Failed to place detour on target virtual function(TESCameraState Update), this error is fatal.");
+	}
 
 	return ArrowFixes::Attach();
 }

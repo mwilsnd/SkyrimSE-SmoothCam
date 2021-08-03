@@ -1,2 +1,2 @@
-cd preproc
-lua do_prepoc.lua ../mcm.psc ../SmoothCamMCM.psc
+cd paper
+paper.exe ../mcm/mcm.psc ../SmoothCamMCM.psc

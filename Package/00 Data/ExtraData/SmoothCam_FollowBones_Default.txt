@@ -1,0 +1,40 @@
+// Any file in the SKSE plugins folder starting with the name "SmoothCam_FollowBones_" will be loaded and parsed by SmoothCam.
+// Bone names in this file are used to select the starting camera position height for the player and are selected based on
+// what matching bone name is found first. SmoothCam will search this list in descending order, so if you want to override
+// a bone, place it higher up in the list (Or include your bones in a file with a name that SmoothCam will load earlier).
+
+// Each bone should be placed on a separate line and the name should be an exact match to what is found in the skeleton.
+// You can add comment lines by starting the line with '//', but you cannot place comments anywhere on the same line as a bone!
+// (You think I'm writing a proper parser for this?)
+
+// I've included some bone names for most of the vanilla skeletons here, with what *should* be decent locations for the
+// camera to follow, starting with the highest priority bones to look for, descending to the last-resort bones.
+
+Camera3rd [Cam3]
+NPC Head [Head]
+NPC Head
+DwarvenSpiderBody
+ElkSpine1
+ChaurusFlyerSpine1
+Boar_Spine1
+NetchPelvis [Pelv]
+DragPriestNPC Head [Head]
+Canine_Spine1
+Goat_Spine3
+Horker_Ribcage
+HorseSpine2
+IW Head
+Mammoth Spine 4
+Mcrab_Body
+Sabrecat_Ribcage[Spn4]
+SlaughterfishNeck
+Wisp Head
+Bip01 Spine1
+Spine [Spn1]
+SPINE1
+SpineUpperSpine
+MainBody
+NPC Spine [Spn1]
+Neck1
+RabbitSpine2
+NPC COM [COM]

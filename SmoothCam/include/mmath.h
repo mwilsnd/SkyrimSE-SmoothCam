@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 namespace Config {
-	enum class ScalarMethods;
+	enum class ScalarMethods : uint8_t;
 }
 
 namespace mmath {

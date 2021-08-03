@@ -4,9 +4,8 @@
 #include "render/d2d.h"
 #include "render/dwrite.h"
 #include "render/shader.h"
-#include "render/shaders/shader_vertex_color.h"
 
-extern std::unique_ptr<Render::D2D> g_D2D;
+extern eastl::unique_ptr<Render::D2D> g_D2D;
 
 Render::LineGraph::LineGraph(uint8_t numPlots, uint32_t maxPoints, uint32_t width, uint32_t height, D3DContext& ctx)
 	: numPlots(numPlots), maxPoints(maxPoints), width(width), height(height), GradBox(ctx, width, height)
@@ -44,7 +43,7 @@ void Render::LineGraph::SetLineThickness(float amount) noexcept {
 	lineThickness = amount;
 }
 
-void Render::LineGraph::SetName(const std::wstring& n) {
+void Render::LineGraph::SetName(const eastl::wstring& n) {
 	name = n;
 }
 
@@ -65,7 +64,7 @@ void Render::LineGraph::Draw(D3DContext& ctx) noexcept {
 	DrawBackground(ctx);
 
 	// Draw line(s)
-	std::vector<PlotMetrics> plotMetrics;
+	eastl::vector<PlotMetrics> plotMetrics;
 	const auto xAdd = static_cast<float>(width) / static_cast<float>(maxPoints);
 	for (auto i = 0; i < plots.size(); i++) {
 		const auto& points = plots[i];
@@ -73,11 +72,11 @@ void Render::LineGraph::Draw(D3DContext& ctx) noexcept {
 		const auto& plotRange = plotRanges[i];
 		float x = 0.0f;
 
-		float minVal = points.size() == 0 ? 0.0f : std::numeric_limits<float>::max();
-		float maxVal = points.size() == 0 ? 0.0f : std::numeric_limits<float>::min();
+		float minVal = points.size() == 0 ? 0.0f : eastl::numeric_limits<float>::max();
+		float maxVal = points.size() == 0 ? 0.0f : eastl::numeric_limits<float>::min();
 		float avg = 0.0f;
 
-		std::vector<glm::vec2> plotLocations;
+		eastl::vector<glm::vec2> plotLocations;
 		uint32_t j = 0;
 		for (const auto& value : points) {
 			if (value > maxVal) maxVal = value;
@@ -135,8 +134,8 @@ void Render::LineGraph::Draw(D3DContext& ctx) noexcept {
 		float yoff = nameSize.y;
 		float longestLine = 0.0f;
 
-		std::wstring minStr = L"min: ";
-		minStr.append(std::to_wstring(metrics.min));
+		eastl::wstring minStr = L"min: ";
+		minStr.append(std::to_wstring(metrics.min).c_str());
 		g_D2D->GetDWrite()->Write(
 			minStr,
 			ctx.windowSize.x, ctx.windowSize.y,
@@ -145,9 +144,9 @@ void Render::LineGraph::Draw(D3DContext& ctx) noexcept {
 		);
 
 		auto sz = g_D2D->GetDWrite()->GetTextSize(minStr, ctx.windowSize.x, ctx.windowSize.y);
-		longestLine = std::max(sz.x, longestLine);
-		std::wstring maxStr = L"max: ";
-		maxStr.append(std::to_wstring(metrics.max));
+		longestLine = eastl::max(sz.x, longestLine);
+		eastl::wstring maxStr = L"max: ";
+		maxStr.append(std::to_wstring(metrics.max).c_str());
 		g_D2D->GetDWrite()->Write(
 			maxStr,
 			ctx.windowSize.x, ctx.windowSize.y,
@@ -157,9 +156,9 @@ void Render::LineGraph::Draw(D3DContext& ctx) noexcept {
 		yoff += sz.y;
 
 		sz = g_D2D->GetDWrite()->GetTextSize(maxStr, ctx.windowSize.x, ctx.windowSize.y);
-		longestLine = std::max(sz.x, longestLine);
-		std::wstring avgStr = L"avg: ";
-		avgStr.append(std::to_wstring(metrics.avg));
+		longestLine = eastl::max(sz.x, longestLine);
+		eastl::wstring avgStr = L"avg: ";
+		avgStr.append(std::to_wstring(metrics.avg).c_str());
 		g_D2D->GetDWrite()->Write(
 			avgStr,
 			ctx.windowSize.x, ctx.windowSize.y,
@@ -169,7 +168,7 @@ void Render::LineGraph::Draw(D3DContext& ctx) noexcept {
 		yoff += sz.y;
 
 		sz = g_D2D->GetDWrite()->GetTextSize(avgStr, ctx.windowSize.x, ctx.windowSize.y);
-		xoff += std::max(sz.x, longestLine) + xpad;
+		xoff += eastl::max(sz.x, longestLine) + xpad;
 	}
 }
 #endif

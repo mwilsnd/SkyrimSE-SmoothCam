@@ -1,23 +1,25 @@
+#ifdef WITH_D2D
 #include "render/gradbox.h"
 #include "render/vertex_buffer.h"
 #include "render/shader.h"
-#include "render/shaders/shader_vertex_color.h"
+#include "render/shaders/vertex_color_screen.h"
+#include "render/shader_cache.h"
 
 Render::GradBox::GradBox(Render::D3DContext& ctx, uint32_t width, uint32_t height) :
 	bgSize(width, height)
 {
 	backgroundDirty = true;
 	Render::ShaderCreateInfo vsCreateInfo(
-		Render::Shaders::VertexColorPassThruVS,
+		Render::Shaders::VertexColorScreenVS,
 		Render::PipelineStage::Vertex
 	);
-	vsBackground = std::make_shared<Render::Shader>(vsCreateInfo, ctx);
+	vsBackground = ShaderCache::Get().Load(vsCreateInfo, ctx);
 
 	Render::ShaderCreateInfo psCreateInfo(
-		Render::Shaders::VertexColorPassThruPS,
+		Render::Shaders::VertexColorScreenPS,
 		Render::PipelineStage::Fragment
 	);
-	psBackground = std::make_shared<Render::Shader>(psCreateInfo, ctx);
+	psBackground = ShaderCache::Get().Load(psCreateInfo, ctx);
 }
 
 Render::GradBox::~GradBox() {
@@ -37,6 +39,8 @@ void Render::GradBox::SetBackgroundPosition(const glm::vec2& pos) noexcept {
 }
 
 void Render::GradBox::SetBackgroundColors(const glm::vec4& color1, const glm::vec4& color2) noexcept {
+	bgColor1 = color1;
+	bgColor2 = color2;
 	backgroundDirty = true;
 }
 
@@ -88,7 +92,7 @@ void Render::GradBox::MakeBackgroundVerts(D3DContext& ctx) noexcept {
 			D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0
 		});
 
-		vboBackground = std::make_unique<Render::VertexBuffer>(vbInfo, ctx);
+		vboBackground = eastl::make_unique<Render::VertexBuffer>(vbInfo, ctx);
 	} else {
 		auto data = vboBackground->Map(D3D11_MAP::D3D11_MAP_WRITE_DISCARD);
 		memcpy(data.pData, backgroundVerts.data(), backgroundVerts.size() * sizeof(float));
@@ -97,3 +101,4 @@ void Render::GradBox::MakeBackgroundVerts(D3DContext& ctx) noexcept {
 
 	backgroundDirty = false;
 }
+#endif

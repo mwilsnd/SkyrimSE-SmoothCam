@@ -1,9 +1,10 @@
 #include "crosshair/dot.h"
 #include "render/models/dot.h"
-#include "render/shaders/vertex_color.h"
+#include "render/shaders/vertex_color_world.h"
+#include "render/shader_cache.h"
 #include "camera.h"
 
-void Crosshair::Dot::Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::CBuffer>& perObjectBuf) {
+void Crosshair::Dot::Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept {
 	Render::Model::Model mdl;
 	if (!Render::Model::Load(dotMesh, mdl))
 		FatalError(L"SmoothCam: Failed to load 3D asset");
@@ -12,14 +13,14 @@ void Crosshair::Dot::Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::C
 	perObjectBuffer = perObjectBuf;
 
 	// Vertex and fragment programs
-	Render::ShaderCreateInfo vsCreateInfo(Render::Shaders::VertexColorVS, Render::PipelineStage::Vertex);
-	Render::ShaderCreateInfo psCreateInfo(Render::Shaders::VertexColorPS, Render::PipelineStage::Fragment);
+	Render::ShaderCreateInfo vsCreateInfo(Render::Shaders::VertexColorWorldVS, Render::PipelineStage::Vertex);
+	Render::ShaderCreateInfo psCreateInfo(Render::Shaders::VertexColorWorldPS, Render::PipelineStage::Fragment);
 
 	// Upload mesh 0 to the GPU
 	Render::MeshCreateInfo meshInfo;
 	meshInfo.mesh = &mdl.meshes[0];
-	meshInfo.vs = std::make_shared<Render::Shader>(vsCreateInfo, ctx);
-	meshInfo.ps = std::make_shared<Render::Shader>(psCreateInfo, ctx);
+	meshInfo.vs = Render::ShaderCache::Get().Load(vsCreateInfo, ctx);
+	meshInfo.ps = Render::ShaderCache::Get().Load(psCreateInfo, ctx);
 
 	// Assert our shaders are good
 	if (!meshInfo.vs->IsValid() || !meshInfo.ps->IsValid()) {
@@ -27,13 +28,13 @@ void Crosshair::Dot::Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::C
 		return;
 	}
 
-	meshDrawer = std::make_unique<Render::MeshDrawer>(meshInfo, perObjectBuffer, ctx);
+	meshDrawer = eastl::make_unique<Render::MeshDrawer>(meshInfo, perObjectBuffer, ctx);
 
 	glm::vec3 ourSize{ 10.0f, 10.0f, 1.0f };
 	SetScale(ourSize);
 }
 
-void Crosshair::Dot::Render(Render::D3DContext& ctx, float curTime, float deltaTime, bool allowDepthTesting) {
+void Crosshair::Dot::Render(Render::D3DContext& ctx, float curTime, float deltaTime, bool allowDepthTesting) noexcept {
 	// Compute our transform
 	UpdateTransform();
 

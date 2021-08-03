@@ -52,7 +52,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
+ FILEVERSION 1,4,0,0
  PRODUCTVERSION 1,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -69,9 +69,9 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "SkyrimSE Smooth Cam"
-            VALUE "FileVersion", "1.0.0.0"
+            VALUE "FileVersion", "1.4.0.0"
             VALUE "InternalName", "SmoothCam.dll"
-            VALUE "LegalCopyright", "Copyright (C) 2020"
+            VALUE "LegalCopyright", "Copyright (C) 2020-2021"
             VALUE "OriginalFilename", "SmoothCam.dll"
             VALUE "ProductName", "SmoothCam"
             VALUE "ProductVersion", "1.0.0.0"

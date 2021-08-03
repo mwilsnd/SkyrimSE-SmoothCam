@@ -1,5 +1,4 @@
 Config::UserConfig currentConfig;
-Config::GameConfig gameConfig;
 
 #define CREATE_JSON_VALUE(obj, member) {#member, obj.member}
 #define VALUE_FROM_JSON(obj, member)	\
@@ -90,6 +89,10 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, useWorldCrosshair),
 		CREATE_JSON_VALUE(obj, worldCrosshairDepthTest),
 		CREATE_JSON_VALUE(obj, worldCrosshairType),
+		CREATE_JSON_VALUE(obj, stealthMeterXOffset),
+		CREATE_JSON_VALUE(obj, stealthMeterYOffset),
+		CREATE_JSON_VALUE(obj, offsetStealthMeter),
+		CREATE_JSON_VALUE(obj, alwaysOffsetStealthMeter),
 
 		// Arrow prediction
 		CREATE_JSON_VALUE(obj, useArrowPrediction),
@@ -99,8 +102,14 @@ void Config::to_json(json& j, const UserConfig& obj) {
 
 		// Misc
 		CREATE_JSON_VALUE(obj, disableDeltaTime),
+		CREATE_JSON_VALUE(obj, nextPresetKey),
 		CREATE_JSON_VALUE(obj, shoulderSwapKey),
 		CREATE_JSON_VALUE(obj, swapXClamping),
+		CREATE_JSON_VALUE(obj, modDisabled),
+		CREATE_JSON_VALUE(obj, modToggleKey),
+		CREATE_JSON_VALUE(obj, customZOffset),
+		CREATE_JSON_VALUE(obj, applyZOffsetKey),
+		CREATE_JSON_VALUE(obj, enableCrashDumps),
 
 		// Comapt
 		CREATE_JSON_VALUE(obj, compatACC),
@@ -184,6 +193,10 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, useWorldCrosshair)
 	VALUE_FROM_JSON(obj, worldCrosshairDepthTest)
 	VALUE_FROM_JSON(obj, worldCrosshairType)
+	VALUE_FROM_JSON(obj, stealthMeterXOffset)
+	VALUE_FROM_JSON(obj, stealthMeterYOffset)
+	VALUE_FROM_JSON(obj, offsetStealthMeter)
+	VALUE_FROM_JSON(obj, alwaysOffsetStealthMeter)
 
 	// Arrow prediction
 	VALUE_FROM_JSON(obj, useArrowPrediction)
@@ -193,8 +206,14 @@ void Config::from_json(const json& j, UserConfig& obj) {
 
 	// Misc
 	VALUE_FROM_JSON(obj, disableDeltaTime)
+	VALUE_FROM_JSON(obj, nextPresetKey)
 	VALUE_FROM_JSON(obj, shoulderSwapKey)
 	VALUE_FROM_JSON(obj, swapXClamping)
+	VALUE_FROM_JSON(obj, modDisabled)
+	VALUE_FROM_JSON(obj, modToggleKey)
+	VALUE_FROM_JSON(obj, customZOffset)
+	VALUE_FROM_JSON(obj, applyZOffsetKey)
+	VALUE_FROM_JSON(obj, enableCrashDumps)
 
 	// Compat
 	VALUE_FROM_JSON(obj, compatACC)
@@ -325,43 +344,18 @@ void Config::ReadConfigFile() {
 		SaveCurrentConfig();
 	}
 
-	wchar_t path[MAX_PATH];
-	if (!SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, path))) {
-		_WARNING("Failed to locate My Documents folder, using defualt game config values.");
-	} else {
-		wchar_t buf[16];
-		const auto inipath = std::wstring(path) + L"\\My Games\\Skyrim Special Edition\\Skyrim.ini";
-		if (GetPrivateProfileString(L"Combat", L"f3PArrowTiltUpAngle", L"2.5", buf, 16, inipath.c_str()) != 0) {
-			wchar_t* end;
-			gameConfig.f3PArrowTiltUpAngle = std::wcstof(buf, &end);
-		}
-
-		if (GetPrivateProfileString(L"Combat", L"f3PBoltTiltUpAngle", L"2.5", buf, 16, inipath.c_str()) != 0) {
-			wchar_t* end;
-			gameConfig.f3PBoltTiltUpAngle = std::wcstof(buf, &end);
-		}
-
-		if (GetPrivateProfileString(L"Display", L"fNearDistance", L"15.0", buf, 16, inipath.c_str()) != 0) {
-			wchar_t* end;
-			gameConfig.fNearDistance = std::wcstof(buf, &end);
-		}
-
-		if (GetPrivateProfileString(L"Camera", L"fMinCurrentZoom", L"-0.200000003", buf, 16, inipath.c_str()) != 0) {
-			wchar_t* end;
-			gameConfig.fMinCurrentZoom = std::wcstof(buf, &end);
-		}
-	}
-
 	// Load bone data
 	LoadBonePriorities();
-
+#ifdef DEVELOPER
+	LoadEyeBonePriorities();
+#endif
 	currentConfig = cfg;
 }
 
 void Config::SaveCurrentConfig() {
 	std::ofstream os(L"Data/SKSE/Plugins/SmoothCam.json");
 	Config::json j = currentConfig;
-	os << j << std::endl;
+	os << std::setw(4) << j << std::endl;
 }
 
 Config::UserConfig* Config::GetCurrentConfig() noexcept {
@@ -382,9 +376,10 @@ BSFixedString Config::SaveConfigAsPreset(int slot, const BSFixedString& name) {
 	p.name = { name.c_str() };
 	p.config = currentConfig;
 
-	std::ofstream os(GetPresetPath(slot));
+	const auto path = GetPresetPath(slot);
+	std::ofstream os(path.c_str());
 	Config::json j = p;
-	os << j << std::endl;
+	os << std::setw(4) << j << std::endl;
 
 	return { "" };
 }
@@ -393,7 +388,8 @@ bool Config::LoadPreset(int slot) {
 	if (slot >= MaxPresetSlots) return false;
 	
 	Preset p;
-	std::ifstream is(GetPresetPath(slot));
+	const auto path = GetPresetPath(slot);
+	std::ifstream is(path.c_str());
 	if (is.good()) {
 		try {
 			Config::json j;
@@ -414,11 +410,12 @@ bool Config::LoadPreset(int slot) {
 	return true;
 }
 
-Config::LoadStatus Config::LoadPresetName(int slot, std::string& name) {
+Config::LoadStatus Config::LoadPresetName(int slot, eastl::string& name) {
 	if (slot >= MaxPresetSlots) return LoadStatus::FAILED;
 
 	Preset p;
-	std::ifstream is(GetPresetPath(slot));
+	const auto path = GetPresetPath(slot);
+	std::ifstream is(path.c_str());
 	if (is.good()) {
 		try {
 			Config::json j;
@@ -434,7 +431,7 @@ Config::LoadStatus Config::LoadPresetName(int slot, std::string& name) {
 		return LoadStatus::MISSING;
 	}
 
-	name = { p.name };
+	name = p.name.c_str();
 	return LoadStatus::OK;
 }
 
@@ -442,7 +439,7 @@ BSFixedString Config::GetPresetSlotName(int slot) {
 	if (slot >= MaxPresetSlots)
 		return { "ERROR: Preset index out of range" };
 
-	std::string userName;
+	eastl::string userName;
 	const auto code = LoadPresetName(slot, userName);
 	if (code == LoadStatus::OK)
 		return { userName.c_str() };
@@ -452,15 +449,11 @@ BSFixedString Config::GetPresetSlotName(int slot) {
 		return { "Empty" };
 }
 
-std::wstring Config::GetPresetPath(int slot) {
-	std::wstring slotName(L"Data/SKSE/Plugins/SmoothCamPreset");
-	slotName.append(std::to_wstring(slot));
+eastl::wstring Config::GetPresetPath(int slot) {
+	eastl::wstring slotName(L"Data/SKSE/Plugins/SmoothCamPreset");
+	slotName.append(std::to_wstring(slot).c_str());
 	slotName.append(L".json");
 	return slotName;
-}
-
-const Config::GameConfig* const Config::GetGameConfig() {
-	return &gameConfig;
 }
 
 void trimString(std::string& outStr) {
@@ -473,29 +466,39 @@ void trimString(std::string& outStr) {
 
 static Config::BoneList bonePriorities = {};
 void Config::LoadBonePriorities() {
-	const std::string search = "SmoothCam_FollowBones_";
-	for (const auto& v : std::filesystem::directory_iterator("Data/SKSE/Plugins")) {
-		if (!v.is_regular_file()) continue;
-		const auto name = v.path().filename().string();
+	// @Issue:35: std::filesystem::directory_iterator throws on unicode paths
+	const std::wstring path = L"\\\\?\\Data\\SKSE\\Plugins\\SmoothCam_FollowBones_*.txt";
+	WIN32_FIND_DATA data;
+	auto hf = FindFirstFileEx(
+		path.c_str(),
+		FINDEX_INFO_LEVELS::FindExInfoStandard,
+		&data,
+		FINDEX_SEARCH_OPS::FindExSearchLimitToDirectories,
+		nullptr,
+		0
+	);
 
-		if (name.length() < search.length()) continue;
-		if (search.compare(0, search.length(), name.substr(0, search.length())) == 0) {
-			std::string path = "Data/SKSE/Plugins/";
-			path.append(name);
+	if (hf != INVALID_HANDLE_VALUE)
+		do {
+			std::wstring filePath = L"Data/SKSE/Plugins/";
+			filePath.append(data.cFileName);
+			std::ifstream ifs(filePath);
+			if (ifs.good()) {
+				std::string line;
+				while (std::getline(ifs, line)) {
+					trimString(line);
+					if (line.length() == 0) continue;
+					if (line.rfind("//", 0) == 0) continue;
 
-			std::ifstream ifs(path);
-			if (!ifs.good()) continue;
-
-			std::string line;
-			while (std::getline(ifs, line)) {
-				trimString(line);
-				if (line.length() == 0) continue;
-				if (line.rfind("//", 0) == 0) continue;
-
-				bonePriorities.emplace_back(line.c_str());
+					bonePriorities.emplace_back(line.c_str());
+				}
 			}
-		}
-	}
+
+			if (!FindNextFile(hf, &data)) {
+				FindClose(hf);
+				break;
+			}
+		} while (hf != INVALID_HANDLE_VALUE);
 
 	if (bonePriorities.size() == 0) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_FollowBones_Default.txt present in the SKSE plugins directory?
@@ -508,3 +511,52 @@ To prevent this warning ensure a bone list file is present with at least 1 bone 
 Config::BoneList& Config::GetBonePriorities() noexcept {
 	return bonePriorities;
 }
+
+#ifdef DEVELOPER
+static Config::BoneList eyeBonePriorities = {};
+void Config::LoadEyeBonePriorities() {
+	const std::wstring path = L"\\\\?\\Data\\SKSE\\Plugins\\SmoothCam_EyeBones_*.txt";
+	WIN32_FIND_DATA data;
+	auto hf = FindFirstFileEx(
+		path.c_str(),
+		FINDEX_INFO_LEVELS::FindExInfoStandard,
+		&data,
+		FINDEX_SEARCH_OPS::FindExSearchLimitToDirectories,
+		nullptr,
+		0
+	);
+
+	if (hf != INVALID_HANDLE_VALUE)
+		do {
+			std::wstring filePath = L"Data/SKSE/Plugins/";
+			filePath.append(data.cFileName);
+			std::ifstream ifs(filePath);
+			if (ifs.good()) {
+				std::string line;
+				while (std::getline(ifs, line)) {
+					trimString(line);
+					if (line.length() == 0) continue;
+					if (line.rfind("//", 0) == 0) continue;
+
+					eyeBonePriorities.emplace_back(line.c_str());
+				}
+			}
+
+			if (!FindNextFile(hf, &data)) {
+				FindClose(hf);
+				break;
+			}
+		} while (hf != INVALID_HANDLE_VALUE);
+
+	if (eyeBonePriorities.size() == 0) {
+		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_EyeBones_Default.txt present in the SKSE plugins directory?
+Will fall back to default first-person camera bone.
+To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
+		eyeBonePriorities.emplace_back("NPCEyeBone");
+	}
+}
+
+Config::BoneList& Config::GetEyeBonePriorities() noexcept {
+	return eyeBonePriorities;
+}
+#endif

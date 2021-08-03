@@ -23,7 +23,7 @@ namespace Render {
 			void SetLineThickness(float amount) noexcept;
 
 			// Set the name of the chart
-			void SetName(const std::wstring& n);
+			void SetName(const eastl::wstring& n);
 
 			// Add a point to the given plot id
 			void AddPoint(uint8_t plotID, float value) noexcept;
@@ -31,12 +31,12 @@ namespace Render {
 			void Draw(D3DContext& ctx) noexcept;
 			
 		private:
-			using PlotList = std::vector<float>;
-			std::vector<PlotList> plots;
-			std::vector<glm::vec2> plotRanges;
-			std::vector<glm::vec4> plotColors;
+			using PlotList = eastl::vector<float>;
+			eastl::vector<PlotList> plots;
+			eastl::vector<glm::vec2> plotRanges;
+			eastl::vector<glm::vec4> plotColors;
 
-			std::wstring name;
+			eastl::wstring name;
 
 			uint8_t numPlots;
 			uint32_t maxPoints;

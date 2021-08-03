@@ -7,13 +7,13 @@
 namespace Render {
 	typedef struct MeshCreateInfo {
 		Model::Mesh* mesh = nullptr;
-		std::shared_ptr<Shader> vs;
-		std::shared_ptr<Shader> ps;
+		eastl::shared_ptr<Shader> vs;
+		eastl::shared_ptr<Shader> ps;
 	} MeshCreateInfo;
 
 	class MeshDrawer {
 		public:
-			explicit MeshDrawer(MeshCreateInfo& info, std::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx);
+			explicit MeshDrawer(MeshCreateInfo& info, eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx);
 			~MeshDrawer();
 			MeshDrawer(const MeshDrawer&) = delete;
 			MeshDrawer(MeshDrawer&&) noexcept = delete;
@@ -24,15 +24,15 @@ namespace Render {
 			void Submit(glm::mat4& modelMatrix) noexcept;
 
 			// Set the shaders used by the mesh for rendering
-			void SetShaders(std::shared_ptr<Shader>& vs, std::shared_ptr<Shader>& ps);
+			void SetShaders(eastl::shared_ptr<Shader>& vs, eastl::shared_ptr<Shader>& ps);
 
 		private:
 			D3DContext context;
-			std::unique_ptr<VertexBuffer> vbo;
-			std::shared_ptr<CBuffer> cbufPerObject;
-			std::shared_ptr<Shader> vs;
-			std::shared_ptr<Shader> ps;
+			eastl::unique_ptr<VertexBuffer> vbo;
+			eastl::shared_ptr<CBuffer> cbufPerObject;
+			eastl::shared_ptr<Shader> vs;
+			eastl::shared_ptr<Shader> ps;
 
-			void CreateObjects(std::vector<Model::Vertex>& vertices, D3DContext& ctx);
+			void CreateObjects(eastl::vector<Model::Vertex>& vertices, D3DContext& ctx);
 	};
 }

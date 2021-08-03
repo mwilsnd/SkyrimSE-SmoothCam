@@ -6,30 +6,33 @@
 #include "render/srv.h"
 #include "render/texture2d.h"
 #include "render/vertex_buffer.h"
+#include "util.h"
+#include "debug/eh.h"
 
 static Render::D3DContext gameContext;
-static std::vector<Render::DrawFunc> presentCallbacks;
+static eastl::vector<Render::DrawFunc> presentCallbacks;
+static eastl::unique_ptr<VTableDetour<IDXGISwapChain>> dxgiHook;
 static bool initialized = false;
 
 #ifdef WITH_D2D
-extern std::unique_ptr<Render::D2D> g_D2D;
+extern eastl::unique_ptr<Render::D2D> g_D2D;
 #endif
 
 struct D3DObjectsStore {
 	winrt::com_ptr<ID3D11DepthStencilView> depthStencilView;
 	winrt::com_ptr<ID3D11RenderTargetView> gameRTV;
 
-	std::unordered_map<
+	eastl::unordered_map<
 		Render::DSStateKey, Render::DSState,
 		Render::DSHasher, Render::DSCompare
 	> loadedDepthStates;
 
-	std::unordered_map<
+	eastl::unordered_map<
 		Render::BlendStateKey, Render::BlendState,
 		Render::BlendStateHasher, Render::BlendStateCompare
 	> loadedBlendStates;
 
-	std::unordered_map<
+	eastl::unordered_map<
 		Render::RasterStateKey, Render::RasterState,
 		Render::RasterStateHasher, Render::RasterStateCompare
 	> loadedRasterStates;
@@ -44,10 +47,10 @@ struct D3DObjectsStore {
 };
 static D3DObjectsStore d3dObjects;
 
-static std::unique_ptr<PLH::VFuncSwapHook> d3dHook;
-static PLH::VFuncMap origVFuncs_D3D;
-static Render::D3D11Present fnPresentOrig;
+
 HRESULT Render::Present(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags) {
+	const auto mdmp = Debug::MiniDumpScope();
+
 	// Save some context state to restore later
 	winrt::com_ptr<ID3D11DepthStencilState> gameDSState;
 	uint32_t gameStencilRef;
@@ -98,8 +101,6 @@ HRESULT Render::Present(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags
 	}
 
 	// Put things back the way we found it
-	auto ptrRTV = d3dObjects.gameRTV.get();
-	gameContext.context->OMSetRenderTargets(1, &ptrRTV, d3dObjects.depthStencilView.get());
 	gameContext.context->RSSetState(rasterState.get());
 	gameContext.context->RSSetViewports(1, &gamePort);
 	gameContext.context->OMSetBlendState(gameBlendState.get(), gameBlendFactors, gameSampleMask);
@@ -108,32 +109,29 @@ HRESULT Render::Present(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags
 	d3dObjects.depthStencilView = nullptr;
 	d3dObjects.gameRTV = nullptr;
 
-	return reinterpret_cast<Render::D3D11Present>(origVFuncs_D3D[8])(swapChain, syncInterval, flags);
+	return dxgiHook->GetBase<Render::D3D11Present>(8)(swapChain, syncInterval, flags);
 }
 
 static bool ReadSwapChain() {
 	// Hopefully SEH will shield us from unexpected crashes with other mods/programs
+	// @Note: no MiniDumpScope here, we allow for this to fail and simply disable D3D features
 	__try {
-		struct UnkCreationD3D {
-			uintptr_t unk0;
-			uintptr_t unk1;
-			uintptr_t unk2;
-			IDXGISwapChain* swapChain;
-		};
-		auto data = **Offsets::Get<UnkCreationD3D**>(524730);
+		auto data = *Offsets::Get<Render::D3D11Resources**>(524728);
 		// Naked pointer to the swap chain
-		gameContext.swapChain = data.swapChain;
+		gameContext.swapChain = data->swapChain;
+		// Device
+		gameContext.device.copy_from(data->device);
+		// Context
+		gameContext.context.copy_from(data->ctx);
 
 		// Try and read the desc as a simple test
 		DXGI_SWAP_CHAIN_DESC desc;
-		if (!SUCCEEDED(data.swapChain->GetDesc(&desc)))
+		if (!SUCCEEDED(data->swapChain->GetDesc(&desc)))
 			return false;
 
-		// Read our screen size
-		RECT r;
-		GetClientRect(desc.OutputWindow, &r);
-		gameContext.windowSize.x = static_cast<float>(r.right);
-		gameContext.windowSize.y = static_cast<float>(r.bottom);
+		gameContext.windowSize.x = static_cast<float>(data->windowW);
+		gameContext.windowSize.y = static_cast<float>(data->windowH);
+		gameContext.hWnd = data->window;
 	} __except (1) {
 		return false;
 	}
@@ -146,25 +144,15 @@ void Render::InstallHooks() {
 		return;
 	}
 
-	if (!SUCCEEDED(gameContext.swapChain->GetDevice(__uuidof(ID3D11Device), gameContext.device.put_void()))) {
-		_ERROR("SmoothCam: Failed to get rendering device.");
-		return;
-	}
-	
-	d3dHook = std::make_unique<PLH::VFuncSwapHook>(
-		(uint64_t)gameContext.swapChain,
-		PLH::VFuncMap{
-			{ static_cast<uint16_t>(8), reinterpret_cast<uint64_t>(&Render::Present) },
-		},
-		&origVFuncs_D3D
-	);
-	
-	if (!d3dHook->hook()) {
+	const auto mdmp = Debug::MiniDumpScope();
+
+	dxgiHook = eastl::make_unique<VTableDetour<IDXGISwapChain>>(gameContext.swapChain);
+	dxgiHook->Add(8, Render::Present);
+	if (!dxgiHook->Attach()) {
 		_ERROR("SmoothCam: Failed to place detour on virtual IDXGISwapChain->Present.");
 		return;
 	}
 
-	gameContext.device->GetImmediateContext(gameContext.context.put());
 	initialized = true;
 }
 
@@ -176,7 +164,7 @@ void Render::Shutdown() {
 	d3dObjects.release();
 
 	// Free our present hook
-	d3dHook->unHook();
+	dxgiHook->Detach();
 
 	// Explicit release
 	gameContext.context = nullptr;
@@ -269,4 +257,18 @@ void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CUL
 	auto state = RasterState{ ctx, key };
 	ctx.context->RSSetState(state.state.get());
 	d3dObjects.loadedRasterStates.emplace(key, std::move(state));
+}
+
+Render::GBuffer::WrappedCameraData* Render::GBuffer::CameraSwap(NiCamera* inCamera, byte flags) {
+	// FUN_140d7d7b0
+	typedef WrappedCameraData*(*ty)(GBuffer* param_1, NiCamera* param_2, byte param_3);
+	static auto fn = Offsets::Get<ty>(75713);
+	return fn(this, inCamera, flags);
+}
+
+void Render::GBuffer::UpdateGPUCameraData(NiCamera* inCamera, byte flags) {
+	// FUN_140d7bab0
+	typedef void(*ty)(GBuffer* param_1, NiCamera* param_2, byte param_3);
+	static auto fn = Offsets::Get<ty>(75694);
+	fn(this, inCamera, flags);
 }

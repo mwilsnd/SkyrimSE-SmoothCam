@@ -13,3 +13,9 @@
 [submodule "Deps/json"]
 	path = Deps/json
 	url = https://github.com/nlohmann/json.git
+[submodule "Deps/EASTL"]
+	path = Deps/EASTL
+	url = https://github.com/electronicarts/EASTL.git
+[submodule "Deps/EABase"]
+	path = Deps/EABase
+	url = https://github.com/electronicarts/EABase.git

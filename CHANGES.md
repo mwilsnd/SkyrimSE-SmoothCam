@@ -1,3 +1,52 @@
+# Beta 1.4
+* Bumped module and MCM version number to 13
+
+**Fixes:**
+* Merge pull request #48 from ersh1/master (Compatibility fix for True Directional Movement).
+* Github issue #31, Fixed FOV issues with mods like Undeath and Triumvirate (Wildshape)
+* Github issue #35, directory enumeration no longer throws on unicode paths.
+* Fixed distance clamping causing the camera to jump when strafing while using True Directional Movement.
+* Fixed FOV offsets being applied in the map menu.
+* Fixed an issue where a setting string might already be in the string cache from another mod, but in the wrong case.
+* Fixed an issue that caused the normal game crosshair to disappear.
+* Fixed new game not hooking D3D11 until after saving and loading.
+* Fixed Improved Camera patch causing some issues - Now requires the offical reddit release version (beta4) for the compatibility fix to work - sorry, but I have to read a memory address inside Improved Camera to achieve a functional compatibility mode. Fixes distance clamping causing the camera to jump around when the player moves off-screen.
+* Invalidate crosshair enable status when exiting a dialog menu.
+* Camera is more aggressive about moving to the desired goal position on both camera state transitions and after loading a new cell.
+* Now dynamically reading arrow tilt angle during runtime - Mods that change these values should work correctly now.
+
+**New Stuff:**
+* Added an FOMOD installer and consolidated both versions in 1 download.
+* Github issue request #30, Added a new key binding to cycle through saved presets (Keep in mind each saved preset needs this key bound, otherwise when you switch the loaded preset won't have your keybind saved).
+* Github issue request #43, Added a new option and key binding to turn the camera on and off.
+* Github issue request #44, Added a new setting and key binding to offset the camera height by a set amount via hotkey.
+* Now factoring arrow draw time in the arrow trajectory computation. (Should help with inaccuracy reported when using the eagle eye perk)
+* Added a new setting under the "General" page which allows you to force the camera state back to third-person, meant to fix rare instances where the camera gets stuck in a different state.
+* Added a new setting under the "General" page which resets the crosshair back to sane settings, in an attempt to recover a missing crosshair reported by some users.
+* Added new settings to offset the stealth meter/sneak crosshair by a configurable amount - either when the world-space crosshair is active, or at all times while sneaking.
+* Crosshair now supports conjuration casting mode - crosshair changes color to a red tint when the player is unable to summon at the desired location.
+* Now smoothing POV transition from third to first person.
+* Added a custom crash handler which can be enabled via the MCM and will detect when a crash happens inside SmoothCam, creating a mini-dump file. If you have this happen, follow the instructions in the message box to report this issue and share the dump file so the crash may be investigated.
+* Added EASTL as a source code/compile dependency.
+
+**Changes:**
+* Renamed the "Info" page in the MCM to the "General" page.
+* Removed the compatibility page from the MCM, moved compat options to the "General" page.
+* Slightly altered the raycasting logic for camera collisions (Fixes camera collision jitter).
+* Adjustments to arrow prediction math.
+* Increased the allowed size range of the crosshair in the MCM.
+* Explicitly looking for the arrow node for the raycast origin now - Accounts for some mods that attach other effects to the arrow before being fired (maybe).
+* New external debug console, for printing useful information (in debug builds).
+* Update gen_addrmap to look at member_fn_0..N macros.
+* Added offset caching, we can now unload the offset DB and free up some more ram.
+* Refactored camera into the low-level camera, and Thirdperson+Firstperson cameras owned by the low-level camera.
+* Refactored camera states.
+* Rewrote the papyrus preprocessor in D, using a more proper tokenizer system.
+* Some reverse engineering of Skyrim's renderer, updates to d3d_context.
+* Added a shader cache.
+* New abstracted detour utilities.
+* Updated build scripts.
+
 ## Beta 1.3
 * Bumped module and MCM version number to 12
 

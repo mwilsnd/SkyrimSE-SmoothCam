@@ -13,9 +13,6 @@ Render::VertexBuffer::VertexBuffer(const VertexBufferCreateInfo& createInfo, D3D
 }
 
 Render::VertexBuffer::~VertexBuffer() noexcept {
-	context.context->IASetInputLayout(nullptr);
-	context.context->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
-
 	if (buffer)
 		buffer = nullptr;
 
@@ -23,7 +20,7 @@ Render::VertexBuffer::~VertexBuffer() noexcept {
 		inputLayout = nullptr;
 }
 
-void Render::VertexBuffer::CreateIALayout(const IALayout& layout, const std::shared_ptr<Shader>& vertexProgram) noexcept {
+void Render::VertexBuffer::CreateIALayout(const IALayout& layout, const eastl::shared_ptr<Shader>& vertexProgram) noexcept {
 	if (inputLayout)
 		inputLayout = nullptr;
 

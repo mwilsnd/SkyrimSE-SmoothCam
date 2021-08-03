@@ -2,6 +2,28 @@
 
 struct hkpRayCastInfo;
 
+class hkpWorld {
+	public:
+		uintptr_t unk0;
+		uintptr_t unk1;
+		uintptr_t unk2;
+		uintptr_t unk3;
+		glm::vec4 gravity;
+		uintptr_t unk4;
+		uintptr_t unk5;
+		uintptr_t unk6;
+		uintptr_t unk7;
+		uintptr_t unk8;
+		uintptr_t unk9;
+		uintptr_t unk10;
+		uintptr_t unk11;
+		uintptr_t unk12;
+		uintptr_t unk13;
+		uintptr_t unk14;
+		hkp3AxisSweep* broadphase;
+};
+static_assert(offsetof(hkpWorld, broadphase) == 0x88);
+
 class bhkWorld {
 	public:
 		virtual void unk1();              // 0x0   ==> FUN_140dac670
@@ -43,7 +65,7 @@ class bhkWorld {
 		virtual void unk37();             // 0x120 ==> LAB_140c52b10
 		virtual void unk38();             // 0x128 ==> thunk_FUN_140ddc2a0
 		virtual void unk39();             // 0x130 ==> FUN_140dab5f0
-		virtual intptr_t unk40() const;   // 0x138 ==> LAB_140da6b60
+		virtual hkpWorld* GetHavokWorld();// 0x138 ==> LAB_140da6b60
 		virtual intptr_t unk41() const;   // 0x140 ==> LAB_140da6b70
 		virtual void unk42();             // 0x148 ==> LAB_14029f590
 		virtual void unk43();             // 0x150 ==> LAB_1402a1da0
@@ -60,3 +82,4 @@ class bhkWorld {
 		virtual void unk54();             // 0x1A8 ==> FUN_140da79f0
 		virtual void unk55();             // 0x1B0 ==> FUN_140da7af0
 };
+

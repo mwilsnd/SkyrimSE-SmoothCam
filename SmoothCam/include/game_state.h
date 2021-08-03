@@ -67,10 +67,53 @@ namespace GameState {
 		MAX_STATE,
 	};
 
+	// When drawing an arrow, the game stores the amount of time passed since
+	// starting the draw. This is used for arrow shot power calculations and
+	// is stored in this format within a small array at PlayerCharacter::BA0.
+	// Array appears to be used as a stack, with the most current draw time always being
+	// the last entry. Size is reset when an arrow is fired but amusingly grows forever if
+	// the player draws and cancels arrows repeatedly.
+	//
+	// Additionally, the eagle eye perk appears to mess with this timer, forcing it to a low value
+	// causing arrows to be fired with less force - this appears to be a bug with the game.
+	struct UnkBowDrawnTimerEntry {
+		float bowDrawTime = 0.0f;
+		float unk1 = 0.0f; // Haven't looked much into the following data, unsure what it is
+		float unk2 = 0.0f;
+		float unk3 = 0.0f;
+	};
+
+	template<typename T, size_t S>
+	struct SSA {
+		union Data {
+			T* ptr;
+			char ssa[sizeof(T) * S];
+			T obj[S];
+		};
+
+		uint32_t capacity : 31;
+		uint32_t local : 1;
+		Data data;
+		uint32_t size;
+
+		inline const T& at(size_t index) const noexcept {
+			if (local == 1) {
+				return data.obj[index];
+			} else {
+				return data.ptr[index];
+			}
+		}
+
+		inline const T& top() const noexcept {
+			return at(size - 1);
+		}
+	};
+	using PlayerArrayBA0 = SSA<UnkBowDrawnTimerEntry, 2>;
+
 	// Returns the bits for player->actorState->flags04 which appear to convey movement info
-	const std::bitset<32> GetPlayerMovementBits(const Actor* player) noexcept;
+	const eastl::bitset<32> GetPlayerMovementBits(const Actor* player) noexcept;
 	// Returns the bits for player->actorState->flags08 which appear to convey action info
-	const std::bitset<32> GetPlayerActionBits(const Actor* player) noexcept;
+	const eastl::bitset<32> GetPlayerActionBits(const Actor* player) noexcept;
 
 	// Check if the camera is near the player's head (for first person mods)
 	const bool IC_InFirstPersonState(const TESObjectREFR* player, const CorrectedPlayerCamera* camera) noexcept;
@@ -105,14 +148,17 @@ namespace GameState {
 	const bool IsInBleedoutCamera(const CorrectedPlayerCamera* camera) noexcept;
 	// Returns true if the player is riding a dragon
 	const bool IsInDragonCamera(const CorrectedPlayerCamera* camera) noexcept;
-
+	// Get the current camera state
 	const CameraState GetCameraState(const Actor* player, const CorrectedPlayerCamera* canera) noexcept;
-
 
 	/// Player action states
 	const bool IsWeaponDrawn(const Actor* player) noexcept;
 	// Get an equipped weapon
 	const TESObjectWEAP* GetEquippedWeapon(const Actor* player, bool leftHand = false) noexcept;
+	// Get currently equipped ammo
+	const TESAmmo* GetCurrentAmmo(const Actor* player) noexcept;
+	// Get the amount of time the player has been holding an arrow back in the bow
+	float GetCurrentBowDrawTimer(const PlayerCharacter* player) noexcept;
 	// Returns true if the player is holding an enchanted item that counts as 'magic' in the given hand
 	bool IsUsingMagicItem(const Actor* player, bool leftHand = false) noexcept;
 	// Returns true if the given spell counts as "combat" magic

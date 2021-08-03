@@ -66,9 +66,8 @@ project "PolyHook2"
 		functionlevellinking "Off"
 		runtime "Release"
 		omitframepointer "On"
-		flags { "MultiProcessorCompile" }
 
 		flags {
 			"LinkTimeOptimization", "NoBufferSecurityCheck",
-			"NoMinimalRebuild", "NoRuntimeChecks",
+			"NoMinimalRebuild", "NoRuntimeChecks", "MultiProcessorCompile"
 		}

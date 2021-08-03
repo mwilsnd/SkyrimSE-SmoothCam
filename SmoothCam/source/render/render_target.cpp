@@ -20,7 +20,7 @@ Render::RenderTarget::RenderTarget(Render::D3DContext& ctx, const RenderTargetCr
 	srvInfo.texture2D.MipLevels = 1;
 	srvInfo.texture2D.MostDetailedMip = 0;
 	srvInfo.texture = texture;
-	srvColor = std::make_unique<Render::SRV>(ctx, srvInfo);
+	srvColor = eastl::make_unique<Render::SRV>(ctx, srvInfo);
 }
 
 Render::RenderTarget::~RenderTarget() {
@@ -44,6 +44,6 @@ void Render::RenderTarget::Clear(Render::D3DContext& ctx, glm::vec4& color) noex
 	ctx.context->ClearRenderTargetView(rtv.get(), col);
 }
 
-std::unique_ptr<Render::SRV>& Render::RenderTarget::GetColorSRV() noexcept {
+eastl::unique_ptr<Render::SRV>& Render::RenderTarget::GetColorSRV() noexcept {
 	return srvColor;
 }

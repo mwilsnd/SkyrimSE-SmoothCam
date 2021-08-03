@@ -1,21 +1,21 @@
 #include "crosshair/base.h"
 
-void Crosshair::Base::SetPosition(const glm::vec3& pos) {
+void Crosshair::Base::SetPosition(const glm::vec3& pos) noexcept {
 	position = pos;
 	dirty = true;
 }
 
-void Crosshair::Base::SetRotation(const glm::vec3& rot) {
+void Crosshair::Base::SetRotation(const glm::vec3& rot) noexcept {
 	rotation = rot;
 	dirty = true;
 }
 
-void Crosshair::Base::SetScale(const glm::vec3& s) {
+void Crosshair::Base::SetScale(const glm::vec3& s) noexcept {
 	scale = s;
 	dirty = true;
 }
 
-void Crosshair::Base::UpdateTransform() {
+void Crosshair::Base::UpdateTransform() noexcept {
 	if (!dirty) return;
 	transform = glm::identity<glm::mat4>();
 	transform = glm::translate(transform, Render::ToRenderScale(position));

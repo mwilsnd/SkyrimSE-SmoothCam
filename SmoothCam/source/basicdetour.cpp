@@ -5,6 +5,11 @@ BasicDetour::BasicDetour(void** old, void* replacement) noexcept : attached(fals
 	fnDetour = replacement;
 }
 
+BasicDetour::~BasicDetour() noexcept {
+	if (attached)
+		Detach();
+}
+
 bool BasicDetour::Attach() noexcept {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());

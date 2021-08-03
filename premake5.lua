@@ -162,6 +162,7 @@ dofile( "BuildScripts/project_common_skse64.lua" )
 dofile( "BuildScripts/project_skse64_common.lua" )
 dofile( "BuildScripts/project_skse64.lua" )
 dofile( "BuildScripts/project_polyhook.lua" )
+dofile( "BuildScripts/project_eastl.lua" )(os.getcwd(), _OPTIONS["VS_PLATFORM"])
 
 local outputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 project "SmoothCam"
@@ -174,7 +175,7 @@ project "SmoothCam"
 
 	targetdir( "SmoothCam/bin/".. outputDir.. "/%{prj.name}" )
 	objdir( "SmoothCam/bin-obj/".. outputDir.. "/%{prj.name}" )
-	dependson { "common_skse64", "skse64_common", "skse64", "PolyHook2" }
+	dependson { "common_skse64", "skse64_common", "skse64", "PolyHook2", "eastl" }
 
 	files { "SmoothCam/**.h", "SmoothCam/**.cpp", "SmoothCam/**.rc", "SmoothCam/**.def", "SmoothCam/**.ini" }
 	pchheader "pch.h"
@@ -192,6 +193,8 @@ project "SmoothCam"
 		"Deps/PolyHook_2_0",
 		"Deps/eternal/include",
 		"Deps/json/single_include",
+		"Deps/EASTL/include",
+		"Deps/EABase/include/Common",
 	}
 
 	filter "system:windows"
@@ -220,6 +223,7 @@ project "SmoothCam"
 
 			"Deps/Detours/lib.X64",
 			"Deps/PolyHook_2_0/bin/Debug-windows-x86_64/PolyHook2",
+			"Deps/EASTL/build/Debug"
 		}
 
 		links {
@@ -229,6 +233,7 @@ project "SmoothCam"
 
 			"detours.lib",
 			"PolyHook2.lib",
+			"EASTL.lib"
 		}
 
 	filter "configurations:Release"
@@ -253,6 +258,7 @@ project "SmoothCam"
 
 			"Deps/Detours/lib.X64",
 			"Deps/PolyHook_2_0/bin/Release-windows-x86_64/PolyHook2",
+			"Deps/EASTL/build/Release"
 		}
 
 		links {
@@ -262,4 +268,5 @@ project "SmoothCam"
 
 			"detours.lib",
 			"PolyHook2.lib",
+			"EASTL.lib"
 		}

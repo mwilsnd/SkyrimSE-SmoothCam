@@ -49,20 +49,18 @@ glm::vec3 mmath::GetViewVector(const glm::vec3& forwardRefer, float pitch, float
 }
 
 glm::vec3 mmath::NiMatrixToEuler(const NiMatrix33& m) noexcept {
-	const float pitch = glm::asin(glm::clamp(-m.data[2][1], -1.0f, 1.0f));
-	float yaw = 0.0f;
-	if (m.data[0][0] <= 0.0000001f || m.data[2][2] <= 0.0000001f) {
-		const auto ab = glm::atan(m.data[0][2], m.data[1][2]);
-		yaw = ab - half_pi;
-	} else {
-		yaw = glm::atan(m.data[0][0], m.data[1][0]);
-	}
+	glm::vec3 rot;
+	const auto a = glm::clamp(-m.data[2][0], -1.0f, 1.0f);
+	rot.x = glm::clamp(glm::asin(a), -mmath::half_pi, mmath::half_pi) - mmath::half_pi;
 
-	return {
-		pitch,
-		yaw,
-		0.0f
-	};
+	if (m.data[0][0] <= 0.001f || m.data[2][2] <= 0.001f) {
+		auto ab = glm::atan(m.data[0][2], m.data[1][2]);
+		rot.y = ab - mmath::half_pi;
+	} else
+		rot.y = glm::atan(m.data[0][0], m.data[1][0]);
+
+	rot.z = 0.0f;
+	return rot;
 }
 
 NiMatrix33 mmath::ToddHowardTransform(const float pitch, const float yaw) noexcept {
@@ -127,11 +125,7 @@ void mmath::DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 }
 
 glm::vec3 mmath::PointToScreen(const glm::vec3& point) noexcept {
-	auto port = NiRect<float>();
-	port.m_left = -1.0f;
-	port.m_right = 1.0f;
-	port.m_top = 1.0f;
-	port.m_bottom = -1.0f;
+	static NiRect<float> port = { -1.0f, 1.0f, 1.0f, -1.0f };
 
 	glm::vec3 screen = {};
 	auto niPt = NiPoint3(point.x, point.y, point.z);

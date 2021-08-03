@@ -4,13 +4,13 @@
 #include "render/gradbox.h"
 
 namespace Camera {
-	class SmoothCamera;
+	class Thirdperson;
 }
 
 namespace Render {
 	class StateOverlay : public GradBox {
 		public:
-			explicit StateOverlay(uint32_t width, uint32_t height, Camera::SmoothCamera* camera, D3DContext& ctx);
+			explicit StateOverlay(uint32_t width, uint32_t height, Camera::Thirdperson* camera, D3DContext& ctx);
 			~StateOverlay();
 			StateOverlay(const StateOverlay&) = delete;
 			StateOverlay(StateOverlay&&) noexcept = delete;
@@ -22,15 +22,15 @@ namespace Render {
 			// Set the size of the graph
 			void SetSize(uint32_t w, uint32_t h) noexcept;
 			// Draw the chart
-			void Draw(const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept;
+			void Draw(const Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept;
 
 		private:
-			void DrawBitset32(const std::wstring& name, const std::bitset<32>& bits,
+			void DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,
 				const glm::vec2& pos, D3DContext& ctx) noexcept;
-			void DrawBool(const std::wstring& name, bool value, const glm::vec2& pos,
+			void DrawBool(const eastl::wstring& name, bool value, const glm::vec2& pos,
 				D3DContext& ctx) noexcept;
 
-			Camera::SmoothCamera* camera = nullptr;
+			Camera::Thirdperson* camera = nullptr;
 			uint32_t width = 0;
 			uint32_t height = 0;
 			uint32_t xPos = 0;

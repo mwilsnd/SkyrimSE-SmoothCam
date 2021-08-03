@@ -9,7 +9,7 @@ namespace Render {
 		DXGI_FORMAT format;
 		D3D11_RTV_DIMENSION dimensions = D3D11_RTV_DIMENSION_TEXTURE2D;
 		D3D11_TEX2D_RTV texture2D;
-		std::shared_ptr<Texture2D> texture;
+		eastl::shared_ptr<Texture2D> texture;
 	} RenderTargetCreateInfo;
 
 	class RenderTarget {
@@ -26,11 +26,11 @@ namespace Render {
 			// Clear the target
 			void Clear(Render::D3DContext& ctx, glm::vec4& color) noexcept;
 			// Get an SRV for reading the target in shaders
-			std::unique_ptr<SRV>& GetColorSRV() noexcept;
+			eastl::unique_ptr<SRV>& GetColorSRV() noexcept;
 
 		private:
 			winrt::com_ptr<ID3D11RenderTargetView> rtv;
-			std::shared_ptr<Texture2D> texture;
-			std::unique_ptr<SRV> srvColor;
+			eastl::shared_ptr<Texture2D> texture;
+			eastl::unique_ptr<SRV> srvColor;
 	};
 }

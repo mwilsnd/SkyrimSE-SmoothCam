@@ -51,3 +51,7 @@ size_t Render::CBuffer::Size() const noexcept {
 D3D11_USAGE Render::CBuffer::Usage() const noexcept {
 	return usage;
 }
+
+winrt::com_ptr<ID3D11Buffer>& Render::CBuffer::GetBuffer() noexcept {
+	return buffer;
+}

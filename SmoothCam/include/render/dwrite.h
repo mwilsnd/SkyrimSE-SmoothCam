@@ -15,10 +15,10 @@ namespace Render {
 			~DWrite();
 
 			// Generate and return a text layout
-			winrt::com_ptr<IDWriteTextLayout>& GetLayout(const std::wstring_view& text, float maxWidth, float maxHeight);
+			winrt::com_ptr<IDWriteTextLayout>& GetLayout(const eastl::wstring_view& text, float maxWidth, float maxHeight);
 
 			// Draw text
-			void Write(const std::wstring_view& text, float maxWidth, float maxHeight, const glm::vec2& pos,
+			void Write(const eastl::wstring_view& text, float maxWidth, float maxHeight, const glm::vec2& pos,
 				const glm::vec4& color) noexcept;
 
 			// Draw using a layout
@@ -26,7 +26,7 @@ namespace Render {
 				const glm::vec4& color) noexcept;
 
 			// Get the width and height of a text input, were it to be drawn
-			glm::vec2 GetTextSize(const std::wstring_view& text, float maxWidth, float maxHeight) noexcept;
+			glm::vec2 GetTextSize(const eastl::wstring_view& text, float maxWidth, float maxHeight) noexcept;
 
 			// Get the size from a layout
 			glm::vec2 GetTextSize(winrt::com_ptr<IDWriteTextLayout>& layout) noexcept;

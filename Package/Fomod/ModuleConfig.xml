@@ -1,0 +1,62 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+	<moduleName>SmoothCam</moduleName>
+	<installSteps order="Explicit">
+		<installStep name="Version">
+			<optionalFileGroups order="Explicit">
+				<group name="Select Version" type="SelectExactlyOne">
+					<plugins order="Explicit">
+						<plugin name="SmoothCam AVX">
+							<description>For use with modern CPUs</description>
+							<files>
+								<file source="00 Data\AVX\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
+								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<type name="Optional"/>
+							</typeDescriptor>
+						</plugin>
+						<plugin name="SmoothCam SSE">
+							<description>For use with older CPUs (~2011 and earlier)</description>
+							<files>
+								<file source="00 Data\SSE\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
+								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<type name="Optional"/>
+							</typeDescriptor>
+						</plugin>
+					</plugins>
+				</group>
+			</optionalFileGroups>
+		</installStep>
+
+		<installStep name="Plugin">
+			<optionalFileGroups order="Explicit">
+				<group name="Select Plugin Type" type="SelectExactlyOne">
+					<plugins order="Explicit">
+						<plugin name="ESP">
+							<description>Use the ESP version of the MCM plugin</description>
+							<files>
+								<file source="00 Data\SmoothCam.esp" destination="SmoothCam.esp" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<type name="Optional"/>
+							</typeDescriptor>
+						</plugin>
+						<plugin name="ESL">
+							<description>Use the ESL version of the MCM plugin</description>
+							<files>
+								<file source="00 Data\SmoothCam.esl" destination="SmoothCam.esl" priority="0"/>
+							</files>
+							<typeDescriptor>
+								<type name="Optional"/>
+							</typeDescriptor>
+						</plugin>
+					</plugins>
+				</group>
+			</optionalFileGroups>
+		</installStep>
+	</installSteps>
+</config>

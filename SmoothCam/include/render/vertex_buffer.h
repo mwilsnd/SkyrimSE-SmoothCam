@@ -3,7 +3,7 @@
 #include "render/shader.h"
 
 namespace Render {
-	using IALayout = std::vector<D3D11_INPUT_ELEMENT_DESC>;
+	using IALayout = eastl::vector<D3D11_INPUT_ELEMENT_DESC>;
 	struct VertexBufferCreateInfo {
 		size_t elementSize = 0;
 		size_t numElements = 0;
@@ -11,7 +11,7 @@ namespace Render {
 		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		D3D11_USAGE bufferUsage = D3D11_USAGE_IMMUTABLE;
 		uint32_t cpuAccessFlags = 0;
-		std::shared_ptr<Shader> vertexProgram;
+		eastl::shared_ptr<Shader> vertexProgram;
 		IALayout iaLayout = {};
 	};
 
@@ -35,7 +35,7 @@ namespace Render {
 			// Unmap the buffer
 			void Unmap() noexcept;
 			// Create the input assembler layout
-			void CreateIALayout(const IALayout& layout, const std::shared_ptr<Shader>& vertexProgram) noexcept;
+			void CreateIALayout(const IALayout& layout, const eastl::shared_ptr<Shader>& vertexProgram) noexcept;
 
 		private:
 			uint32_t stride;

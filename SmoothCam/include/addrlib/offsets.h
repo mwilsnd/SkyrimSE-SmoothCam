@@ -1,5 +1,6 @@
 #pragma once
 #include <mapbox/eternal.hpp>
+#include <memory>
 
 namespace Offsets {
 	// Generated code from code_gen/gen_addrmap
@@ -26,6 +27,8 @@ namespace Offsets {
 		{ 0x0019C3B0, 14678 },
 		{ 0x0019CE40, 14693 },
 		{ 0x001A1730, 14809 },
+		{ 0x001C60A0, 15491 },
+		{ 0x001C61A0, 15494 },
 		{ 0x001D2050, 0 },
 		{ 0x001D66E0, 15757 },
 		{ 0x001D6860, 15758 },
@@ -155,6 +158,9 @@ namespace Offsets {
 		{ 0x00878850, 50650 },
 		{ 0x00879770, 50657 },
 		{ 0x00879B40, 50659 },
+		{ 0x00880140, 50750 },
+		{ 0x00885400, 50823 },
+		{ 0x00885C40, 50839 },
 		{ 0x00887750, 50882 },
 		{ 0x00887970, 50884 },
 		{ 0x008879A0, 50885 },
@@ -195,6 +201,7 @@ namespace Offsets {
 		{ 0x00C52750, 68835 },
 		{ 0x00C529A0, 68839 },
 		{ 0x00C56B50, 68900 },
+		{ 0x00C57A60, 68936 },
 		{ 0x00C59690, 68971 },
 		{ 0x00C598F0, 68972 },
 		{ 0x00C59AE0, 68973 },
@@ -205,6 +212,7 @@ namespace Offsets {
 		{ 0x00C68D20, 69335 },
 		{ 0x00C6BC70, 69406 },
 		{ 0x00C72180, 69562 },
+		{ 0x00C72300, 69564 },
 		{ 0x00C76060, 69636 },
 		{ 0x00C76340, 69638 },
 		{ 0x00C76480, 69639 },
@@ -215,12 +223,28 @@ namespace Offsets {
 		{ 0x00C767B0, 69647 },
 		{ 0x00C76820, 69648 },
 		{ 0x00C7EB60, 69804 },
+		{ 0x00C91440, 70356 },
 		{ 0x00D2ECA0, 74034 },
 		{ 0x00D74B60, 75638 },
 		{ 0x00EBE150, 79937 },
 		{ 0x00EBF9C0, 79949 },
 		{ 0x00EC30F0, 80059 },
 		{ 0x00EC31D0, 80061 },
+		{ 0x00EC83A0, 80197 },
+		{ 0x00EC9490, 80207 },
+		{ 0x00EC9BD0, 80214 },
+		{ 0x00EC9C20, 80216 },
+		{ 0x00EC9F30, 80218 },
+		{ 0x00ECA150, 80222 },
+		{ 0x00ECA570, 80230 },
+		{ 0x00ECA620, 80231 },
+		{ 0x00ECA860, 80233 },
+		{ 0x00ECB080, 80244 },
+		{ 0x00ECB0E0, 80245 },
+		{ 0x00ECB300, 80248 },
+		{ 0x00ECBDB0, 80263 },
+		{ 0x00ECCBA0, 80268 },
+		{ 0x00ECCCF0, 80270 },
 		{ 0x00ECD7F0, 80282 },
 		{ 0x00ECD850, 80283 },
 		{ 0x00ECD8A0, 80284 },
@@ -232,6 +256,8 @@ namespace Offsets {
 		{ 0x00ECE790, 80302 },
 		{ 0x00ED3A50, 80446 },
 		{ 0x00ED6AC0, 80520 },
+		{ 0x00F45350, 82382 },
+		{ 0x00F45820, 82383 },
 		{ 0x00F483C0, 82467 },
 		{ 0x0122DAD0, 97379 },
 		{ 0x01233670, 97462 },
@@ -250,6 +276,7 @@ namespace Offsets {
 		{ 0x012507F0, 97923 },
 		{ 0x01250C80, 97925 },
 		{ 0x01250ED0, 97927 },
+		{ 0x0128F900, 98844 },
 		{ 0x01291C30, 98893 },
 		{ 0x01291D40, 98897 },
 		{ 0x01295C30, 98986 },
@@ -363,24 +390,27 @@ namespace Offsets {
 		{ 0x058FEAB4, 0 }
 	});
 
-	VersionDb& GetDB();
+	std::unique_ptr<VersionDb>& GetDB();
 
 	bool Initialize();
+	void ReleaseDB() noexcept;
 #ifdef _DEBUG
 	void DumpDatabaseTextFile();
 #endif
 
+	void CacheID(uintptr_t ofsID) noexcept;
+
 	template<typename T>
-	T Get(uintptr_t id) {
-		return reinterpret_cast<T>(GetDB().FindAddressById(id));
+	T Get(uintptr_t id) noexcept {
+		return reinterpret_cast<T>(reinterpret_cast<void*>(GetOffset(id)));
 	}
 	
 	template<typename T>
-	T GetVersionAddress(uintptr_t addr) {
+	T GetVersionAddress(uintptr_t addr) noexcept {
 		return Get<T>(addrMap.at(addr));
 	}
 
 	constexpr uintptr_t GetByVersionAddr(uintptr_t addr);
-	uintptr_t GetVersionAddress(uintptr_t addr);
-	uintptr_t GetOffset(uintptr_t id);
+	uintptr_t GetVersionAddress(uintptr_t addr) noexcept;
+	uintptr_t GetOffset(uintptr_t id) noexcept;
 }

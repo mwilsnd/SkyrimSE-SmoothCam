@@ -41,7 +41,7 @@ void Render::DWrite::CreateFont() {
 }
 
 // Generate and return a text layout
-winrt::com_ptr<IDWriteTextLayout>& Render::DWrite::GetLayout(const std::wstring_view& text, float maxWidth, float maxHeight) {
+winrt::com_ptr<IDWriteTextLayout>& Render::DWrite::GetLayout(const eastl::wstring_view& text, float maxWidth, float maxHeight) {
 	textLayout = nullptr;
 	if (!SUCCEEDED(factory->CreateTextLayout(
 		text.data(),
@@ -57,7 +57,7 @@ winrt::com_ptr<IDWriteTextLayout>& Render::DWrite::GetLayout(const std::wstring_
 	return textLayout;
 }
 
-void Render::DWrite::Write(const std::wstring_view& text, float maxWidth, float maxHeight, const glm::vec2& pos,
+void Render::DWrite::Write(const eastl::wstring_view& text, float maxWidth, float maxHeight, const glm::vec2& pos,
 	const glm::vec4& color) noexcept
 {
 	textLayout = nullptr;
@@ -93,7 +93,7 @@ void Render::DWrite::Write(winrt::com_ptr<IDWriteTextLayout>& layout, const glm:
 	);	
 }
 
-glm::vec2 Render::DWrite::GetTextSize(const std::wstring_view& text, float maxWidth, float maxHeight) noexcept {
+glm::vec2 Render::DWrite::GetTextSize(const eastl::wstring_view& text, float maxWidth, float maxHeight) noexcept {
 	DWRITE_TEXT_METRICS metrics;
 	if (!SUCCEEDED(GetLayout(text, maxWidth, maxHeight)->GetMetrics(&metrics))) {
 		FatalError(L"SmoothCam: Failed to get text metrics");

@@ -54,9 +54,9 @@ class hkpCastCollector {
 				const uint64_t m = 1ULL << static_cast<uint64_t>(hitResult.hit->flags & 0x7F);
 				constexpr uint64_t filter = 0x40122716;
 				if ((m & filter) != 0) {
-					results.push_back(hitResult);
 					// We only want further hits to be closer than this
 					m_earlyOutHitFraction = hitResult.hitFraction;
+					results.push_back(eastl::move(hitResult));
 				}
 			}
 		}
@@ -78,7 +78,7 @@ class hkpCastCollector {
 		hkpCollidable* m_rootCollidable = nullptr;
 		uint64_t unk2 = 0;
 
-		std::vector<hkpRayHitResult> results;
+		eastl::vector<hkpRayHitResult> results;
 };
 
 typedef __declspec(align(16)) struct hkpRayCastInfo {

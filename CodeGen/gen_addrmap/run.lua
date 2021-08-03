@@ -73,6 +73,18 @@ for _, v in ipairs(fileList) do
 		end
 	end
 
+	--DEFINE_MEMBER_FN_0..N
+	for addr in s:gmatch("DEFINE_MEMBER_FN_[%d]+%s*%(%s*[%w%d%s%*_<>]+%s*,%s*[%w%d%s%*_<>]+%s*,%s*([%dxXABCDEFabcdef0]+%s*)") do
+		if addr == "0" then addr = "0x00000000" end
+		addrs[addr] = tonumber(addr, 16) == 0 and 0 or offsets[tonumber(addr, 16)]
+		if not addrs[addr] then
+			print("WARNING: Address ".. addr.. " is not in the offsets db! Mapping this value to 0. File: ".. v)
+			addrs[addr] = 0
+		else
+			numMemberFuns = numMemberFuns +1
+		end
+	end
+
 	for addr in s:gmatch("RelocAddr%s*<%s*[%w%d%s%*_<>]+%s*>%s*[%w%d%s%*_<>]+%s*%(%s*([%dxABCDEFabcdef]+)%s*%)") do
 		if addr == "0" then addr = "0x00000000" end
 		addrs[addr] = tonumber(addr, 16) == 0 and 0 or offsets[tonumber(addr, 16)]

@@ -1,8 +1,11 @@
 #pragma once
+#include "render/shaders/shader_decl.h"
 
 namespace Render {
 	namespace Shaders {
-		constexpr const auto DrawFullscreenTextureVS = R"(
+		constexpr ShaderDecl DrawFullscreenTextureVS = {
+			2,
+			R"(
 struct VS_INPUT {
 	float3 vPos : POS;
 	float2 vUV : UV;
@@ -19,9 +22,11 @@ VS_OUTPUT main(VS_INPUT input) {
 	output.vUV = input.vUV;
 	return output;
 }
-		)";
+		)" };
 
-		constexpr const auto DrawFullscreenTexturePS = R"(
+		constexpr ShaderDecl DrawFullscreenTexturePS = {
+			3,
+			R"(
 struct PS_INPUT {
 	float4 vPos : SV_POSITION;
 	float2 uv : COLOR0;
@@ -39,6 +44,6 @@ PS_OUTPUT main(PS_INPUT input) {
 	output.color = tex.Sample(texSampler, input.uv);
 	return output;
 }
-		)";
+		)" };
 	}
 }

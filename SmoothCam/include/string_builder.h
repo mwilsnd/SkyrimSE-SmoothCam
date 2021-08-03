@@ -42,6 +42,6 @@ struct StringBuilder {
 
 	private:
 		T str = {};
-		std::vector<T> items = {};
+		eastl::vector<T> items = {};
 		size_t size_ = 0;
 };

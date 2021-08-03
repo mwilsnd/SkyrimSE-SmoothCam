@@ -1,17 +1,37 @@
 #pragma once
-#include <string>
 #include <shlobj.h>	
 #include <stdlib.h>
+#include <cstdlib>
 #include <stdexcept>
-#include <algorithm>
-#include <functional> 
-#include <bitset>
-#include <unordered_map>
 #include <fstream>
-#include <array>
-#include <tuple>
 #include <filesystem>
+#include <thread>
 #include <xmmintrin.h>
+
+#include <new>
+void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line);
+void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags,
+    unsigned debugFlags, const char* file, int line);
+
+extern "C" {
+    int __cdecl Vsnprintf8(char* p, size_t n, const char* pFormat, va_list arguments);
+}
+
+#define EASTL_EASTDC_VSNPRINTF 0
+#include <EASTL/shared_ptr.h>
+#include <EASTL/unique_ptr.h>
+#include <EASTL/string.h>
+#include <EASTL/numeric_limits.h>
+#include <EASTL/algorithm.h>
+#include <EASTL/functional.h>
+#include <EASTL/bitset.h>
+#include <EASTL/unordered_map.h>
+#include <EASTL/array.h>
+#include <EASTL/tuple.h>
+#include <EASTL/vector.h>
+#include <EASTL/fixed_vector.h>
+#include <EASTL/fixed_slist.h>
+#include <EASTL/fixed_list.h>
 
 #include "code_analysis.h"
 
@@ -19,8 +39,10 @@
 SILENCE_CODE_ANALYSIS;
 #   define WIN32_LEAN_AND_MEAN
 #   define NOMINMAX
-#   undef CreateFont
 #   include <Windows.h>
+#   include <winnt.h>
+#   undef CreateFont
+#   undef NO_DATA
 
 // Compat when building in unicode mode with SKSE
 // (ModInfo.fileData is of type WIN32_FIND_DATA which changes based on mbcs or unicode)
@@ -41,6 +63,9 @@ SILENCE_CODE_ANALYSIS;
 #   include <skse64/NiTypes.h>
 #   include <skse64/NiNodes.h>
 #   include <skse64/NiObjects.h>
+#   include <skse64/NiGeometry.h>
+#   include <skse64/NiRenderer.h>
+#   include <skse64/NiProperties.h>
 #   include <skse64/GameReferences.h>
 #   include <skse64/GameEvents.h>
 #   include <skse64/GameForms.h>
@@ -48,6 +73,7 @@ SILENCE_CODE_ANALYSIS;
 #   include <skse64/GameMenus.h>
 #   include <skse64/GameInput.h>
 #   include <skse64/GameCamera.h>
+#   include <skse64/GameSettings.h>
 #   include <skse64/GameData.h>
     
 #   include <skse64/PapyrusArgs.h>
@@ -64,8 +90,7 @@ SILENCE_CODE_ANALYSIS;
 #       undef WIN32_FIND_DATA
 #       define WIN32_FIND_DATA WIN32_FIND_DATAW
 #   endif
-//#   include <skse64_common/RelocationEx.h>
-    
+
 // @TODO: Use Polyhook2's function detouring instead, drop microsoft detours
 #   include <../Detours/include/detours.h>
 #   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
@@ -115,11 +140,22 @@ RESTORE_CODE_ANALYSIS;
 #pragma warning( disable : 26409 ) // avoid naked new and delete - required for papyrus registration
 #pragma warning( disable : 26486 ) // invalid pointer passing - also busted?
 
+#include "util.h"
+#include "debug/console.h"
+
 #include "addrlib/offsets.h"
 #include "timer.h"
 
+// Enable in-progress features
+//#define DEVELOPER
+
+// Enable an exception handler that writes minidumps when smoothcam code crashes
+#define EMIT_MINIDUMPS
+
+// Enable Direct2D code
 //#define WITH_D2D
 #ifdef WITH_D2D
+// Enable debug overlays
 #   define WITH_CHARTS
 
 #   ifdef WITH_CHARTS
@@ -134,6 +170,7 @@ RESTORE_CODE_ANALYSIS;
 #include "skyrimSE/bhkSimpleShapePhantom.h"
 #include "skyrimSE/bhkWorld.h"
 #include "skyrimSE/PlayerCamera.h"
+#include "skyrimSE/FirstPersonState.h"
 #include "skyrimSE/ThirdPersonState.h"
 #include "skyrimSE/PlayerCameraTransitionState.h"
 #include "skyrimSE/HorseCameraState.h"

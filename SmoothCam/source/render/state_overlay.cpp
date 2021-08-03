@@ -3,8 +3,9 @@
 #include "render/d2d.h"
 #include "render/dwrite.h"
 #include "camera.h"
+#include "thirdperson.h"
 
-extern std::unique_ptr<Render::D2D> g_D2D;
+extern eastl::unique_ptr<Render::D2D> g_D2D;
 
 static const wchar_t* ActionStateEnumNames[] = {
 	L"Standing",
@@ -67,7 +68,7 @@ static const wchar_t* OffsetGroupNames[]{
 constexpr auto ofsNameLen = sizeof(OffsetGroupNames) / sizeof(OffsetGroupNames[0]);
 static_assert(ofsNameLen == static_cast<size_t>(Config::OffsetGroupID::MAX_OFS));
 
-Render::StateOverlay::StateOverlay(uint32_t width, uint32_t height, Camera::SmoothCamera* camera,
+Render::StateOverlay::StateOverlay(uint32_t width, uint32_t height, Camera::Thirdperson* camera,
 	D3DContext& ctx) : width(width), height(height), camera(camera), GradBox(ctx, width, height)
 {}
 
@@ -85,12 +86,11 @@ void Render::StateOverlay::SetSize(uint32_t w, uint32_t h) noexcept {
 	SetBackgroundSize({ w, h });
 }
 
-void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept {
+void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept {
 	DrawBackground(ctx);
 
 	constexpr auto lineHeight = 14.0f;
 	glm::vec2 curPos = { 5.0f + xPos, 0.0f + yPos };
-	auto ply = *g_thePlayer;
 	
 	g_D2D->GetDWrite()->Write(
 		L"Player State Bits",
@@ -100,14 +100,14 @@ void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext&
 	);
 	curPos.y += lineHeight;
 
-	DrawBitset32(L"Movement Bits: ", GameState::GetPlayerMovementBits(ply), curPos, ctx);
+	DrawBitset32(L"Movement Bits: ", GameState::GetPlayerMovementBits(focus), curPos, ctx);
 	curPos.y += lineHeight;
 
-	DrawBitset32(L"Action Bits: ", GameState::GetPlayerActionBits(ply), curPos, ctx);
+	DrawBitset32(L"Action Bits: ", GameState::GetPlayerActionBits(focus), curPos, ctx);
 	curPos.y += lineHeight;
 
-	std::wstring cameraState = L"Camera State: ";
-	cameraState.append(CameraStateEnumNames[static_cast<uint8_t>(camera->GetCurrentCameraState())]);
+	eastl::wstring cameraState = L"Camera State: ";
+	cameraState.append(CameraStateEnumNames[static_cast<uint8_t>(camera->m_camera->GetCurrentCameraState())]);
 	g_D2D->GetDWrite()->Write(
 		cameraState.c_str(),
 		ctx.windowSize.x, ctx.windowSize.y,
@@ -116,8 +116,8 @@ void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext&
 	);
 	curPos.y += lineHeight;
 
-	std::wstring actionState = L"Action State: ";
-	actionState.append(ActionStateEnumNames[static_cast<uint8_t>(camera->GetCurrentCameraActionState())]);
+	eastl::wstring actionState = L"Action State: ";
+	actionState.append(ActionStateEnumNames[static_cast<uint8_t>(camera->m_camera->GetCurrentCameraActionState())]);
 	g_D2D->GetDWrite()->Write(
 		actionState.c_str(),
 		ctx.windowSize.x, ctx.windowSize.y,
@@ -126,52 +126,55 @@ void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext&
 	);
 	curPos.y += lineHeight;
 
-	DrawBool(L"Weapon Drawn",			GameState::IsWeaponDrawn(ply), curPos, ctx);
+	DrawBool(L"Weapon Drawn",			GameState::IsWeaponDrawn(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Using Left Magic Item",	GameState::IsUsingMagicItem(ply, true), curPos, ctx);
+	DrawBool(L"Using Left Magic Item",	GameState::IsUsingMagicItem(focus, true), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Using Right Magic Item",	GameState::IsUsingMagicItem(ply), curPos, ctx);
+	DrawBool(L"Using Right Magic Item",	GameState::IsUsingMagicItem(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Left Combat Magic",		GameState::IsCombatMagic(ply->leftHandSpell), curPos, ctx);
+	DrawBool(L"Left Combat Magic",		GameState::IsCombatMagic(focus->leftHandSpell), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Right Combat Magic",		GameState::IsCombatMagic(ply->rightHandSpell), curPos, ctx);
+	DrawBool(L"Right Combat Magic",		GameState::IsCombatMagic(focus->rightHandSpell), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Melee Drawn",			GameState::IsMeleeWeaponDrawn(ply), curPos, ctx);
+	DrawBool(L"Melee Drawn",			GameState::IsMeleeWeaponDrawn(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Magic Drawn",			GameState::IsMagicDrawn(ply), curPos, ctx);
+	DrawBool(L"Magic Drawn",			GameState::IsMagicDrawn(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Ranged Drawn",			GameState::IsRangedWeaponDrawn(ply), curPos, ctx);
+	DrawBool(L"Ranged Drawn",			GameState::IsRangedWeaponDrawn(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Using Crossbow",			GameState::IsUsingCrossbow(ply), curPos, ctx);
+	DrawBool(L"Using Crossbow",			GameState::IsUsingCrossbow(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Using Bow",				GameState::IsUsingBow(ply), curPos, ctx);
+	DrawBool(L"Using Bow",				GameState::IsUsingBow(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Aiming With Bow",		GameState::IsBowDrawn(ply), curPos, ctx);
+	DrawBool(L"Aiming With Bow",		GameState::IsBowDrawn(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Sitting",				GameState::IsSitting(ply), curPos, ctx);
+	DrawBool(L"Sitting",				GameState::IsSitting(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Sleeping",				GameState::IsSleeping(ply), curPos, ctx);
+	DrawBool(L"Sleeping",				GameState::IsSleeping(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Swimming",				GameState::IsSwimming(ply), curPos, ctx);
+	DrawBool(L"Swimming",				GameState::IsSwimming(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Mounting",				GameState::IsMountingHorse(ply), curPos, ctx);
+	DrawBool(L"Mounting",				GameState::IsMountingHorse(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Dismounting",			GameState::IsDisMountingHorse(ply), curPos, ctx);
+	DrawBool(L"Dismounting",			GameState::IsDisMountingHorse(focus), curPos, ctx);
 	curPos.y += lineHeight;
 	DrawBool(L"POV Slide Mode",			GameState::InPOVSlideMode(), curPos, ctx);
+	curPos.y += lineHeight;
+	DrawBool(L"IsVampire",				GameState::IsVampireLord(focus), curPos, ctx);
+	curPos.y += lineHeight;
+	DrawBool(L"IsWerewolf",				GameState::IsWerewolf(focus), curPos, ctx);
 	curPos.y += lineHeight;
 
 	curPos.x = xPos + 270;
 	curPos.y = yPos + lineHeight * 4;
 
 	const auto cam = CorrectedPlayerCamera::GetSingleton();
-	const auto focus = camera->GetCurrentCameraTarget(cam);
 	if (focus) {
 		DrawBool(L"IsFirstPerson", GameState::IsFirstPerson(focus, cam), curPos, ctx);
 		curPos.y += lineHeight;
 		DrawBool(L"IsThirdPerson", GameState::IsThirdPerson(focus, cam), curPos, ctx);
 		curPos.y += lineHeight;
-		DrawBool(L"IsThirdPersonCombat", GameState::IsThirdPersonCombat(ply, cam), curPos, ctx);
+		DrawBool(L"IsThirdPersonCombat", GameState::IsThirdPersonCombat(focus, cam), curPos, ctx);
 		curPos.y += lineHeight;
 		DrawBool(L"IsInKillMove", GameState::IsInKillMove(cam), curPos, ctx);
 		curPos.y += lineHeight;
@@ -196,6 +199,8 @@ void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext&
 		DrawBool(L"IsInDragonCamera", GameState::IsInDragonCamera(cam), curPos, ctx);
 		curPos.y += lineHeight;
 	}
+	DrawBool(L"ShoulderSwapped", camera->shoulderSwap <= 0, curPos, ctx);
+	curPos.y += lineHeight;
 
 	curPos.x = xPos + 160;
 	curPos.y = yPos;
@@ -208,7 +213,7 @@ void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext&
 			{ 1.0f, 0.33f, 0.33f, 1.0f }
 		);
 	} else {
-		std::wstring ofs = L"Offset Group: ";
+		eastl::wstring ofs = L"Offset Group: ";
 		ofs.append(OffsetGroupNames[static_cast<uint8_t>(curGroup->id)]);
 		g_D2D->GetDWrite()->Write(
 			ofs,
@@ -219,14 +224,14 @@ void Render::StateOverlay::Draw(const Config::OffsetGroup* curGroup, D3DContext&
 	}
 }
 
-void Render::StateOverlay::DrawBitset32(const std::wstring& name, const std::bitset<32>& bits,
+void Render::StateOverlay::DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,
 	const glm::vec2& pos, D3DContext& ctx) noexcept
 {
-	std::wstring str;
+	eastl::wstring str;
 	str.reserve(32);
 
 	for (auto i = 0; i < 32; i++) {
-		str.append(std::to_wstring(bits[i]));
+		str.append(std::to_wstring(bits[i]).c_str());
 	}
 
 	g_D2D->GetDWrite()->Write(
@@ -245,10 +250,10 @@ void Render::StateOverlay::DrawBitset32(const std::wstring& name, const std::bit
 	);
 }
 
-void Render::StateOverlay::DrawBool(const std::wstring& name, bool value, const glm::vec2& pos,
+void Render::StateOverlay::DrawBool(const eastl::wstring& name, bool value, const glm::vec2& pos,
 	D3DContext& ctx) noexcept
 {
-	std::wstring str;
+	eastl::wstring str;
 	str.reserve(name.length() + 10);
 	str.append(name);
 	str.append(L" = ");

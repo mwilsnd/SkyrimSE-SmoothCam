@@ -1,48 +1,30 @@
 #include "game_state.h"
 
+extern HMODULE hImprovedCamera;
+
 // Returns the bits for player->actorState->flags04 which appear to convey movement info
-const std::bitset<32> GameState::GetPlayerMovementBits(const Actor* player) noexcept {
-	const auto bits = std::bitset<32>(player->actorState.flags04);
-#ifdef _DEBUG
-	// Just to see what actions end up setting these unknown bits
-	for (int i = 0; i < 32; i++) {
-		if (bits[i]) {
-			auto it = knownMovementBits.find(i);
-			if (it == knownMovementBits.end()) {
-				__debugbreak();
-			}
-		}
-	}
-#endif
+const eastl::bitset<32> GameState::GetPlayerMovementBits(const Actor* player) noexcept {
+	const auto bits = eastl::bitset<32>(player->actorState.flags04);
 	return bits;
 }
 
 // Returns the bits for player->actorState->flags08 which appear to convey action info
-const std::bitset<32> GameState::GetPlayerActionBits(const Actor* player) noexcept {
-	const auto bits = std::bitset<32>(player->actorState.flags08);
-#ifdef _DEBUG
-	// Just to see what actions end up setting these unknown bits
-	for (int i = 0; i < 32; i++) {
-		if (bits[i]) {
-			auto it = knownActionBits.find(i);
-			if (it == knownActionBits.end()) {
-				__debugbreak();
-			}
-		}
-	}
-#endif
+const eastl::bitset<32> GameState::GetPlayerActionBits(const Actor* player) noexcept {
+	const auto bits = eastl::bitset<32>(player->actorState.flags08);
 	return bits;
 }
 
 const bool GameState::IC_InFirstPersonState(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	static BSFixedString faceGen = "BSFaceGenNiNodeSkinned";
-	if (!ref->loadedState || !ref->loadedState->node || !faceGen.data) return false;
+	// ImprovedCamera compat is kinda a nightmare - let's choose violence 
+	// IC 1.0.0.4 - > 18004d510 = g_isThirdPerson
+	if (hImprovedCamera != NULL) {
+		const auto g_isThirdPerson = reinterpret_cast<bool*>(
+			reinterpret_cast<uintptr_t>(hImprovedCamera) + 0x4d510
+		);
+		return *g_isThirdPerson;
+	}
 
-	const auto npc = ref->loadedState->node->GetObjectByName(&faceGen.data);
-	if (!npc) return false;
-
-	const auto bits = std::bitset<32>(npc->m_flags);
-	return !bits[26];
+	return false;
 }
 
 const bool GameState::IFPV_InFirstPersonState(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
@@ -52,7 +34,7 @@ const bool GameState::IFPV_InFirstPersonState(const TESObjectREFR* ref, const Co
 	const auto npc = ref->loadedState->node->GetObjectByName(&faceGen.data);
 	if (!npc) return false;
 
-	const auto bits = std::bitset<32>(npc->m_flags);
+	const auto bits = eastl::bitset<32>(npc->m_flags);
 	return bits[0];
 }
 
@@ -190,7 +172,7 @@ const GameState::CameraState GameState::GetCameraState(const Actor* player, cons
 
 const bool GameState::IsWeaponDrawn(const Actor* player) noexcept {
 	const auto bits = GameState::GetPlayerActionBits(player);
-	return /*bits[5] &&*/ bits[6]; // Looks like bit 5 flips when switching weapons/magic, which we want to ignore.
+	return bits[6];
 }
 
 // Get an equipped weapon
@@ -205,6 +187,21 @@ const TESObjectWEAP* GameState::GetEquippedWeapon(const Actor* player, bool left
 
 	if (!wep || !wep->IsWeapon()) return nullptr;
 	return reinterpret_cast<const TESObjectWEAP*>(wep);
+}
+
+const TESAmmo* GameState::GetCurrentAmmo(const Actor* player) noexcept {
+	typedef TESAmmo*(__thiscall Actor::* GetAmmo)() const;
+	return (player->*reinterpret_cast<GetAmmo>(&Actor::Unk_9E))();
+}
+
+float GameState::GetCurrentBowDrawTimer(const PlayerCharacter* player) noexcept {
+	// @Note: Read projectile->unk188
+	// This is the arrow draw duration/shot power, stored on the player in a small array used as a stack
+	// This grows, with the top value being the current timer - until an arrow is fired, clearing the stack
+	const auto arr = reinterpret_cast<const PlayerArrayBA0*>(&(player->unkBA0));
+	float drawTimerValue = arr->size > 0 ? glm::min(arr->top().bowDrawTime, 1.0f) : 1.0f;
+	if (!mmath::IsValid(drawTimerValue)) drawTimerValue = 1.0f;
+	return drawTimerValue;
 }
 
 bool GameState::IsUsingMagicItem(const Actor* player, bool leftHand) noexcept {
@@ -253,10 +250,8 @@ const bool GameState::IsMeleeWeaponDrawn(const Actor* player) noexcept {
 	// Continue to look for a staff here - consider a non-enchanted staff to be melee
 	if (right) {
 		if (right->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
-			/*right->gameData.type != TESObjectWEAP::GameData::kType_Staff &&*/
 			right->gameData.type != TESObjectWEAP::GameData::kType_CrossBow &&
 			right->gameData.type != TESObjectWEAP::GameData::kType_Bow2 &&
-			/*right->gameData.type != TESObjectWEAP::GameData::kType_Staff2 &&*/
 			right->gameData.type != TESObjectWEAP::GameData::kType_CBow)
 		{
 			return true;
@@ -265,10 +260,8 @@ const bool GameState::IsMeleeWeaponDrawn(const Actor* player) noexcept {
 
 	if (left) {
 		if (left->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
-			/*left->gameData.type != TESObjectWEAP::GameData::kType_Staff &&*/
 			left->gameData.type != TESObjectWEAP::GameData::kType_CrossBow &&
 			left->gameData.type != TESObjectWEAP::GameData::kType_Bow2 &&
-			/*left->gameData.type != TESObjectWEAP::GameData::kType_Staff2 &&*/
 			left->gameData.type != TESObjectWEAP::GameData::kType_CBow)
 		{
 			return true;
@@ -409,7 +402,7 @@ const bool GameState::IsBowDrawn(const Actor* player) noexcept {
 		static bool drawnLastCall = false;
 		static bool objective = false;
 
-		if (!movementBits[31] || movementBits[30]/* || actionBits[3]*/) {
+		if (!movementBits[31] || movementBits[30]) {
 			drawnLastCall = objective = false;
 			return false;
 		}

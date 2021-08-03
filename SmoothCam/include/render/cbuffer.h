@@ -26,6 +26,8 @@ namespace Render {
 			size_t Size() const noexcept;
 			// Get the buffer usage it was created with
 			D3D11_USAGE Usage() const noexcept;
+			// Get the naked resource
+			winrt::com_ptr<ID3D11Buffer>& GetBuffer() noexcept;
 
 		private:
 			winrt::com_ptr<ID3D11Buffer> buffer;

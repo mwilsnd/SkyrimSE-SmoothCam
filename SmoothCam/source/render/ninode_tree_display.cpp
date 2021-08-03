@@ -4,15 +4,15 @@
 #include "render/dwrite.h"
 #include <iomanip>
 
-extern std::unique_ptr<Render::D2D> g_D2D;
+extern eastl::unique_ptr<Render::D2D> g_D2D;
 
 template< typename T >
-std::wstring int_to_hex(T i) {
+eastl::wstring int_to_hex(T i) {
 	std::wstringstream stream;
 	stream << "0x" 
 		<< std::setfill (L'0') << std::setw(sizeof(T)*2) 
 		<< std::hex << i;
-	return stream.str();
+	return stream.str().c_str();
 }
 
 Render::NiNodeTreeDisplay::NiNodeTreeDisplay(uint32_t width, uint32_t height, D3DContext& ctx) :
@@ -37,11 +37,11 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, NiNode* node) noexcept {
 	DrawBackground(ctx);
 
 	builder.clear();
-	std::wstring str;
+	eastl::wstring str;
 	
 	const auto maxSize = glm::vec2{ width, height };
-	std::function<void(NiNode*, float&, float&, uint32_t)> walkFun;
-	walkFun = [&ctx, &maxSize, &walkFun, &str, this](NiNode* n, float& x, float& y, uint32_t level) {
+	eastl::function<void(NiAVObject*, float&, float&, uint32_t)> walkFun;
+	walkFun = [&ctx, &maxSize, &walkFun, &str, this](NiAVObject* n, float& x, float& y, uint32_t level) {
 		constexpr auto lineHeight = 14.0f;
 
 		if (!n->m_name) return;
@@ -77,10 +77,12 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, NiNode* node) noexcept {
 		builder.append(L"\n");
 		y += lineHeight;
 
-		for (auto i = 0; i < n->m_children.m_size; i++) {
-			auto no = DYNAMIC_CAST(n->m_children.m_data[i], NiAVObject, NiNode);
-			if (!no) continue;
-			walkFun(no, x, y, level + 1);
+		auto no = DYNAMIC_CAST(n, NiAVObject, NiNode);
+		if (no) {
+			for (auto i = 0; i < no->m_children.m_arrayBufLen; i++) {
+				if (no->m_children.m_data[i])
+					walkFun(no->m_children.m_data[i], x, y, level + 1);
+			}
 		}
 	};
 

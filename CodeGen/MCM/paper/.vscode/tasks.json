@@ -1,0 +1,33 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "dub",
+            "run": true,
+            "compiler": "dmd",
+            "archType": "x86_64",
+            "buildType": "debug",
+            "configuration": "application-debug",
+            "_generated": true,
+            "problemMatcher": [
+                "$dmd"
+            ],
+            "group": "build"
+        }
+        {
+            "type": "dub",
+            "run": true,
+            "compiler": "dmd",
+            "archType": "x86_64",
+            "buildType": "release",
+            "configuration": "application-release",
+            "_generated": true,
+            "problemMatcher": [
+                "$dmd"
+            ],
+            "group": "build"
+        }
+    ]
+}

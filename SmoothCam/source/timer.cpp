@@ -28,6 +28,11 @@ double GameTime::GetQPC() noexcept {
 }
 
 void GameTime::StepFrameTime() noexcept {
+#ifdef _DEBUG
+	// @TODO: This is an awful place for this
+	Debug::CommandPump();
+#endif
+
 	lastFrame = curFrame;
 	curFrame = GetTime();
 

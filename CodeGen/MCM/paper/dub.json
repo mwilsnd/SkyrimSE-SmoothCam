@@ -1,0 +1,34 @@
+{
+	"authors": [
+		"mwilsnd"
+	],
+	"copyright": "Copyright © 2020, mwilsnd",
+	"description": "Preprocessor for Skyrim papyrus",
+	"license": "",
+	"name": "paper",
+	"configurations": [
+		{
+			"name": "application-debug",
+			"platforms": [
+				"windows"
+			],
+			"targetType": "executable",
+			"versions": [
+				"DesktopApp"
+			]
+		},
+		{
+			"dflags": [
+				"-boundscheck=off"
+			],
+			"name": "application-release",
+			"platforms": [
+				"windows"
+			],
+			"targetType": "executable",
+			"versions": [
+				"DesktopApp"
+			]
+		}
+	]
+}

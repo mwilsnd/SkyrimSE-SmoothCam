@@ -1,0 +1,7 @@
+// Much like the follow bones file, this file lists bones to be used for positioning the first-person camera
+// This file is currently not used in release mode, the first person camera is very much work-in-progress
+// and is only included in developer builds
+
+NPCEyeBone
+NPC Head [Head]
+NPC Head

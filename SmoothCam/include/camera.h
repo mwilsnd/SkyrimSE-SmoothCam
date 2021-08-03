@@ -1,19 +1,12 @@
 #pragma once
-#include "camera_state.h"
-#include "camera_states/thirdperson.h"
-#include "camera_states/thirdperson_combat.h"
-#include "camera_states/thirdperson_horse.h"
-#include "crosshair.h"
-
-#ifdef WITH_CHARTS
-#   include "render/line_graph.h"
-#   include "render/cbuffer.h"
-#   include "render/ninode_tree_display.h"
-#   include "render/state_overlay.h"
-#endif
+#include "camera_states/base_first.h"
+#include "camera_states/base_third.h"
+#include "trackir/trackir.h"
 
 namespace Camera {
-	typedef void(*UpdateWorldToScreenMtx)(NiCamera*);
+	class Thirdperson;
+	class Firstperson;
+	class Camera;
 
 	// Helps describe more about the current camera and player state
 	// Used for selecting camera offsets
@@ -39,37 +32,86 @@ namespace Camera {
 		MAX_STATE
 	};
 
-	// Used to select which scalar function type should be run
-	enum class ScalarSelector {
-		Normal,
-		SepZ,
-		LocalSpace,
-	};
-
-	enum class MenuID {
+	enum class MenuID : uint8_t {
 		None,
 		DialogMenu,
 		LoadingMenu,
 		MistMenu,
 		FaderMenu,
 		LoadWaitSpinner,
+		MapMenu,
+		InventoryMenu,
 	};
 
-	class SmoothCamera {
+	enum class CameraID : uint8_t {
+		None,
+		Firstperson,
+		Thirdperson
+	};
+
+	// Interface to different cameras
+	class ICamera {
 		public:
-			SmoothCamera();
-			~SmoothCamera();
-			SmoothCamera(const SmoothCamera&) = delete;
-			SmoothCamera(SmoothCamera&&) noexcept = delete;
-			SmoothCamera& operator=(const SmoothCamera&) = delete;
-			SmoothCamera& operator=(SmoothCamera&&) noexcept = delete;
+			ICamera(Camera* baseCamera, CameraID id) : m_camera(baseCamera), m_id(id) {};
+			virtual ~ICamera() {};
+
+			// Called when we are switching to this camera
+			virtual void OnBegin(PlayerCharacter* player, CorrectedPlayerCamera* camera, ICamera* lastState) noexcept = 0;
+			// Called when we are done using this camera
+			virtual void OnEnd(PlayerCharacter* player, CorrectedPlayerCamera* camera, ICamera* newState) noexcept = 0;
+
+			// Runs before the internal game camera logic
+			// Return true when changing the camera state
+			virtual bool OnPreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera,
+				BSTSmartPointer<TESCameraState>& nextState) = 0;
+			// Selects the correct update method and positions the camera
+			virtual void OnUpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera,
+				BSTSmartPointer<TESCameraState>& nextState) = 0;
+			// Render crosshair objects
+			virtual void Render(Render::D3DContext& ctx) noexcept = 0;
+
+			// Called when the player toggles the POV
+			virtual void OnTogglePOV(const ButtonEvent* ev) noexcept = 0;
+			// Called when any other key is pressed
+			virtual bool OnKeyPress(const ButtonEvent* ev) noexcept = 0;
+			// Called when a menu of interest is opening or closing
+			virtual bool OnMenuOpenClose(MenuID id, const MenuOpenCloseEvent* const ev) noexcept = 0;
+
+			// Triggers when the camera action state changes
+			virtual void OnCameraActionStateTransition(const PlayerCharacter* player, const CameraActionState newState,
+				const CameraActionState oldState) noexcept = 0;
+			// Triggers when the camera state changes
+			virtual void OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+				const GameState::CameraState newState, const GameState::CameraState oldState) noexcept = 0;
+
+		public:
+			const CameraID m_id = CameraID::None;
+
+		protected:
+			Camera* m_camera = nullptr;
+
+	};
+
+	// Low level camera, holding both the thirdperson and firstperson cameras
+	class Camera {
+		public:
+			Camera();
+			~Camera();
+			Camera(const Camera&) = delete;
+			Camera(Camera&&) noexcept = delete;
+			Camera& operator=(const Camera&) = delete;
+			Camera& operator=(Camera&&) noexcept = delete;
 			
 		public:
 			// Runs before the internal game camera logic
 			// Return true when changing the camera state
-			bool PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera, BSTSmartPointer<TESCameraState>& nextState);
+			bool PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera,
+				BSTSmartPointer<TESCameraState>& nextState);
 			// Selects the correct update method and positions the camera
-			void UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera, BSTSmartPointer<TESCameraState>& nextState);
+			void UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera,
+				BSTSmartPointer<TESCameraState>& nextState);
+			// Render crosshair objects
+			void Render(Render::D3DContext& ctx);
 
 			// Called when the player toggles the POV
 			void OnTogglePOV(const ButtonEvent* ev) noexcept;
@@ -86,110 +128,61 @@ namespace Camera {
 			// Set the camera world position
 			void SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept;
 
-			// Returns the full world-space camera target postion for the current player state
-			glm::vec3 GetCurrentCameraTargetWorldPosition(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) const;
-			// Returns the target world-space position for the camera, with local offsets and rotations applied. This is the goal
-			// position ignoring any interpolation
-			void GetCameraGoalPosition(const CorrectedPlayerCamera* camera, glm::vec3& world, glm::vec3& local);
-			// Return the euler angles for the player's current aim
-			glm::vec2 GetAimRotation(const TESObjectREFR* ref, const CorrectedPlayerCamera * camera) const;
-			// Return the camera rotation
-			const mmath::Rotation& GetCameraRotation() const noexcept;
+			// Return the current frustum
+			const NiFrustum& GetFrustum() const noexcept;
 			// Get the object the camera is currently focused on
 			NiPointer<Actor> GetCurrentCameraTarget(const CorrectedPlayerCamera* camera) noexcept;
 			// Returns true if a loading screen is active
 			bool InLoadingScreen() const noexcept;
+			// Option for the MCM - Allow forcing the camera to a new state
+			// Adding this after observing a bug - Camera got stuck in kCameraState_Furniture
+			void SetShouldForceCameraState(bool force, uint8_t newCameraState) noexcept;
+
+			// Get the thirdperson camera
+			Thirdperson* GetThirdpersonCamera() noexcept;
+			// Get the firstperson camera
+			Firstperson* GetFirstpersonCamera() noexcept;
 
 		private:
-			// Returns true if interpolation is allowed in the current state
-			bool IsInterpAllowed(const PlayerCharacter* player) const noexcept;	
-			
 			// Update skyrim's screen projection matrix
-			void UpdateInternalWorldToScreenMatrix(const CorrectedPlayerCamera* camera) noexcept;
-			// Update the internal rotation
-			void UpdateInternalRotation(CorrectedPlayerCamera* camera) noexcept;
+			void UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera) noexcept;
 			// Updates our POV state to the true value the game expects for each state
 			const bool UpdateCameraPOVState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
 			// Returns the current camera state for use in selecting an update method
-			const GameState::CameraState UpdateCurrentCameraState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera);
+			const GameState::CameraState UpdateCurrentCameraState(const PlayerCharacter* player,
+				const CorrectedPlayerCamera* camera) noexcept;
 			// Returns the current camera action state for use in the selected update method
-			const CameraActionState UpdateCurrentCameraActionState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
+			const CameraActionState UpdateCurrentCameraActionState(const PlayerCharacter* player,
+				const CorrectedPlayerCamera* camera) noexcept;
 
-#ifdef _DEBUG
-			// Triggers when the camera action state changes, for debugging
+			// Triggers when the camera action state changes
 			void OnCameraActionStateTransition(const PlayerCharacter* player, const CameraActionState newState,
 				const CameraActionState oldState) const noexcept;
-#endif
 			// Triggers when the camera state changes
-			void OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera, const GameState::CameraState newState,
-				const GameState::CameraState oldState);
-
-			/// Camera position calculations
-			// Find a node to use as the world position for following
-			NiAVObject* FindFollowBone(const TESObjectREFR* ref) const noexcept;
-			// Returns the zoom value set from the given camera state
-			float GetCurrentCameraZoom(const CorrectedPlayerCamera* camera, const GameState::CameraState currentState) const noexcept;
-			// Returns an offset group for the current player movement state
-			const Config::OffsetGroup* GetOffsetForState(const CameraActionState state) const noexcept;
-			
-			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateZoomOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
-			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateUpOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
-			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateSideOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
-			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateFOVOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
-
-			//Returns the camera zoom for the current player state
-			float GetCurrentCameraZoomOffset(const PlayerCharacter* player) const noexcept;
-			// Returns the camera height for the current player state
-			float GetCurrentCameraHeight(const PlayerCharacter* player) const noexcept;
-			// Returns the ideal camera distance for the current zoom level
-			float GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept;
-			// Returns the camera side offset for the current player state
-			float GetCurrentCameraSideOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
-			// Returns the camera FOV offset for the current player state
-			float GetCurrentCameraFOVOffset(const PlayerCharacter* player) const noexcept;
-			
-			// Returns the full local-space camera offset for the current player state, FOV is packed in .w
-			glm::vec4 GetCurrentCameraOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
-			
-			// Returns the current smoothing scalar to use for the given distance to the player
-			double GetCurrentSmoothingScalar(const float distance, ScalarSelector method = ScalarSelector::Normal) const;
-			// Returns the user defined distance clamping vector pair
-			std::tuple<glm::vec3, glm::vec3> GetDistanceClamping() const noexcept;
-			// Returns the camera's current zoom level - Camera must extend ThirdPersonState
-			float GetCameraZoomScalar(const CorrectedPlayerCamera* camera, uint16_t cameraState) const noexcept;
-
-			// Offset the gmae FOV by the given amount
-			void SetFOVOffset(float fov) noexcept;
+			void OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+				const GameState::CameraState newState, const GameState::CameraState oldState);
 
 			NiPointer<NiCamera> GetNiCamera(CorrectedPlayerCamera* camera) const noexcept;
 
-			// Render crosshair objects
-			void Render(Render::D3DContext& ctx);
-
 		private:
-			struct {
-				mutable BSFixedString head = "NPC Head [Head]";
-				mutable BSFixedString spine1 = "NPC Spine1 [Spn1]";
-			} Strings;
+			Config::UserConfig* config = nullptr;       // User config
+			Actor* currentFocusObject = nullptr;        // The ref object the camera is focused on
+			NiPointer<NiCamera> cameraNi = nullptr;     // Active NiCamera
+			ICamera* activeCamera = nullptr;            // And the active camera
 
-			// User config
-			Config::UserConfig* config = nullptr;
-
-			// The ref object the camera is focused on
-			Actor* currentFocusObject = nullptr;
-			// NiCamera
-			NiPointer<NiCamera> cameraNi = nullptr;
-
-			// Crosshair manager
-			std::unique_ptr<Crosshair::Manager> crosshair;
-
-			// All camera state instances
-			std::array<std::unique_ptr<State::BaseCameraState>, static_cast<size_t>(GameState::CameraState::MAX_STATE)> cameraStates;
-
+			eastl::unique_ptr<Thirdperson> cameraThird; // Third person camera
+			eastl::unique_ptr<Firstperson> cameraFirst; // First person camera
+		
+			bool ranLastFrame = false;					// Did the camera run last frame?
+			bool povIsThird = false;                    // Our current POV state
+			bool povWasPressed = false;					// Change POV was pressed
+			bool wasLoading = false;					// True if we saw the loading screen menu
+			int8_t loadScreenDepth = 0;                 // If not 0, we are in a loading screen sequence
+			NiFrustum frustum;                          // Our current view frustum
+			mmath::NiMatrix44 worldToScaleform;         // Our current worldToScreen matrix for the hud
+#ifdef DEVELOPER
+			TrackIR::TrackingSnapshot trackIRData;      // If using TrackIR, the current data from the tracker
+#endif
 			// The last and current camera state
 			GameState::CameraState currentState = GameState::CameraState::Unknown;
 			GameState::CameraState lastState = GameState::CameraState::Unknown;
@@ -198,84 +191,21 @@ namespace Camera {
 			CameraActionState currentActionState = CameraActionState::Unknown;
 			CameraActionState lastActionState = CameraActionState::Unknown;
 
-			// The current rotation of the camera in both euler angles and in quaternion form
-			mmath::Rotation rotation;
-			// The last position of the camera we set
-			mmath::Position lastPosition;
-			// Our most current camera position we set
-			mmath::Position currentPosition;
 			// Whatever position was last set before any camera update code is executed for the frame
 			glm::vec3 gameLastActualPosition = { 0.0f, 0.0f, 0.0f };
-			// Our current worldToScreen matrix for the hud
-			mmath::NiMatrix44 worldToScaleform;
-			// Our current view frustum
-			NiFrustum frustum;
 
-			// Data to be saved and restored across certain state transitions
-			struct {
-				// Yaw rotation for the horse state - We need to restore this after moving from tween->horse
-				float horseYaw = 0.0f;
-				// ACC writes over pitch rotation of the player with an incorrect value (are we causing that?)
-				// Store pitch when entering dialog and restore it after
-				float accPitch = 0.0f;
-			} stateCopyData;
+			bool wantNewCameraState = false; // If true, we are to switch to a new camera state next update
+			uint8_t wantNewState = CorrectedPlayerCamera::kCameraState_ThirdPerson2; // The state to switch to
 
-			// Our current offset group and offset position, set by the offset transition states
-			struct {
-				const Config::OffsetGroup* currentGroup = nullptr;
-				glm::vec3 position = { 0.0f, 0.0f, 0.0f };
-				float fov = 0.0f;
-			} offsetState;
+			// When using cycle preset hotkeys, this will point at our current preset ID.
+			// We could store the preset slot in the config structure, but that would cause compat issues with older
+			// save files and somewhat prevent renaming preset files outside of the game.
+			// Just start at slot 0 every time and keep track of it here.
+			int currentPresetIndex = 0; 
 
-			// Transition groups for smoothing offset and zoom switches
-			using OffsetTransition = mmath::TransitionGroup<glm::vec2>;
-			using ZoomTransition = mmath::TransitionGroup<float>;
-			// Smooth x, y components of the active offset group
-			OffsetTransition offsetTransitionState;
-			// Smooth z of the active offset group
-			ZoomTransition zoomTransitionState;
-			// Smooth FOV of the active offset group
-			ZoomTransition fovTransitionState;
-
-			// Set on first execution to perform setup
-			bool firstFrame = false;
-			// Should we be in third person?
-			bool povIsThird = false;
-			// Was the POV key pressed this frame?
-			bool povWasPressed = false;
-			// Is the dialog menu open?
-			bool dialogMenuOpen = false;
-			// Was the dialog menu open last frame?
-			bool wasDialogMenuOpen = false;
-			// -1 when we have swapped shoulders
-			int shoulderSwap = 1;
-			// If not 0, we are in a loading screen sequence
-			uint8_t loadScreenDepth = 0;
-
-#ifdef WITH_CHARTS
-			std::unique_ptr<Render::CBuffer> perFrameOrtho;
-			std::unique_ptr<Render::LineGraph> worldPosTargetGraph;
-			std::unique_ptr<Render::LineGraph> offsetPosGraph;
-			std::unique_ptr<Render::LineGraph> offsetTargetPosGraph;
-			std::unique_ptr<Render::LineGraph> localSpaceGraph;
-			std::unique_ptr<Render::LineGraph> rotationGraph;
-			std::unique_ptr<Render::LineGraph> tpsRotationGraph;
-			std::unique_ptr<Render::LineGraph> computeTimeGraph;
-			std::unique_ptr<Render::NiNodeTreeDisplay> refTreeDisplay;
-			std::unique_ptr<Render::StateOverlay> stateOverlay;
-			glm::mat4 orthoMatrix;
-			float lastProfSnap = 0.0f;
-			
-			enum class DisplayMode : uint8_t {
-				None,
-				Graphs,
-				NodeTree,
-				StateOverlay
-			};
-			DisplayMode curDebugMode = DisplayMode::None;
-			bool dbgKeyDown = false;
-#endif
-
-			friend class State::BaseCameraState;
+			friend class State::BaseThird;
+			friend class State::BaseFirst;
+			friend class Thirdperson;
+			friend class Firstperson;
 	};
 }

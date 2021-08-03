@@ -9,7 +9,7 @@ namespace Render {
 		DXGI_FORMAT format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 		D3D11_SRV_DIMENSION dimensions = D3D11_SRV_DIMENSION::D3D10_1_SRV_DIMENSION_TEXTURE2D;
 		D3D11_TEX2D_SRV texture2D = {};
-		std::shared_ptr<Texture2D> texture;
+		eastl::shared_ptr<Texture2D> texture;
 	} SRVCreateInfo;
 
 	class SRV {
@@ -26,6 +26,6 @@ namespace Render {
 
 		private:
 			winrt::com_ptr<ID3D11ShaderResourceView> srv;
-			std::shared_ptr<Texture2D> texture;
+			eastl::shared_ptr<Texture2D> texture;
 	};
 }

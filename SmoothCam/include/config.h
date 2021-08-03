@@ -8,7 +8,7 @@ namespace Config {
 	using json = nlohmann::json;
 	constexpr auto MaxPresetSlots = 6;
 
-	enum class ScalarMethods {
+	enum class ScalarMethods : uint8_t {
 		LINEAR,
 		QUAD_IN, QUAD_OUT, QUAD_INOUT,
 		CUBIC_IN, CUBIC_OUT, CUBIC_INOUT,
@@ -25,13 +25,13 @@ namespace Config {
 		Dot
 	};
 
-	enum class LoadStatus {
+	enum class LoadStatus : uint8_t {
 		OK,
 		MISSING,
 		FAILED
 	};
 
-	enum class OffsetGroupID {
+	enum class OffsetGroupID : uint8_t {
 		Standing,
 		Walking,
 		Running,
@@ -49,71 +49,64 @@ namespace Config {
 	};
 
 	constexpr auto scalarMethods = mapbox::eternal::hash_map<mapbox::eternal::string, ScalarMethods>({
-		{ "linear",					ScalarMethods::LINEAR },
-		{ "quadraticEaseIn",		ScalarMethods::QUAD_IN },
-		{ "quadraticEaseOut",		ScalarMethods::QUAD_OUT },
-		{ "quadraticEaseInOut",		ScalarMethods::QUAD_INOUT },
-		{ "cubicEaseIn",			ScalarMethods::CUBIC_IN },
-		{ "cubicEaseOut",			ScalarMethods::CUBIC_OUT },
-		{ "cubicEaseInOut",			ScalarMethods::CUBIC_INOUT },
-		{ "quarticEaseIn",			ScalarMethods::QUART_IN },
-		{ "quarticEaseOut",			ScalarMethods::QUART_OUT },
-		{ "quarticEaseInOut",		ScalarMethods::QUART_INOUT },
-		{ "quinticEaseIn",			ScalarMethods::QUINT_IN },
-		{ "quinticEaseOut",			ScalarMethods::QUINT_OUT },
-		{ "quinticEaseInOut",		ScalarMethods::QUINT_INOUT },
-		{ "sineEaseIn",				ScalarMethods::SINE_IN },
-		{ "sineEaseOut",			ScalarMethods::SINE_OUT },
-		{ "sineEaseInOut",			ScalarMethods::SINE_INOUT },
-		{ "circularEaseIn",			ScalarMethods::CIRC_IN },
-		{ "circularEaseOut",		ScalarMethods::CIRC_OUT },
-		{ "circularEaseInOut",		ScalarMethods::CIRC_INOUT },
-		{ "exponentialEaseIn",		ScalarMethods::EXP_IN },
-		{ "exponentialEaseOut",		ScalarMethods::EXP_OUT },
-		{ "exponentialEaseInOut",	ScalarMethods::EXP_INOUT },
+		{ "LINEAR",					ScalarMethods::LINEAR },
+		{ "QUADRATICEASEIN",		ScalarMethods::QUAD_IN },
+		{ "QUADRATICEASEOUT",		ScalarMethods::QUAD_OUT },
+		{ "QUADRATICEASEINOUT",		ScalarMethods::QUAD_INOUT },
+		{ "CUBICEASEIN",			ScalarMethods::CUBIC_IN },
+		{ "CUBICEASEOUT",			ScalarMethods::CUBIC_OUT },
+		{ "CUBICEASEINOUT",			ScalarMethods::CUBIC_INOUT },
+		{ "QUARTICEASEIN",			ScalarMethods::QUART_IN },
+		{ "QUARTICEASEOUT",			ScalarMethods::QUART_OUT },
+		{ "QUARTICEASEINOUT",		ScalarMethods::QUART_INOUT },
+		{ "QUINTICEASEIN",			ScalarMethods::QUINT_IN },
+		{ "QUINTICEASEOUT",			ScalarMethods::QUINT_OUT },
+		{ "QUINTICEASEINOUT",		ScalarMethods::QUINT_INOUT },
+		{ "SINEEASEIN",				ScalarMethods::SINE_IN },
+		{ "SINEEASEOUT",			ScalarMethods::SINE_OUT },
+		{ "SINEEASEINOUT",			ScalarMethods::SINE_INOUT },
+		{ "CIRCULAREASEIN",			ScalarMethods::CIRC_IN },
+		{ "CIRCULAREASEOUT",		ScalarMethods::CIRC_OUT },
+		{ "CIRCULAREASEINOUT",		ScalarMethods::CIRC_INOUT },
+		{ "EXPONENTIALEASEIN",		ScalarMethods::EXP_IN },
+		{ "EXPONENTIALEASEOUT",		ScalarMethods::EXP_OUT },
+		{ "EXPONENTIALEASEINOUT",	ScalarMethods::EXP_INOUT },
 	});
 
 	constexpr auto scalarMethodRevLookup = mapbox::eternal::map<ScalarMethods, mapbox::eternal::string>({
-		{ ScalarMethods::LINEAR, 		"linear" },
-		{ ScalarMethods::QUAD_IN, 		"quadraticEaseIn" },
-		{ ScalarMethods::QUAD_OUT, 		"quadraticEaseOut" },
-		{ ScalarMethods::QUAD_INOUT, 	"quadraticEaseInOut" },
-		{ ScalarMethods::CUBIC_IN, 		"cubicEaseIn" },
-		{ ScalarMethods::CUBIC_OUT, 	"cubicEaseOut" },
-		{ ScalarMethods::CUBIC_INOUT, 	"cubicEaseInOut" },
-		{ ScalarMethods::QUART_IN, 		"quarticEaseIn" },
-		{ ScalarMethods::QUART_OUT, 	"quarticEaseOut" },
-		{ ScalarMethods::QUART_INOUT, 	"quarticEaseInOut" },
-		{ ScalarMethods::QUINT_IN, 		"quinticEaseIn" },
-		{ ScalarMethods::QUINT_OUT, 	"quinticEaseOut" },
-		{ ScalarMethods::QUINT_INOUT, 	"quinticEaseInOut" },
-		{ ScalarMethods::SINE_IN, 		"sineEaseIn" },
-		{ ScalarMethods::SINE_OUT, 		"sineEaseOut" },
-		{ ScalarMethods::SINE_INOUT, 	"sineEaseInOut" },
-		{ ScalarMethods::CIRC_IN, 		"circularEaseIn" },
-		{ ScalarMethods::CIRC_OUT, 		"circularEaseOut" },
-		{ ScalarMethods::CIRC_INOUT, 	"circularEaseInOut" },
-		{ ScalarMethods::EXP_IN, 		"exponentialEaseIn" },
-		{ ScalarMethods::EXP_OUT, 		"exponentialEaseOut" },
-		{ ScalarMethods::EXP_INOUT, 	"exponentialEaseInOut" },
+		{ ScalarMethods::LINEAR, 		"LINEAR" },
+		{ ScalarMethods::QUAD_IN, 		"QUADRATICEASEIN" },
+		{ ScalarMethods::QUAD_OUT, 		"QUADRATICEASEOUT" },
+		{ ScalarMethods::QUAD_INOUT, 	"QUADRATICEASEINOUT" },
+		{ ScalarMethods::CUBIC_IN, 		"CUBICEASEIN" },
+		{ ScalarMethods::CUBIC_OUT, 	"CUBICEASEOUT" },
+		{ ScalarMethods::CUBIC_INOUT, 	"CUBICEASEINOUT" },
+		{ ScalarMethods::QUART_IN, 		"QUARTICEASEIN" },
+		{ ScalarMethods::QUART_OUT, 	"QUARTICEASEOUT" },
+		{ ScalarMethods::QUART_INOUT, 	"QUARTICEASEINOUT" },
+		{ ScalarMethods::QUINT_IN, 		"QUINTICEASEIN" },
+		{ ScalarMethods::QUINT_OUT, 	"QUINTICEASEOUT" },
+		{ ScalarMethods::QUINT_INOUT, 	"QUINTICEASEINOUT" },
+		{ ScalarMethods::SINE_IN, 		"SINEEASEIN" },
+		{ ScalarMethods::SINE_OUT, 		"SINEEASEOUT" },
+		{ ScalarMethods::SINE_INOUT, 	"SINEEASEINOUT" },
+		{ ScalarMethods::CIRC_IN, 		"CIRCULAREASEIN" },
+		{ ScalarMethods::CIRC_OUT, 		"CIRCULAREASEOUT" },
+		{ ScalarMethods::CIRC_INOUT, 	"CIRCULAREASEINOUT" },
+		{ ScalarMethods::EXP_IN, 		"EXPONENTIALEASEIN" },
+		{ ScalarMethods::EXP_OUT, 		"EXPONENTIALEASEOUT" },
+		{ ScalarMethods::EXP_INOUT, 	"EXPONENTIALEASEINOUT" },
 	});
 
 	constexpr auto crosshairTypeLookup = mapbox::eternal::hash_map<mapbox::eternal::string, CrosshairType>({
-		{ "Skyrim", CrosshairType::Skyrim },
-		{ "Dot", CrosshairType::Dot }
+		{ "SKYRIM", CrosshairType::Skyrim },
+		{ "DOT", CrosshairType::Dot }
 	});
 
 	constexpr auto crosshairTypeRevLookup = mapbox::eternal::map<CrosshairType, mapbox::eternal::string>({
-		{ CrosshairType::Skyrim, "Skyrim" },
-		{ CrosshairType::Dot, "Dot" }
+		{ CrosshairType::Skyrim, "SKYRIM" },
+		{ CrosshairType::Dot, "DOT" }
 	});
-
-	typedef struct gameConf {
-		float f3PArrowTiltUpAngle = 2.5f;
-		float f3PBoltTiltUpAngle = 2.5f;
-		float fNearDistance = 15.0f;
-		float fMinCurrentZoom = -0.200000003;
-	} GameConfig;
 
 	typedef struct offsetGroup {
 		float sideOffset = 25.0;
@@ -173,8 +166,12 @@ namespace Config {
 		float crosshairMinDistSize = 16.0f;
 		float crosshairMaxDistSize = 24.0f;
 		bool useWorldCrosshair = false;
-		bool worldCrosshairDepthTest = true;
+		bool worldCrosshairDepthTest = false;
 		CrosshairType worldCrosshairType = CrosshairType::Skyrim;
+		float stealthMeterXOffset = 0.0f;
+		float stealthMeterYOffset = 0.0f;
+		bool offsetStealthMeter = false;
+		bool alwaysOffsetStealthMeter = false;
 
 		// Arrow prediction
 		bool useArrowPrediction = false;
@@ -184,8 +181,15 @@ namespace Config {
 
 		// Misc
 		bool disableDeltaTime = false;
+		int nextPresetKey = -1;
 		int shoulderSwapKey = -1;
 		bool swapXClamping = true;
+		bool modDisabled = false;
+		int modToggleKey = -1;
+		float customZOffset = 0.0f;
+		int applyZOffsetKey = -1;
+		bool zOffsetActive = false; // @NOSAVE
+		bool enableCrashDumps = false;
 		
 		// Compat
 		bool compatIC = false;
@@ -197,8 +201,8 @@ namespace Config {
 		bool enableInterp = true;
 		ScalarMethods currentScalar = ScalarMethods::SINE_IN;
 		float minCameraFollowDistance = 64.0f;
-		float minCameraFollowRate = 0.15f;
-		float maxCameraFollowRate = 0.4f;
+		float minCameraFollowRate = 0.25f;
+		float maxCameraFollowRate = 0.66f;
 		float zoomMul = 500.0f;
 		float zoomMaxSmoothingDistance = 650.0f;
 
@@ -277,17 +281,21 @@ namespace Config {
 	// Returns true if ok, otherwise does nothing
 	bool LoadPreset(int slot);
 	// Returns true if ok, otherwise does nothing
-	LoadStatus LoadPresetName(int slot, std::string& name);
+	LoadStatus LoadPresetName(int slot, eastl::string& name);
 	// Returns the name of the saved preset or "Slot <N>" if no preset is found
 	BSFixedString GetPresetSlotName(int slot);
 	// Get the file path for the given preset slot
-	std::wstring GetPresetPath(int slot);
+	eastl::wstring GetPresetPath(int slot);
 
 	// Load the list of bones for the camera to follow
 	void LoadBonePriorities();
-	using BoneList = std::vector<BSFixedString>;
+	using BoneList = eastl::vector<BSFixedString>;
 	// Get the follow bone list
 	BoneList& GetBonePriorities() noexcept;
 
-	const GameConfig* const GetGameConfig();
+#ifdef DEVELOPER
+	void LoadEyeBonePriorities();
+	// And the bone list for firstperson
+	BoneList& GetEyeBonePriorities() noexcept;
+#endif
 }

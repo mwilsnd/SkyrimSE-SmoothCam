@@ -22,14 +22,12 @@ namespace Render {
 			void Draw(D3DContext& ctx, NiNode* node) noexcept;
 
 		private:
-			void DrawNode(D3DContext& ctx, NiNode* no, float indent, float line, float& maxWidth, uint32_t level);
-
 			uint32_t width = 0;
 			uint32_t height = 0;
 			uint32_t xPos = 0;
 			uint32_t yPos = 0;
 			
-			StringBuilder<std::wstring> builder;
+			StringBuilder<eastl::wstring> builder;
 			wchar_t* buffer = nullptr;
 			size_t bufSize = 0;
 	};

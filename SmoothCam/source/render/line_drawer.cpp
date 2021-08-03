@@ -1,5 +1,6 @@
 #include "render/line_drawer.h"
-#include "render/shaders/shader_vertex_color.h"
+#include "render/shaders/vertex_color_screen.h"
+#include "render/shader_cache.h"
 
 Render::LineDrawer::LineDrawer(D3DContext& ctx) {
 	CreateObjects(ctx);
@@ -15,16 +16,16 @@ Render::LineDrawer::~LineDrawer() {
 
 void Render::LineDrawer::CreateObjects(D3DContext& ctx) {
 	Render::ShaderCreateInfo vsCreateInfo(
-		Render::Shaders::VertexColorPassThruVS,
+		Render::Shaders::VertexColorScreenVS,
 		Render::PipelineStage::Vertex
 	);
-	vs = std::make_shared<Render::Shader>(vsCreateInfo, ctx);
+	vs = ShaderCache::Get().Load(vsCreateInfo, ctx);
 
 	Render::ShaderCreateInfo psCreateInfo(
-		Render::Shaders::VertexColorPassThruPS,
+		Render::Shaders::VertexColorScreenPS,
 		Render::PipelineStage::Fragment
 	);
-	ps = std::make_shared<Render::Shader>(psCreateInfo, ctx);
+	ps = ShaderCache::Get().Load(psCreateInfo, ctx);
 
 	Render::VertexBufferCreateInfo vbInfo;
 	vbInfo.elementSize = sizeof(Point);
@@ -37,7 +38,7 @@ void Render::LineDrawer::CreateObjects(D3DContext& ctx) {
 	vbInfo.iaLayout.emplace_back(D3D11_INPUT_ELEMENT_DESC{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 });
 	
 	for (auto i = 0; i < NumBuffers; i++)
-		vbo[i] = std::move(std::make_unique<Render::VertexBuffer>(vbInfo, ctx));
+		vbo[i] = eastl::move(eastl::make_unique<Render::VertexBuffer>(vbInfo, ctx));
 }
 
 void Render::LineDrawer::Submit(const LineList& lines) noexcept {

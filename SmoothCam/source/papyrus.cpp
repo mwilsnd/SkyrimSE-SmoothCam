@@ -1,19 +1,28 @@
 #include "papyrus.h"
+#include "camera.h"
+#include "thirdperson.h"
+#include "crosshair.h"
+
+extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern uint8_t improvedCameraStatus;
 
 using namespace PapyrusBindings;
+#define PAPYRUS_MANGLE(VarName)			\
+	"_^@"##VarName##"_SmoothCamSetting"
+
 #define IMPL_GETTER(VarName, Var)                   \
-    { VarName, []() noexcept {                      \
+    { PAPYRUS_MANGLE(VarName), []() noexcept {      \
         return Config::GetCurrentConfig()->Var;     \
     } },
 
 #define IMPL_SETTER(VarName, Var, Type)         \
-    { VarName, [](Type arg) {                   \
+    { PAPYRUS_MANGLE(VarName), [](Type arg) {   \
         Config::GetCurrentConfig()->Var = arg;  \
         Config::SaveCurrentConfig();            \
     } },
 
 #define IMPL_SCALAR_METHOD_GETTER(VarName, Var)             \
-    { VarName, []() {                                       \
+    { PAPYRUS_MANGLE(VarName), []() {                       \
         const auto it = Config::scalarMethodRevLookup.find( \
             Config::GetCurrentConfig()->Var                 \
         );                                                  \
@@ -24,8 +33,9 @@ using namespace PapyrusBindings;
     } },
 
 #define IMPL_SCALAR_METHOD_SETTER(VarName, Var)                     \
-    { VarName, [](BSFixedString& str) {                             \
-        const auto it = Config::scalarMethods.find(str.c_str());    \
+    { PAPYRUS_MANGLE(VarName), [](BSFixedString& str) {             \
+		const auto upper = Util::UpperCase(str);					\
+        const auto it = Config::scalarMethods.find(upper.c_str());  \
         if (it != Config::scalarMethods.end()) {                    \
             Config::GetCurrentConfig()->Var = it->second;           \
             Config::SaveCurrentConfig();                            \
@@ -33,7 +43,7 @@ using namespace PapyrusBindings;
     } },
 
 #define IMPL_GROUP_SETTER(VarName, Var, Type)   \
-    { VarName, [](Type arg) {                   \
+    { PAPYRUS_MANGLE(VarName), [](Type arg) {   \
         auto cfg = Config::GetCurrentConfig();  \
         cfg->standing.Var = arg;                \
         cfg->walking.Var = arg;                 \
@@ -96,7 +106,7 @@ using namespace PapyrusBindings;
 	IMPL_SETTER("Interp"##GroupNamePrefix##"MagicCombat",	GroupVarName.interpMagicCombat, bool)   \
 	IMPL_SETTER("Interp"##GroupNamePrefix##"MeleeCombat",	GroupVarName.interpMeleeCombat, bool)   
 
-const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> stringGetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<BSFixedString(void)>> stringGetters = {
 	IMPL_SCALAR_METHOD_GETTER("InterpolationMethod", currentScalar)
 	IMPL_SCALAR_METHOD_GETTER("SeparateZInterpMethod", separateZScalar)
 	IMPL_SCALAR_METHOD_GETTER("SepLocalInterpMethod", separateLocalScalar)
@@ -104,7 +114,7 @@ const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> s
 	IMPL_SCALAR_METHOD_GETTER("ZoomTransitionMethod", zoomScalar)
 	IMPL_SCALAR_METHOD_GETTER("FOVTransitionMethod", fovScalar)
 
-	{ "WorldCrosshairType", []() {
+	{ PAPYRUS_MANGLE("WorldCrosshairType"), []() {
 		const auto it = Config::crosshairTypeRevLookup.find(Config::GetCurrentConfig()->worldCrosshairType);
 		if (it != Config::crosshairTypeRevLookup.end()) {
 			return BSFixedString(it->second.c_str());
@@ -113,12 +123,16 @@ const std::unordered_map<std::string_view, std::function<BSFixedString(void)>> s
 	}},
 };
 
-const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<bool(void)>> boolGetters = {
 	{
-		"D3DHooked", []() noexcept {
-		return Render::HasContext();
+		PAPYRUS_MANGLE("D3DHooked"), []() noexcept {
+			return Render::HasContext();
 		}
 	},
+
+	// Misc
+	IMPL_GETTER("ModEnabled",						modDisabled)
+	IMPL_GETTER("EnableCrashDumps",					enableCrashDumps)
 	
 	// Comapt
 	IMPL_GETTER("ACCCompat",						compatACC)
@@ -136,6 +150,8 @@ const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetter
 	IMPL_GETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip)
 	IMPL_GETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair)
 	IMPL_GETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat)
+	IMPL_GETTER("OffsetStealthMeter",				offsetStealthMeter)
+	IMPL_GETTER("AlwaysOffsetStealthMeter",			alwaysOffsetStealthMeter)
 
 	// Primary interpolation
 	IMPL_GETTER("InterpolationEnabled",				enableInterp)
@@ -181,7 +197,10 @@ const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetter
 	IMPL_GETTER("InterpBowAimSneaking",				bowAim.interpMeleeCombat)
 };
 
-const std::unordered_map<std::string_view, std::function<float(void)>> floatGetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<float(void)>> floatGetters = {
+	// Misc
+	IMPL_GETTER("CustomZOffsetAmount",					customZOffset)
+
 	// Primary interpolation
 	IMPL_GETTER("MinFollowDistance",					minCameraFollowDistance)
 	IMPL_GETTER("MinCameraFollowRate",					minCameraFollowRate)
@@ -198,6 +217,8 @@ const std::unordered_map<std::string_view, std::function<float(void)>> floatGett
 	IMPL_GETTER("ArrowArcColorB",						arrowArcColor.b)
 	IMPL_GETTER("ArrowArcColorA",						arrowArcColor.a)
 	IMPL_GETTER("MaxArrowPredictionRange",				maxArrowPredictionRange)
+	IMPL_GETTER("StealthMeterOffsetX",					stealthMeterXOffset)
+	IMPL_GETTER("StealthMeterOffsetY",					stealthMeterYOffset)
 
 	// Separate local interpolation
 	IMPL_GETTER("SepLocalInterpRate",					localScalarRate)
@@ -252,11 +273,14 @@ const std::unordered_map<std::string_view, std::function<float(void)>> floatGett
 	IMPL_GETTER("BowaimSneak:FOVOffset",				bowAim.combatMeleeFOVOffset)
 };
 
-const std::unordered_map<std::string_view, std::function<int(void)>> intGetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<int(void)>> intGetters = {
 	IMPL_GETTER("ShoulderSwapKeyCode", shoulderSwapKey)
+	IMPL_GETTER("NextPresetKeyCode", nextPresetKey)
+	IMPL_GETTER("ModEnabledKeyCode", modToggleKey)
+	IMPL_GETTER("ToggleCustomZKeyCode", applyZOffsetKey)
 };
 
-const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> stringSetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<void(BSFixedString)>> stringSetters = {
 	IMPL_SCALAR_METHOD_SETTER("InterpolationMethod", currentScalar)
 	IMPL_SCALAR_METHOD_SETTER("SeparateZInterpMethod", separateZScalar)
 	IMPL_SCALAR_METHOD_SETTER("SepLocalInterpMethod", separateLocalScalar)
@@ -264,8 +288,9 @@ const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> s
 	IMPL_SCALAR_METHOD_SETTER("ZoomTransitionMethod", zoomScalar)
 	IMPL_SCALAR_METHOD_SETTER("FOVTransitionMethod", fovScalar)
 	
-	{ "WorldCrosshairType", [](BSFixedString& str) {
-		const auto it = Config::crosshairTypeLookup.find(str.c_str());
+	{ PAPYRUS_MANGLE("WorldCrosshairType"), [](BSFixedString& str) {
+		const auto upper = Util::UpperCase(str);
+		const auto it = Config::crosshairTypeLookup.find(upper.c_str());
 		if (it != Config::crosshairTypeLookup.end()) {
 			Config::GetCurrentConfig()->worldCrosshairType = it->second;
 			Config::SaveCurrentConfig();
@@ -273,7 +298,11 @@ const std::unordered_map<std::string_view, std::function<void(BSFixedString)>> s
 	}},
 };
 
-const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<void(bool)>> boolSetters = {
+	// Misc
+	IMPL_SETTER("ModEnabled",						modDisabled, bool)
+	IMPL_SETTER("EnableCrashDumps",					enableCrashDumps, bool)	
+
 	// Compat
 	IMPL_SETTER("ACCCompat",						compatACC, bool)
 	IMPL_SETTER("ICCompat",							compatIC, bool)
@@ -290,6 +319,8 @@ const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetter
 	IMPL_SETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip, bool)
 	IMPL_SETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair, bool)
 	IMPL_SETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat, bool)
+	IMPL_SETTER("OffsetStealthMeter",				offsetStealthMeter, bool)
+	IMPL_SETTER("AlwaysOffsetStealthMeter",			alwaysOffsetStealthMeter, bool)
 
 	// Primary interpolation
 	IMPL_SETTER("InterpolationEnabled",				enableInterp, bool)
@@ -335,7 +366,10 @@ const std::unordered_map<std::string_view, std::function<void(bool)>> boolSetter
 	IMPL_SETTER("InterpBowAimSneaking",				bowAim.interpMeleeCombat, bool)
 };
 
-const std::unordered_map<std::string_view, std::function<void(float)>> floatSetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<void(float)>> floatSetters = {
+	// Misc
+	IMPL_SETTER("CustomZOffsetAmount",					customZOffset, float)
+
 	// Primary interpolation
 	IMPL_SETTER("MinFollowDistance",					minCameraFollowDistance, float)
 	IMPL_SETTER("MinCameraFollowRate",					minCameraFollowRate, float)
@@ -352,6 +386,8 @@ const std::unordered_map<std::string_view, std::function<void(float)>> floatSett
 	IMPL_SETTER("ArrowArcColorB",						arrowArcColor.b, float)
 	IMPL_SETTER("ArrowArcColorA",						arrowArcColor.a, float)
 	IMPL_SETTER("MaxArrowPredictionRange",				maxArrowPredictionRange, float)
+	IMPL_SETTER("StealthMeterOffsetX",					stealthMeterXOffset, float)
+	IMPL_SETTER("StealthMeterOffsetY",					stealthMeterYOffset, float)
 
 	// Separate local interpolation
 	IMPL_SETTER("SepLocalInterpRate",					localScalarRate, float)
@@ -427,8 +463,11 @@ const std::unordered_map<std::string_view, std::function<void(float)>> floatSett
 	IMPL_GROUP_SETTER("GroupCombat:Melee:FOVOffset",	combatMeleeFOVOffset, float)
 };
 
-const std::unordered_map<std::string_view, std::function<void(int)>> intSetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<void(int)>> intSetters = {
 	IMPL_SETTER("ShoulderSwapKeyCode", shoulderSwapKey, int)
+	IMPL_SETTER("NextPresetKeyCode", nextPresetKey, int)
+	IMPL_SETTER("ModEnabledKeyCode", modToggleKey, int)
+	IMPL_SETTER("ToggleCustomZKeyCode", applyZOffsetKey, int)
 };
 
 void PapyrusBindings::Bind(VMClassRegistry* registry) {
@@ -583,6 +622,44 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput) {
 				Config::ResetConfig();
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction0<StaticFunctionTag, void>(
+			"SmoothCam_ResetCrosshair",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput) {
+				g_theCamera->GetThirdpersonCamera()->GetCrosshairManager()->Reset(true);
+			},
+			registry
+		)
+	);
+	
+	registry->RegisterFunction(
+		new NativeFunction0<StaticFunctionTag, void>(
+			"SmoothCam_FixCameraState",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput) {
+				g_theCamera->SetShouldForceCameraState(true, CorrectedPlayerCamera::kCameraState_ThirdPerson2);
+			},
+			registry
+		)
+	);
+
+	registry->RegisterFunction(
+		new NativeFunction0<StaticFunctionTag, BSFixedString>(
+			"SmoothCam_IsImprovedCameraDetected",
+			ScriptClassName,
+			[](StaticFunctionTag* thisInput) {
+				if (improvedCameraStatus == 0)
+					return BSFixedString("Detected");
+				else if (improvedCameraStatus == 1)
+					return BSFixedString("Not Detected");
+				else
+					return BSFixedString("Version Mismatch");
 			},
 			registry
 		)

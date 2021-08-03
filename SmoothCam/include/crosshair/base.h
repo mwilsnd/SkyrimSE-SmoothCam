@@ -11,26 +11,26 @@ namespace Crosshair {
 	class Base {
 		public:
 			Base() = default;
-			virtual ~Base() {};
+			virtual ~Base() noexcept {};
 			Base(const Base&) = delete;
 			Base(Base&&) noexcept = delete;
 			Base& operator=(const Base&) = delete;
 			Base& operator=(Base&&) noexcept = delete;
 
 			// Create any needed 3D assets for rendering
-			virtual void Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::CBuffer>& perObjectBuf) = 0;
+			virtual void Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept = 0;
 			
 			// Render the crosshair
-			virtual void Render(Render::D3DContext& ctx, float curTime, float deltaTime, bool allowDepthTesting) = 0;
+			virtual void Render(Render::D3DContext& ctx, float curTime, float deltaTime, bool allowDepthTesting) noexcept = 0;
 			
 			// Set the world position
-			virtual void SetPosition(const glm::vec3& pos);
+			virtual void SetPosition(const glm::vec3& pos) noexcept;
 			// Set the rotation
-			virtual void SetRotation(const glm::vec3& rot);
+			virtual void SetRotation(const glm::vec3& rot) noexcept;
 			// Set the scale
-			virtual void SetScale(const glm::vec3& s);
+			virtual void SetScale(const glm::vec3& s) noexcept;
 			// Update the transform matrix
-			virtual void UpdateTransform();
+			virtual void UpdateTransform() noexcept;
 
 			// Get the world position
 			glm::vec3 GetPosition() const noexcept;
@@ -42,7 +42,7 @@ namespace Crosshair {
 			glm::mat4 GetTransform() const noexcept;
 
 		protected:
-			std::shared_ptr<Render::CBuffer> perObjectBuffer;
+			eastl::shared_ptr<Render::CBuffer> perObjectBuffer;
 			glm::mat4 transform = glm::identity<glm::mat4>();
 			glm::vec3 position = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 rotation = { 0.0f, 0.0f, 0.0f };
