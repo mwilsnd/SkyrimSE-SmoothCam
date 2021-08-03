@@ -467,7 +467,15 @@ void trimString(std::string& outStr) {
 static Config::BoneList bonePriorities = {};
 void Config::LoadBonePriorities() {
 	// @Issue:35: std::filesystem::directory_iterator throws on unicode paths
-	const std::wstring path = L"\\\\?\\Data\\SKSE\\Plugins\\SmoothCam_FollowBones_*.txt";
+	// @Note: Relative paths don't seem to work without MO2, prepend the full CWD
+	const auto sz = GetCurrentDirectory(0, nullptr);
+	WCHAR* buf = (WCHAR*)malloc(sizeof(WCHAR) * sz);
+	GetCurrentDirectory(sz, buf);
+
+	std::wstring path = L"\\\\?\\"; 
+	path.append(buf);
+	path.append(L"\\Data\\SKSE\\Plugins\\SmoothCam_FollowBones_*.txt");
+
 	WIN32_FIND_DATA data;
 	auto hf = FindFirstFileEx(
 		path.c_str(),
@@ -499,6 +507,10 @@ void Config::LoadBonePriorities() {
 				break;
 			}
 		} while (hf != INVALID_HANDLE_VALUE);
+	else
+		_WARNING("FindFirstFileEx reported error %d", GetLastError());
+
+	free(buf);
 
 	if (bonePriorities.size() == 0) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_FollowBones_Default.txt present in the SKSE plugins directory?
@@ -515,7 +527,16 @@ Config::BoneList& Config::GetBonePriorities() noexcept {
 #ifdef DEVELOPER
 static Config::BoneList eyeBonePriorities = {};
 void Config::LoadEyeBonePriorities() {
-	const std::wstring path = L"\\\\?\\Data\\SKSE\\Plugins\\SmoothCam_EyeBones_*.txt";
+	// @Issue:35: std::filesystem::directory_iterator throws on unicode paths
+	// @Note: Relative paths don't seem to work without MO2, prepend the full CWD
+	const auto sz = GetCurrentDirectory(0, nullptr);
+	WCHAR* buf = (WCHAR*)malloc(sizeof(WCHAR) * sz);
+	GetCurrentDirectory(sz, buf);
+
+	std::wstring path = L"\\\\?\\"; 
+	path.append(buf);
+	path.append(L"\\Data\\SKSE\\Plugins\\SmoothCam_EyeBones_*.txt");
+
 	WIN32_FIND_DATA data;
 	auto hf = FindFirstFileEx(
 		path.c_str(),
@@ -547,6 +568,10 @@ void Config::LoadEyeBonePriorities() {
 				break;
 			}
 		} while (hf != INVALID_HANDLE_VALUE);
+	else
+		_WARNING("FindFirstFileEx reported error %d", GetLastError());
+
+	free(buf);
 
 	if (eyeBonePriorities.size() == 0) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_EyeBones_Default.txt present in the SKSE plugins directory?
