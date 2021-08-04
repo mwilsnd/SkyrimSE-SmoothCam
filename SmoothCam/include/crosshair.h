@@ -78,6 +78,9 @@ namespace Crosshair {
 			bool ProjectilePredictionCurve(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 				const glm::vec2& aimRotation, const glm::vec3& startPos, glm::vec3& hitPos, bool& hitCharacter) noexcept;
 
+			// Try to find the arrow node on the player. It can either be attached to the weapon node or a magic node.
+			NiAVObject* FindArrowNode(const PlayerCharacter* player) const noexcept;
+
 		public:
 			struct CurrentCrosshairData {
 				glm::dvec2 ofs = { 0.0, 0.0 };
@@ -98,6 +101,8 @@ namespace Crosshair {
 				mutable BSFixedString weapon = "WEAPON";
 				mutable BSFixedString arrowName = "Arrow:0";
 				mutable BSFixedString magic = "NPC Head MagicNode [Hmag]";
+				mutable BSFixedString lmag = "NPC L MagicNode [LMag]";
+				mutable BSFixedString rmag = "NPC R MagicNode [RMag]";
 			} Strings;
 
 			// Crosshair metrics read at game start before we mess with them

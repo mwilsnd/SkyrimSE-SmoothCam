@@ -300,6 +300,28 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const PlayerCharacter* player
 	return hit;
 }
 
+NiAVObject* Crosshair::Manager::FindArrowNode(const PlayerCharacter* player) const noexcept {
+	auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.weapon.data), NiAVObject, NiNode);
+	if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
+		auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
+		if (arrow) return arrow;
+	}
+
+	handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.rmag.data), NiAVObject, NiNode);
+	if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
+		auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
+		if (arrow) return arrow;
+	}
+
+	handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.lmag.data), NiAVObject, NiNode);
+	if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
+		auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
+		if (arrow) return arrow;
+	}
+
+	return nullptr;
+}
+
 void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 	const glm::vec2& aimRotation, mmath::NiMatrix44& worldToScaleform) noexcept
 {
@@ -313,41 +335,37 @@ void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, 
 	bool hitCharacter = false;
 
 	if (GameState::IsBowDrawn(player) && Strings.weapon.data && Strings.arrowName.data) {
-		const auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.weapon.data), NiAVObject, NiNode);
+		const auto arrow = FindArrowNode(player);
+		if (arrow) {
+			const auto pos = glm::vec3{
+				arrow->m_worldTransform.pos.x,
+				arrow->m_worldTransform.pos.y,
+				arrow->m_worldTransform.pos.z
+			};
 
-		if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
-			const auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
-			if (arrow != nullptr) {
-				const auto pos = glm::vec3{
-					arrow->m_worldTransform.pos.x,
-					arrow->m_worldTransform.pos.y,
-					arrow->m_worldTransform.pos.z
-				};
-
-				// Now select the method to use
-				if (config->useArrowPrediction) {
-					maxRayLength = config->maxArrowPredictionRange;
-					if (ProjectilePredictionCurve(player, camera, aimRotation, pos, hitPos, hitCharacter)) {
-						hit = true;
-						rayLength = glm::length(hitPos - pos);
-					}
-				} else {
-					// Classic method
-					float fac = 0.0f;
-					if (GameState::IsUsingBow(player) || GameState::IsUsingCrossbow(player)) {
-						static auto arrowTilt = (*g_iniSettingCollection)->Get("f3PArrowTiltUpAngle:Combat");
-						fac = glm::radians(arrowTilt->data.f32) * 0.5f;
-					}
-					const auto n = GetCrosshairTargetNormal(aimRotation, fac);
-
-					auto origin = glm::vec4(pos.x, pos.y, pos.z, 0.0f);
-					auto ray = glm::vec4(n.x, n.y, n.z, 0.0f) * maxRayLength;
-					const auto result = Raycast::hkpCastRay(origin, origin + ray);
-					hit = result.hit;
-					hitPos = result.hitPos;
-					rayLength = result.rayLength;
-					hitCharacter = result.hitCharacter != nullptr;
+			// Now select the method to use
+			if (config->useArrowPrediction) {
+				maxRayLength = config->maxArrowPredictionRange;
+				if (ProjectilePredictionCurve(player, camera, aimRotation, pos, hitPos, hitCharacter)) {
+					hit = true;
+					rayLength = glm::length(hitPos - pos);
 				}
+			} else {
+				// Classic method
+				float fac = 0.0f;
+				if (GameState::IsUsingBow(player) || GameState::IsUsingCrossbow(player)) {
+					static auto arrowTilt = (*g_iniSettingCollection)->Get("f3PArrowTiltUpAngle:Combat");
+					fac = glm::radians(arrowTilt->data.f32) * 0.5f;
+				}
+				const auto n = GetCrosshairTargetNormal(aimRotation, fac);
+
+				auto origin = glm::vec4(pos.x, pos.y, pos.z, 0.0f);
+				auto ray = glm::vec4(n.x, n.y, n.z, 0.0f) * maxRayLength;
+				const auto result = Raycast::hkpCastRay(origin, origin + ray);
+				hit = result.hit;
+				hitPos = result.hitPos;
+				rayLength = result.rayLength;
+				hitCharacter = result.hitCharacter != nullptr;
 			}
 		}
 	} else if (GameState::IsMagicDrawn(player) && Strings.magic.data) {
