@@ -1,7 +1,7 @@
 <fomod>
 	<Name>SmoothCam</Name>
 	<Author>mwilsnd</Author>
-	<Version>1.4.2</Version>
+	<Version>1.5</Version>
 	<Website>https://www.nexusmods.com/skyrimspecialedition/mods/41252</Website>
 	<Description>SmoothCam is a highly configurable third-person camera, with smooth frame-interpolation and a raycasting crosshair to help you aim.</Description>
 	<Groups>
