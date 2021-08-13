@@ -29,7 +29,7 @@ struct hkpAllCdPointTempResult {
 
 class hkpCastCollector {
 	public:
-		hkpCastCollector() {
+		hkpCastCollector() noexcept {
 			results.reserve(64);
 		}
 
@@ -150,11 +150,11 @@ typedef __declspec(align(16)) struct hkpRayCastInfo {
 	// FUN_140a59340:invokeCollector(auVar28, this, broadphaseOffset, uVar34)
 	//		(**(code **)*param_4)(param_4,param_3,&local_58); [ virtual addRayHit ]
 
-	uint64_t unk9 = 0;					// 0xA0
-	hkpCastCollector* collector;		// 0xA8
+	uint64_t unk9 = 0;						// 0xA0
+	hkpCastCollector* collector = nullptr;	// 0xA8
 	uint64_t unk10 = 0;
 	uint64_t unk11 = 0;
-	bool unk12 = false;					// 0xC0
+	bool unk12 = false;						// 0xC0
 
 	// lVar22 = 3;
 	// plVar16 = 0xC0

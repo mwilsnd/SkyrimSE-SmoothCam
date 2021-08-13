@@ -7,7 +7,9 @@ namespace {
 	);
 }
 
-Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize, bool intersectCharacters) {
+Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize, bool intersectCharacters)
+	noexcept
+{
 	RayResult res;
 #ifdef _DEBUG
 	// A saftey net for my own bad code - if the engine EVER gets a nan or inf float
@@ -44,12 +46,12 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	return res;
 }
 
-hkpCastCollector* getCastCollector() {
+hkpCastCollector* getCastCollector() noexcept {
 	static hkpCastCollector collector = hkpCastCollector();
 	return &collector;
 }
 
-Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) {
+Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) noexcept {
 #ifdef _DEBUG
 	if (!mmath::IsValid(start) || !mmath::IsValid(end)) {
 		__debugbreak();

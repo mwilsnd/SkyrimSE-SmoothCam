@@ -9,7 +9,7 @@ Render::VertexBuffer::VertexBuffer(const VertexBufferCreateInfo& createInfo, D3D
 		createInfo.cpuAccessFlags,
 		createInfo.elementData
 	);
-	CreateIALayout(createInfo.iaLayout, createInfo.vertexProgram);
+	CreateIALayout(createInfo.iaLayout, createInfo.vertexProgram.get());
 }
 
 Render::VertexBuffer::~VertexBuffer() noexcept {
@@ -20,7 +20,7 @@ Render::VertexBuffer::~VertexBuffer() noexcept {
 		inputLayout = nullptr;
 }
 
-void Render::VertexBuffer::CreateIALayout(const IALayout& layout, const eastl::shared_ptr<Shader>& vertexProgram) noexcept {
+void Render::VertexBuffer::CreateIALayout(const IALayout& layout, const Shader* vertexProgram) noexcept {
 	if (inputLayout)
 		inputLayout = nullptr;
 

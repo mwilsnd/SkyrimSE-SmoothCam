@@ -14,7 +14,7 @@ Render::Texture2D::Texture2D(Render::D3DContext& ctx, const Texture2DCreateInfo&
 	desc.Height = info.height;
 	desc.Width = info.width;
 
-	auto code = ctx.device->CreateTexture2D(&desc, nullptr, texture.put());
+	const auto code = ctx.device->CreateTexture2D(&desc, nullptr, texture.put());
 	if (!SUCCEEDED(code)) {
 		FatalError(L"SmoothCam: Failed to create 2D texture resource");
 	}

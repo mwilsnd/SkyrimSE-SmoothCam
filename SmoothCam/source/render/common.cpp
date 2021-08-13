@@ -23,7 +23,7 @@ glm::mat4 Render::GetProjectionMatrix(const NiFrustum& frustum) noexcept {
 
 glm::mat4 Render::BuildViewMatrix(const glm::vec3& position, const glm::vec2& rotation) noexcept {
 	const auto pos = Render::ToRenderScale(position);
-	const auto limit = mmath::half_pi * 0.99f;
+	constexpr auto limit = mmath::half_pi * 0.99f;
 	const auto dir = mmath::GetViewVector(
 		{ 0.0, 1.0, 0.0 },
 		glm::clamp(rotation.x, -limit, limit),

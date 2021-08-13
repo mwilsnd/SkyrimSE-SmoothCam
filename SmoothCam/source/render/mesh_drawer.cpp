@@ -1,6 +1,6 @@
 #include "render/mesh_drawer.h"
 
-Render::MeshDrawer::MeshDrawer(MeshCreateInfo& info, eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx) :
+Render::MeshDrawer::MeshDrawer(MeshCreateInfo& info, const eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx) noexcept :
 	vs(info.vs), ps(info.ps)
 {
 	assert(perObjectBuffer->Size() == sizeof(glm::mat4));
@@ -41,7 +41,7 @@ void Render::MeshDrawer::CreateObjects(eastl::vector<Model::Vertex>& vertices, D
 	context = ctx;
 }
 
-void Render::MeshDrawer::Submit(glm::mat4& modelMatrix) noexcept {
+void Render::MeshDrawer::Submit(const glm::mat4& modelMatrix) noexcept {
 	cbufPerObject->Update(&modelMatrix, 0, sizeof(modelMatrix), context);
 	cbufPerObject->Bind(PipelineStage::Vertex, 0, context);
 	vs->Use();
@@ -56,7 +56,7 @@ void Render::MeshDrawer::SetShaders(eastl::shared_ptr<Shader>& nvs, eastl::share
 	iaLayout.emplace_back(D3D11_INPUT_ELEMENT_DESC{ "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 });
 	iaLayout.emplace_back(D3D11_INPUT_ELEMENT_DESC{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 });
 	iaLayout.emplace_back(D3D11_INPUT_ELEMENT_DESC{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 });
-	vbo->CreateIALayout(iaLayout, nvs);
+	vbo->CreateIALayout(iaLayout, nvs.get());
 	vs = nvs;
 	ps = nps;
 }

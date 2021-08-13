@@ -36,11 +36,11 @@ static eastl::unique_ptr<ArrowSpawnFunc> detArrowSpawn;
 static UInt32 mArrowSpawn(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
 	uintptr_t param_3, uintptr_t** param_4)
 {
-	auto ret = detArrowSpawn->GetBase()(arrowHandle, launchData, param_3, param_4);
+	const auto ret = detArrowSpawn->GetBase()(arrowHandle, launchData, param_3, param_4);
 	NiPointer<TESObjectREFR> ref;
 	UInt32 rc = *arrowHandle;
 	(*LookupREFRByHandle)(rc, ref);
-	auto asArrow = reinterpret_cast<SkyrimSE::ArrowProjectile*>(ref.get());
+	auto asArrow = reinterpret_cast<const SkyrimSE::ArrowProjectile*>(ref.get());
 
 	if (asArrow->shooter == 0x00100000) {
 		std::lock_guard<std::mutex> lock(segmentLock);
@@ -104,7 +104,7 @@ static void mFactorCameraOffset(CorrectedPlayerCamera* camera, NiPoint3& pos, bo
 		return;
 	}
 
-	if (!GameState::IsThirdPerson(ply, camera) && !GameState::IsInHorseCamera(ply, camera) && !GameState::IsInDragonCamera(camera)) {
+	if (!GameState::IsThirdPerson(camera) && !GameState::IsInHorseCamera(ply, camera) && !GameState::IsInDragonCamera(camera)) {
 		detFactorCameraOffset->GetBase()(camera, pos, fac);
 		return;
 	}
@@ -122,7 +122,7 @@ static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 	if (!g_theCamera || Config::GetCurrentConfig()->modDisabled)
 		return detArrowFlightPath->GetBase()(arrow);
 
-	const auto camera = CorrectedPlayerCamera::GetSingleton();
+	const CorrectedPlayerCamera* camera = CorrectedPlayerCamera::GetSingleton();
 	const auto ply = *g_thePlayer;
 
 	// Only correct our own arrows
@@ -133,11 +133,14 @@ static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 	NiPointer<TESObjectREFR> out;
 	(*LookupREFRByHandle)(ref, out);
 
-	// On horseback, our camera actually follows the horse and not the player
-	// Compare with the player directly
 	if (reinterpret_cast<const intptr_t>(out.get()) != reinterpret_cast<const intptr_t>(ply))
 		return detArrowFlightPath->GetBase()(arrow);
 
+	// Check for a valid weapon and ammo source - easy way to check for arrows
+	if (!arrow->weaponSource || !arrow->ammoSource) return detArrowFlightPath->GetBase()(arrow);
+	
+	// On horseback, our camera actually follows the horse and not the player
+	// Compare with the player directly
 	// @Note: Don't run our trajectory correction while in a kill move
 	// Only run it in the primary states we care about
 	const auto state = g_theCamera->GetCurrentCameraState();

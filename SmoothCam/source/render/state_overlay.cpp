@@ -21,6 +21,8 @@ static const wchar_t* ActionStateEnumNames[] = {
 	L"Aiming",
 	L"Mounting",
 	L"DisMounting",
+	L"Horseback",
+	L"Dragon",
 	L"FirstPersonHorseback",
 	L"FirstPersonDragon",
 	L"VampireLord",
@@ -63,6 +65,7 @@ static const wchar_t* OffsetGroupNames[]{
 	L"Dragon",
 	L"VampireLord",
 	L"Werewolf",
+	L"Custom",
 	L"Unknown",
 };
 constexpr auto ofsNameLen = sizeof(OffsetGroupNames) / sizeof(OffsetGroupNames[0]);
@@ -84,6 +87,10 @@ void Render::StateOverlay::SetSize(uint32_t w, uint32_t h) noexcept {
 	width = w;
 	height = h;
 	SetBackgroundSize({ w, h });
+}
+
+void Render::StateOverlay::SetThirdPersonState(Camera::State::BaseThird* third) noexcept {
+	thirdState = third;
 }
 
 void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept {
@@ -170,9 +177,9 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 
 	const auto cam = CorrectedPlayerCamera::GetSingleton();
 	if (focus) {
-		DrawBool(L"IsFirstPerson", GameState::IsFirstPerson(focus, cam), curPos, ctx);
+		DrawBool(L"IsFirstPerson", GameState::IsFirstPerson(cam), curPos, ctx);
 		curPos.y += lineHeight;
-		DrawBool(L"IsThirdPerson", GameState::IsThirdPerson(focus, cam), curPos, ctx);
+		DrawBool(L"IsThirdPerson", GameState::IsThirdPerson(cam), curPos, ctx);
 		curPos.y += lineHeight;
 		DrawBool(L"IsThirdPersonCombat", GameState::IsThirdPersonCombat(focus, cam), curPos, ctx);
 		curPos.y += lineHeight;
@@ -222,6 +229,37 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 			{ 1.0f, 1.0f, 1.0f, 1.0f }
 		);
 	}
+
+	if (!thirdState) {
+		curPos.x = xPos + 100;
+		g_D2D->GetDWrite()->Write(
+			L"No third state!",
+			ctx.windowSize.x, ctx.windowSize.y,
+			curPos,
+			{ 1.0f, 0.33f, 0.33f, 1.0f }
+		);
+		return;
+	}
+
+	curPos.x = xPos + 200;
+	curPos.y += 350;
+
+	/*auto scalar = L"Global scalar progress: " + std::to_wstring(thirdState->globalSmoother.progress);
+	g_D2D->GetDWrite()->Write(
+		scalar.c_str(),
+		ctx.windowSize.x, ctx.windowSize.y,
+		curPos,
+		{ 1.0f, 0.33f, 0.33f, 1.0f }
+	);
+
+	curPos.y += lineHeight;
+	scalar = L"Local scalar progress: " + std::to_wstring(thirdState->localSmoother.progress);
+	g_D2D->GetDWrite()->Write(
+		scalar.c_str(),
+		ctx.windowSize.x, ctx.windowSize.y,
+		curPos,
+		{ 1.0f, 0.33f, 0.33f, 1.0f }
+	);*/
 }
 
 void Render::StateOverlay::DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,

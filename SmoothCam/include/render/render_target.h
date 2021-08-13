@@ -22,9 +22,9 @@ namespace Render {
 			RenderTarget& operator=(RenderTarget&&) noexcept = delete;
 
 			// Push the render target for drawing
-			void Push(Render::D3DContext& ctx) noexcept;
+			void Push(const Render::D3DContext& ctx) noexcept;
 			// Clear the target
-			void Clear(Render::D3DContext& ctx, glm::vec4& color) noexcept;
+			void Clear(const Render::D3DContext& ctx, glm::vec4& color) noexcept;
 			// Get an SRV for reading the target in shaders
 			eastl::unique_ptr<SRV>& GetColorSRV() noexcept;
 

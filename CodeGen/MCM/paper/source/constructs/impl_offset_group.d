@@ -131,16 +131,7 @@ final class ImplOffsetGroup : IConstruct {
                         auto vars = state.mem.value.value in ofsGroups.getVarIDs();
 
                         TokenStream generated;
-                        if (!state.mem.noSliderHeader) {
-                            generated ~= Token(Tok.OtherValue, "AddHeaderOption");
-                            generated ~= Token(Tok.OpenParen, "(");
-                            generated ~= Token(Tok.StringValue, state.mem.value.value ~ " Offsets");
-                            generated ~= Token(Tok.CloseParen, ")");
-                            generated ~= Token(Tok.CharReturn, "\r");
-                            generated ~= Token(Tok.NewLine, "\n");
-                        }
-
-                        foreach (ref const(string) varName; (*vars).offsets) {
+                        foreach (ref const(string) varName; (*vars).left) {
                             generated ~= Token(Tok.OtherValue, varName);
                             generated ~= Token(Tok.Arrow, "->");
                             generated ~= Token(Tok.Exclamation, "!");
@@ -157,14 +148,7 @@ final class ImplOffsetGroup : IConstruct {
                             generated ~= Token(Tok.CharReturn, "\r");
                             generated ~= Token(Tok.NewLine, "\n");
 
-                            generated ~= Token(Tok.OtherValue, "AddHeaderOption");
-                            generated ~= Token(Tok.OpenParen, "(");
-                            generated ~= Token(Tok.StringValue, "Interpolation");
-                            generated ~= Token(Tok.CloseParen, ")");
-                            generated ~= Token(Tok.CharReturn, "\r");
-                            generated ~= Token(Tok.NewLine, "\n");
-
-                            foreach (ref const(string) varName; (*vars).toggles) {
+                            foreach (ref const(string) varName; (*vars).right) {
                                 generated ~= Token(Tok.OtherValue, varName);
                                 generated ~= Token(Tok.Arrow, "->");
                                 generated ~= Token(Tok.Exclamation, "!");

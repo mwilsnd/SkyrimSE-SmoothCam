@@ -35,7 +35,7 @@ namespace Render {
 			// Unmap the buffer
 			void Unmap() noexcept;
 			// Create the input assembler layout
-			void CreateIALayout(const IALayout& layout, const eastl::shared_ptr<Shader>& vertexProgram) noexcept;
+			void CreateIALayout(const IALayout& layout, const Shader* vertexProgram) noexcept;
 
 		private:
 			uint32_t stride;

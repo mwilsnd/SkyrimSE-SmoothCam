@@ -55,6 +55,7 @@ SliderSetting crosshairNPCGrowSize -> [
 	interval: 1
 	min: 0
 	max: 64
+	displayFormat: "{0}"
 	page: " Crosshair"
 ]
 SliderSetting crosshairMinDistSize -> [
@@ -65,6 +66,7 @@ SliderSetting crosshairMinDistSize -> [
 	interval: 1
 	min: 8
 	max: 64
+	displayFormat: "{0}"
 	page: " Crosshair"
 ]
 SliderSetting crosshairMaxDistSize -> [
@@ -75,6 +77,7 @@ SliderSetting crosshairMaxDistSize -> [
 	interval: 1
 	min: 8
 	max: 128
+	displayFormat: "{0}"
 	page: " Crosshair"
 ]
 ToggleSetting offsetStealthMeter -> [

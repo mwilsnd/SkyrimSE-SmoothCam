@@ -1,5 +1,7 @@
 #pragma once
+SILENCE_CODE_ANALYSIS;
 #include <mapbox/eternal.hpp>
+RESTORE_CODE_ANALYSIS;
 #include <memory>
 
 namespace Offsets {

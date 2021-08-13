@@ -84,41 +84,49 @@ namespace Camera {
 			// Find a node to use as the world position for following
 			NiAVObject* FindFollowBone(const TESObjectREFR* ref) const noexcept;
 
+			// Returns the ideal camera distance for the current zoom level
+			float GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the zoom value set from the given camera state
 			float GetCurrentCameraZoom(const CorrectedPlayerCamera* camera,
 				const GameState::CameraState currentState) const noexcept;
 			// Returns the camera's current zoom level - Camera must extend ThirdPersonState
 			float GetCameraZoomScalar(const CorrectedPlayerCamera* camera, uint16_t cameraState) const noexcept;
-			// Returns true if interpolation is allowed in the current state
-			bool IsInterpAllowed(const PlayerCharacter* player) const noexcept;	
 
+			// Returns true if interpolation is allowed in the current state
+			bool IsInterpAllowed(const Actor* player) const noexcept;
+			// Returns true if interpolation is overloaded for the current camera state
+			bool IsInterpOverloaded(const Actor* player) const noexcept;
+			// Returns true if local-space interpolation is overloaded for the current camera state
+			bool IsLocalInterpOverloaded(const Actor* player) const noexcept;
+
+			// Return the current user-defined scalar group parameters for overloading based on state
+			const Config::OffsetGroupScalar* GetCurrentScalarGroup(const Actor* player,
+				const Config::OffsetGroup* currentGroup) const noexcept;
 			// Returns an offset group for the current player movement state
 			const Config::OffsetGroup* GetOffsetForState(const CameraActionState state) const noexcept;
 
 			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateZoomOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
+			float GetActiveWeaponStateForwardOffset(const Actor* player, const Config::OffsetGroup* group) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateUpOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
+			float GetActiveWeaponStateUpOffset(const Actor* player, const Config::OffsetGroup* group) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateSideOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
+			float GetActiveWeaponStateSideOffset(const Actor* player, const Config::OffsetGroup* group) const noexcept;
 			// Selects the right offset from an offset group for the player's weapon state
-			float GetActiveWeaponStateFOVOffset(const PlayerCharacter* player, const Config::OffsetGroup* group) const noexcept;
+			float GetActiveWeaponStateFOVOffset(const Actor* player, const Config::OffsetGroup* group) const noexcept;
 
-			//Returns the camera zoom for the current player state
-			float GetCurrentCameraZoomOffset(const PlayerCharacter* player) const noexcept;
+			// Returns the camera zoom for the current player state
+			float GetCurrentCameraForwardOffset(const Actor* player) const noexcept;
 			// Returns the camera height for the current player state
-			float GetCurrentCameraHeight(const PlayerCharacter* player) const noexcept;
+			float GetCurrentCameraHeight(const Actor* player) const noexcept;
 			// Returns the camera side offset for the current player state
-			float GetCurrentCameraSideOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
+			float GetCurrentCameraSideOffset(const Actor* player, const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the camera FOV offset for the current player state
-			float GetCurrentCameraFOVOffset(const PlayerCharacter* player) const noexcept;
+			float GetCurrentCameraFOVOffset(const Actor* player) const noexcept;
 
-			// Returns the ideal camera distance for the current zoom level
-			float GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the full local-space camera offset for the current player state, FOV is packed in .w
-			glm::vec4 GetCurrentCameraOffset(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) const noexcept;
+			glm::vec4 GetCurrentCameraOffset(const Actor* player, const CorrectedPlayerCamera* camera) const noexcept;
 			// Returns the current smoothing scalar to use for the given distance to the player
-			double GetCurrentSmoothingScalar(const float distance, ScalarSelector method = ScalarSelector::Normal) const;
+			double GetCurrentSmoothingScalar(const Actor* player, const float distance, ScalarSelector method = ScalarSelector::Normal) const;
 			// Returns the user defined distance clamping vector pair
 			std::tuple<glm::vec3, glm::vec3> GetDistanceClamping() const noexcept;
 
@@ -126,6 +134,8 @@ namespace Camera {
 			void SetFOVOffset(float fov, bool force = false) noexcept;
 			// Track the thirdperson state for a POV switch and update as required
 			bool UpdatePOVSwitchState(CorrectedPlayerCamera* camera, uint16_t cameraState) noexcept;
+			// Update offset smoothers
+			void UpdateOffsetSmoothers(const Actor* player, float curTime) noexcept;
 
 		private:
 			struct {
@@ -153,20 +163,18 @@ namespace Camera {
 			struct {
 				// Yaw rotation for the horse state - We need to restore this after moving from tween->horse
 				float horseYaw = 0.0f;
-				// ACC writes over pitch rotation of the player with an incorrect value (are we causing that?)
-				// Store pitch when entering dialog and restore it after
-				float accPitch = 0.0f;
 			} stateCopyData;
 
 			// Our current offset group and offset position, set by the offset transition states
 			struct {
 				const Config::OffsetGroup* currentGroup = nullptr;
 				glm::vec3 position = { 0.0f, 0.0f, 0.0f };
+				float zoom = 0.0f;
 				float fov = 0.0f;
 			} offsetState;
 
 			// Transition groups for smoothing offset and zoom switches
-			using OffsetTransition = mmath::TransitionGroup<glm::vec2>;
+			using OffsetTransition = mmath::TransitionGroup<glm::vec3>;
 			using ZoomTransition = mmath::TransitionGroup<float>;
 			using POVTransition = mmath::FixedTransitionGoal<float>;
 			// Smooth x, y components of the active offset group
@@ -182,16 +190,18 @@ namespace Camera {
 				bool running = false;
 			} povTransitionState;
 
+			// Smooth changes in scalar state
+			mmath::ScalarTweener globalSmoother;
+			mmath::ScalarTweener localSmoother;
+			// Store the global interp settings in a similar object just so we can lerp them easier
+			Config::OffsetGroupScalar globalValues;
+
 			// Set on first execution to perform setup
 			bool firstFrame = false;
 			// Was the POV key pressed this frame?
 			bool povWasPressed = false;
 			// Last read zoom value from the third person state
 			float lastZoomValue = -0.2f;
-			// Is the dialog menu open?
-			bool dialogMenuOpen = false;
-			// Was the dialog menu open last frame?
-			bool wasDialogMenuOpen = false;
 			// -1 when we have swapped shoulders
 			int shoulderSwap = 1;
 

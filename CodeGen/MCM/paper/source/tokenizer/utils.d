@@ -153,6 +153,8 @@ Result!ulong endsOnNewLine()(auto ref const(TokenStream) stream) @trusted {
  * Returns: TokenStream
  */
 TokenStream trim(bool onlyExtraLines = false)(auto ref const(TokenStream) stream) @trusted {
+    if (stream.length == 0) return TokenStream();
+
     static if (onlyExtraLines) {
         TokenStream output = TokenStream(stream[0..$]);
 

@@ -2,6 +2,7 @@
 
 namespace Config {
 	enum class ScalarMethods : uint8_t;
+	struct OffsetGroupScalar;
 }
 
 namespace mmath {
@@ -11,15 +12,18 @@ namespace mmath {
 		float data[4][4];
 	} NiMatrix44;
 
-	bool IsInf(const float& f) noexcept;
+	bool IsInf(const float f) noexcept;
+	bool IsInf(const double f) noexcept;
 	bool IsInf(const glm::vec3& v) noexcept;
 	bool IsInf(const glm::vec4& v) noexcept;
 
-	bool IsNan(const float& f) noexcept;
+	bool IsNan(const float f) noexcept;
+	bool IsNan(const double f) noexcept;
 	bool IsNan(const glm::vec3& v) noexcept;
 	bool IsNan(const glm::vec4& v) noexcept;
 
-	bool IsValid(const float& f) noexcept;
+	bool IsValid(const float f) noexcept;
+	bool IsValid(const double f) noexcept;
 	bool IsValid(const glm::vec3& v) noexcept;
 	bool IsValid(const glm::vec4& v) noexcept;
 
@@ -373,5 +377,172 @@ namespace mmath {
 		private:
 			glm::mat4 mat = glm::identity<glm::mat4>();
 			bool dirty = true;
+	};
+
+	// Smooth changes in scalar overloads
+	enum class Local {
+		No,
+		Yes
+	};
+
+	struct TweenStackEntry {
+		// Scalar state to transition away from
+		// If null, prev will be set and it's result should be used instead
+		const Config::OffsetGroupScalar* from = nullptr;
+		// Prev entry, if from is null
+		const TweenStackEntry* prev = nullptr;
+		// Scalar state to transition to
+		const Config::OffsetGroupScalar* to = nullptr;
+		// Progress in the transition, 0-1 scalar value
+		float progress = 0.0f;
+		// Duration in seconds a transition should take
+		float duration = 1.0f;
+		// Start time of the tween
+		float startTime = 0.0f;
+		// Blend method to use
+		Config::ScalarMethods method;
+
+		template<typename T, mmath::Local isLocal = mmath::Local::No>
+		T GetBlendResult(T distance, bool withDT = true) const noexcept {
+			if (from == to || progress >= 1.0f) {
+				if constexpr (isLocal == mmath::Local::No)
+					return RunGlobal<T>(to, distance, withDT);
+				else
+					return RunLocal<T>(to, distance, withDT);
+
+			} else {
+				T fromRes{};
+				T toRes{};
+
+				if constexpr (isLocal == mmath::Local::No)
+					toRes = RunGlobal<T>(to, distance, withDT);
+				else
+					toRes = RunLocal<T>(to, distance, withDT);
+
+				if (!from) {
+					if (!prev) return toRes;
+					fromRes = prev->GetBlendResult<T, isLocal>(distance, withDT);
+				} else {
+					if constexpr (isLocal == mmath::Local::No)
+						fromRes = RunGlobal<T>(from, distance, withDT);
+					else
+						fromRes = RunLocal<T>(from, distance, withDT);
+				}
+
+				return mmath::Interpolate<T>(fromRes, toRes, mmath::RunScalarFunction(method, progress));
+			}
+		}
+
+		template<typename T>
+		T RunGlobal(const Config::OffsetGroupScalar* s, T distance, bool withDT) const noexcept {
+			constexpr const T minZero = 0.000000000001;
+
+			const auto scalar = glm::clamp(
+				glm::max(
+					(T)1.0 - (static_cast<T>(s->zoomMaxSmoothingDistance) - distance),
+					minZero
+				) / static_cast<T>(s->zoomMaxSmoothingDistance), (T)0.0, (T)1.0
+			);
+			auto remapped = mmath::Remap<T>(
+				scalar, (T)0.0, (T)1.0,
+				static_cast<T>(s->minCameraFollowRate), static_cast<T>(s->maxCameraFollowRate)
+				);
+
+			if (withDT) {
+				const T delta = glm::max(static_cast<T>(GameTime::GetFrameDelta()), minZero);
+				const T fps = (T)1.0 / delta;
+				const T mul = -fps * glm::log2((T)1.0 - remapped);
+				remapped = glm::clamp((T)1.0 - glm::exp2(-mul * delta), (T)0.0, (T)1.0);
+			}
+
+			return mmath::RunScalarFunction<double>(s->currentScalar, remapped);
+		}
+
+		template<typename T>
+		T RunLocal(const Config::OffsetGroupScalar* s, T distance, bool withDT) const noexcept {
+			constexpr const T minZero = 0.000000000001;
+
+			const auto scalar = glm::clamp(
+				glm::max(
+					(T)1.0 - (static_cast<T>(s->localMaxSmoothingDistance) - distance),
+					minZero
+				) / static_cast<T>(s->localMaxSmoothingDistance), (T)0.0, (T)1.0
+			);
+			auto remapped = mmath::Remap<T>(
+				scalar, (T)0.0, (T)1.0,
+				static_cast<T>(s->localMinFollowRate), static_cast<T>(s->localMaxFollowRate)
+				);
+
+			if (withDT) {
+				const T delta = glm::max(static_cast<T>(GameTime::GetFrameDelta()), minZero);
+				const T fps = (T)1.0 / delta;
+				const T mul = -fps * glm::log2((T)1.0 - remapped);
+				remapped = glm::clamp((T)1.0 - glm::exp2(-mul * delta), (T)0.0, (T)1.0);
+			}
+
+			return mmath::RunScalarFunction<double>(s->separateLocalScalar, remapped);
+		}
+	};
+
+	struct ScalarTweener {
+		std::list<TweenStackEntry> stack = {};
+		bool hasEverUpdated = false;
+		static constexpr const size_t MAX_STACK = 6;
+
+		inline const Config::OffsetGroupScalar* GetGoal() const noexcept {
+			if (stack.empty()) return nullptr;
+			return stack.back().to;
+		}
+
+		inline void Update(float curTime) noexcept {
+			if (stack.empty()) return;
+			hasEverUpdated = true;
+
+			for (auto it = stack.begin(); it != stack.end(); ++it) {
+				if (it->progress < 1.0f) {
+					it->progress = glm::clamp(
+						static_cast<float>(curTime - it->startTime) / glm::max(it->duration, 0.01f),
+						0.0f, 1.0f
+					);
+				}
+			}
+		}
+
+		inline void MoveTo(const Config::OffsetGroupScalar* newState, Config::ScalarMethods blendMethod,
+			float curTime, float dur = 1.0f) noexcept
+		{
+			// Check if we are full, if so we need to evict the oldest
+			if (stack.size() == MAX_STACK) {
+				stack.pop_front();
+				stack.front().prev = nullptr;
+			}
+
+			TweenStackEntry entry = {};
+			entry.duration = dur;
+			entry.startTime = curTime;
+			entry.to = newState;
+			entry.method = blendMethod;
+
+			// Figure out our from state
+			if (stack.empty()) {
+				entry.from = entry.to;
+				entry.progress = 1.0f;
+			} else {
+				if (stack.back().progress >= 1.0f)
+					entry.from = stack.back().to;
+				else {
+					entry.from = nullptr; // We are already running a smoothing operation, use the blend result
+					entry.prev = &stack.back();
+				}
+			}
+
+			stack.push_back(eastl::move(entry));
+		}
+
+		template<typename T, mmath::Local isLocal = mmath::Local::No>
+		T BlendResult(T distance, bool withDT = true) noexcept {
+			if (stack.empty()) return 1;
+			return stack.back().GetBlendResult<T, isLocal>(distance, withDT);
+		}
 	};
 }

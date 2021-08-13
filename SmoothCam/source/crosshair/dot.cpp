@@ -30,7 +30,7 @@ void Crosshair::Dot::Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render:
 
 	meshDrawer = eastl::make_unique<Render::MeshDrawer>(meshInfo, perObjectBuffer, ctx);
 
-	glm::vec3 ourSize{ 10.0f, 10.0f, 1.0f };
+	const glm::vec3 ourSize{ 10.0f, 10.0f, 1.0f };
 	SetScale(ourSize);
 }
 

@@ -19,10 +19,10 @@ public {
      * A declared offset group, holds variable names that were generated
      */
     struct OffsetDecl {
-        /// Name of all offset sliders
-        string[] offsets;
-        /// Name of all interp toggles
-        string[] toggles;
+        /// Pre-sorted controls on the left pane
+        string[] left;
+        /// Pre-sorted controls on the right pane
+        string[] right;
     }
 
     alias VarIDMap = OffsetDecl[string];
@@ -38,6 +38,23 @@ private struct OffsetGroupDecl {
     bool noInterpToggles = false;
 
     /** 
+     * Create a new header
+     * Params:
+     *   name = Name to display in the header
+     * Returns: Generated token stream containing the header
+     */
+    TokenStream makeHeader(string name) {
+        TokenStream output;
+        output ~= Token(Tok.OtherValue, "AddHeaderOption");
+        output ~= Token(Tok.OpenParen, "(");
+        output ~= Token(Tok.StringValue, name);
+        output ~= Token(Tok.CloseParen, ")");
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+        return output;
+    }
+
+    /** 
      * Create a SliderSetting #constexpr_struct implementation
      * Params:
      *   settingName = Name of the setting being referenced
@@ -50,8 +67,9 @@ private struct OffsetGroupDecl {
      *   max = Maximum value
      * Returns: Generated token stream containing the slider impl
      */
-    TokenStream makeSlider(string settingName, string groupName, const(string)* subGroup,
-        string niceName, string desc, float def, float min, float max)
+    TokenStream makeSlider(bool right = false)(string settingName, string groupName, const(string)* subGroup,
+        string niceName, string desc, float def, float min, float max, float interval = 1.0f, uint numDecimals = 0,
+        string header = "")
     {
         const auto var = subGroup !is null ? replace(*subGroup, ":", "") : "";
         const auto varName = groupName.toLower ~ "_" ~ settingName ~ var;
@@ -71,7 +89,10 @@ private struct OffsetGroupDecl {
         output ~= Token(Tok.NewLine, "\n");
 
         if (groupName !in (*varMap)) (*varMap)[groupName] = OffsetDecl();
-        (*varMap)[groupName].offsets ~= varName;
+        static if (right)
+            (*varMap)[groupName].right ~= varName;
+        else
+            (*varMap)[groupName].left ~= varName;
 
         // var: value
         output ~= Token(Tok.OtherValue, "settingName");
@@ -116,12 +137,35 @@ private struct OffsetGroupDecl {
         output ~= Token(Tok.CharReturn, "\r");
         output ~= Token(Tok.NewLine, "\n");
 
+        output ~= Token(Tok.OtherValue, "interval");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.NumericValue, to!string(interval));
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
+        output ~= Token(Tok.OtherValue, "displayFormat");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.StringValue, "{" ~ to!string(numDecimals) ~ "}");
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
         output ~= Token(Tok.OtherValue, "page");
         output ~= Token(Tok.Colon, ":");
         output ~= Token(Tok.Space, " ");
         output ~= pageName;
         output ~= Token(Tok.CharReturn, "\r");
         output ~= Token(Tok.NewLine, "\n");
+
+        if (header.length > 0) {
+            output ~= Token(Tok.OtherValue, "header");
+            output ~= Token(Tok.Colon, ":");
+            output ~= Token(Tok.Space, " ");
+            output ~= Token(Tok.StringValue, header);
+            output ~= Token(Tok.CharReturn, "\r");
+            output ~= Token(Tok.NewLine, "\n");
+        }
 
         // ]
         output ~= Token(Tok.CloseBrace, "]");
@@ -138,13 +182,14 @@ private struct OffsetGroupDecl {
      *   subGroup = RangedCombat, ...
      *   niceName = Name of the control shown to the user
      *   desc = Description of the setting
+     *   header = If not null, will instruct the const_struct macro generator to add a header before the control
      * Returns: Generated token stream containing the toggle impl
      */
-    TokenStream makeToggle(string settingName, string groupName, const(string)* subGroup,
-        string niceName, string desc)
+    TokenStream makeToggle(bool right = false)(string settingName, string groupName, const(string)* subGroup,
+        string niceName, string desc, string header = "")
     {
         const auto var = subGroup !is null ? replace(*subGroup, ":", "") : settingName;
-        const auto varName = groupName.toLower ~ "_" ~ var;
+        const auto varName = groupName.toLower ~ "_" ~ (subGroup !is null ? *subGroup ~ "_" : "") ~ settingName;
         const auto settingKey = settingName ~ groupName ~ (subGroup !is null ? *subGroup : "");
 
         TokenStream output;
@@ -158,7 +203,11 @@ private struct OffsetGroupDecl {
         output ~= Token(Tok.OpenBrace, "[");
         output ~= Token(Tok.CharReturn, "\r");
         output ~= Token(Tok.NewLine, "\n");
-        (*varMap)[groupName].toggles ~= varName;
+        if (groupName !in (*varMap)) (*varMap)[groupName] = OffsetDecl();
+        static if (right)
+            (*varMap)[groupName].right ~= varName;
+        else
+            (*varMap)[groupName].left ~= varName;
 
         // var: value
         output ~= Token(Tok.OtherValue, "settingName");
@@ -189,10 +238,168 @@ private struct OffsetGroupDecl {
         output ~= Token(Tok.CharReturn, "\r");
         output ~= Token(Tok.NewLine, "\n");
 
+        if (header.length > 0) {
+            output ~= Token(Tok.OtherValue, "header");
+            output ~= Token(Tok.Colon, ":");
+            output ~= Token(Tok.Space, " ");
+            output ~= Token(Tok.StringValue, header);
+            output ~= Token(Tok.CharReturn, "\r");
+            output ~= Token(Tok.NewLine, "\n");
+        }
+
         // ]
         output ~= Token(Tok.CloseBrace, "]");
         output ~= Token(Tok.CharReturn, "\r");
         output ~= Token(Tok.NewLine, "\n");
+        return output;
+    }
+
+    /** 
+     * Create a ListSetting #constexpr_struct implementation
+     * Params:
+     *   settingName = Name of the setting being referenced
+     *   groupName = Standing, Walking, Running...
+     *   subGroup = RangedCombat, ...
+     *   niceName = Name of the control shown to the user
+     *   desc = Description of the setting
+     *   arrayLiteral = Var name to reference for populating the list box 
+     *   header = If not null, will instruct the const_struct macro generator to add a header before the control
+     * Returns: Generated token stream containing the toggle impl
+     */
+    TokenStream makeListBox(bool right = false)(string settingName, string groupName, const(string)* subGroup,
+        string niceName, string desc, string arrayLiteral, string header = "")
+    {
+        const auto var = subGroup !is null ? replace(*subGroup, ":", "") : settingName;
+        const auto varName = groupName.toLower ~ "_" ~ (subGroup !is null ? *subGroup ~ "_" : "") ~ settingName;
+        const auto settingKey = settingName ~ groupName ~ (subGroup !is null ? *subGroup : "");
+
+        TokenStream output;
+        // ListSetting <name> -> [
+        output ~= Token(Tok.OtherValue, "ListSetting");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.OtherValue, varName);
+        output ~= Token(Tok.Arrow, "->");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.OpenBrace, "[");
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+        if (groupName !in (*varMap)) (*varMap)[groupName] = OffsetDecl();
+        static if (right)
+            (*varMap)[groupName].right ~= varName;
+        else
+            (*varMap)[groupName].left ~= varName;
+
+        output ~= Token(Tok.OtherValue, "settingName");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.StringValue, settingKey);
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
+        output ~= Token(Tok.OtherValue, "displayName");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.StringValue, niceName);
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
+        output ~= Token(Tok.OtherValue, "desc");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.StringValue, desc);
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
+        output ~= Token(Tok.OtherValue, "arrayType");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= Token(Tok.OtherValue, arrayLiteral);
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
+        output ~= Token(Tok.OtherValue, "page");
+        output ~= Token(Tok.Colon, ":");
+        output ~= Token(Tok.Space, " ");
+        output ~= pageName;
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+
+        // ]
+        output ~= Token(Tok.CloseBrace, "]");
+        output ~= Token(Tok.CharReturn, "\r");
+        output ~= Token(Tok.NewLine, "\n");
+        return output;
+    }
+
+    /** 
+     * Generate controls for overriding interpolation settings for the given offsetGroup+stance combo
+     * Params:
+     *   groupName = Standing, Walking, Running...
+     *   subGroup = RangedCombat, ...
+     *   niceName = Name of the subGroup to show the user ("", "Magic", "Ranged", ...)
+     * Returns: 
+     */
+    TokenStream generateInterpOverride(string groupName, const(string)* subGroup, string niceName) {
+        const auto namePrefix = niceName.length > 0 ? niceName ~ " " : "";
+
+        TokenStream output;
+        output ~= makeToggle!true(
+            "Interp", groupName, subGroup,
+            "Enable Interpolation", "Enables interpolation in this state.",
+            namePrefix~"Interpolation"
+        );
+        output ~= makeToggle!true(
+            "OverrideInterp", groupName, subGroup,
+            "Override Interpolation", "Overrides interpolation values in this state."
+        );
+        output ~= makeListBox!true(
+            "SelectedScalar", groupName, subGroup,
+            "Method", "Select the scalar method to use for this state",
+            "interpMethods" // @Note: not ideal to hard code this, @TODO: pass as macro param
+        );
+        output ~= makeSlider!true(
+            "MinFollowRate", groupName, subGroup,
+            "Min Follow Rate", "The smoothing rate to use when the camera is close to the player.",
+            0.5f, 0.01f, 1.0f, 0.01, 2
+        );
+        output ~= makeSlider!true(
+            "MaxFollowRate", groupName, subGroup,
+            "Max Follow Rate", "The smoothing rate to use when the camera is far away from the player.",
+            0.5f, 0.01f, 1.0f, 0.01, 2
+        );
+        output ~= makeSlider!true(
+            "MaxSmoothingInterpDistance", groupName, subGroup,
+            "Max Interpolation Distance",
+            "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used.",
+            650.0f, 1.0f, 650.0f
+        );
+
+        output ~= makeToggle!true(
+            "OverrideLocalInterp", groupName, subGroup,
+            "Override Local Interpolation", "Overrides local-space interpolation values in this state.",
+             namePrefix~"Local Interpolation"
+        );
+        output ~= makeListBox!true(
+            "SelectedLocalScalar", groupName, subGroup,
+            "Method", "Select the scalar method to use for this state",
+            "interpMethods" // @Note: not ideal to hard code this, @TODO: pass as macro param
+        );
+        output ~= makeSlider!true(
+            "MinSepLocalFollowRate", groupName, subGroup,
+            "Min Follow Rate", "The smoothing rate to use when the camera is close to the player.",
+            0.5f, 0.01f, 1.0f, 0.01, 2
+        );
+        output ~= makeSlider!true(
+            "MaxSepLocalFollowRate", groupName, subGroup,
+            "Max Follow Rate", "The smoothing rate to use when the camera is far away from the player.",
+            0.5f, 0.01f, 1.0f, 0.01, 2
+        );
+        output ~= makeSlider!true(
+            "SepLocalInterpDistance", groupName, subGroup,
+            "Max Interpolation Distance",
+            "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used.",
+            100.0f, 1.0f, 300.0f
+        );
         return output;
     }
 
@@ -206,7 +413,7 @@ private struct OffsetGroupDecl {
         output ~= makeSlider(
             "SideOffset", groupName.value, null,
             "Side Offset", "The amount to move the camera to the right.",
-            25, -100, 100
+            25, -100, 100, 1, 0, groupName.value ~ " Offsets"
         );
         output ~= makeSlider(
             "UpOffset", groupName.value, null,
@@ -230,7 +437,7 @@ private struct OffsetGroupDecl {
             output ~= makeSlider(
                 "SideOffset", groupName.value, &ranged,
                 "Ranged Side Offset", "The amount to move the camera to the right when in ranged combat.",
-                25, -100, 100
+                25, -100, 100, 1, 0, groupName.value ~ " Ranged Offsets"
             );
             output ~= makeSlider(
                 "UpOffset", groupName.value, &ranged,
@@ -255,7 +462,7 @@ private struct OffsetGroupDecl {
             output ~= makeSlider(
                 "SideOffset", groupName.value, &magic,
                 "Magic Side Offset", "The amount to move the camera to the right when in magic combat.",
-                25, -100, 100
+                25, -100, 100, 1, 0, groupName.value ~ " Magic Offsets"
             );
             output ~= makeSlider(
                 "UpOffset", groupName.value, &magic,
@@ -280,7 +487,7 @@ private struct OffsetGroupDecl {
             output ~= makeSlider(
                 "SideOffset", groupName.value, &melee,
                 "Melee Side Offset", "The amount to move the camera to the right when in melee combat.",
-                25, -100, 100
+                25, -100, 100, 1, 0, groupName.value ~ " Melee Offsets"
             );
             output ~= makeSlider(
                 "UpOffset", groupName.value, &melee,
@@ -301,30 +508,21 @@ private struct OffsetGroupDecl {
         }
 
         if (!noInterpToggles) {
-            output ~= makeToggle(
-                "Interp", groupName.value, null,
-                "Enable Interpolation", "Enables interpolation in this state."
-            );
+            output ~= generateInterpOverride(groupName.value, null, "");
+
             if (!noRanged) {
                 const rc = "RangedCombat";
-                output ~= makeToggle(
-                    "Interp", groupName.value, &rc,
-                    "Enable Ranged Interpolation", "Enables interpolation in this state."
-                );
+                output ~= generateInterpOverride(groupName.value, &rc, "Ranged");
             }
+
             if (!noMagic) {
                 const magc = "MagicCombat";
-                output ~= makeToggle(
-                    "Interp", groupName.value, &magc,
-                    "Enable Magic Interpolation", "Enables interpolation in this state."
-                );
+                output ~= generateInterpOverride(groupName.value, &magc, "Magic");
             }
+
             if (!noMelee) {
                 const melc = "MeleeCombat";
-                output ~= makeToggle(
-                    "Interp", groupName.value, &melc,
-                    "Enable Melee Interpolation", "Enables interpolation in this state."
-                );
+                output ~= generateInterpOverride(groupName.value, &melc, "Melee");
             }
         }
 

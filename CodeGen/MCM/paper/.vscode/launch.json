@@ -9,7 +9,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/paper.exe",
-            "args": ["..\\mcm.psc", "out.psc"],
+            "args": ["..\\mcm\\mcm.psc", "out.psc"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

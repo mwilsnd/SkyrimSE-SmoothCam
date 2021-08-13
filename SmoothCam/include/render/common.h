@@ -7,12 +7,12 @@ namespace Render {
 	constexpr auto RenderScale = 0.0142875f;
 
 	// Convert a world position to our render scale
-	__forceinline glm::vec3 ToRenderScale(const glm::vec3& position) {
+	__forceinline glm::vec3 ToRenderScale(const glm::vec3& position) noexcept {
 		return position * RenderScale;
 	}
 
 	// And convert back
-	__forceinline glm::vec3 FromRenderScale(const glm::vec3& position) {
+	__forceinline glm::vec3 FromRenderScale(const glm::vec3& position) noexcept {
 		return position / RenderScale;
 	}
 

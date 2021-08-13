@@ -117,11 +117,11 @@ namespace Render {
 		} WrappedCameraData;
 
 		// Called by UpdateGPUCameraData
-		WrappedCameraData* CameraSwap(NiCamera* inCamera, byte flags = 0x0);
+		WrappedCameraData* CameraSwap(NiCamera* inCamera, byte flags = 0x0) noexcept;
 		// Compute new contents of cbuffer 12 and update on the GPU
-		void UpdateGPUCameraData(NiCamera* inCamera, byte flags = 0x0);
+		void UpdateGPUCameraData(NiCamera* inCamera, byte flags = 0x0) noexcept;
 
-		static GBuffer* Get() {
+		static GBuffer* Get() noexcept {
 			// DAT_14302c890
 			static auto gbuffer = Offsets::Get<Render::GBuffer*>(524998);
 			return gbuffer;
@@ -167,22 +167,22 @@ namespace Render {
 
 	// Add a new function for drawing during the present hook
 	using DrawFunc = std::function<void(D3DContext&)>;
-	void OnPresent(DrawFunc&& callback);
+	void OnPresent(DrawFunc&& callback) noexcept;
 
 	// Set the depth state
-	void SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D3D11_COMPARISON_FUNC testFunc);
+	void SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D3D11_COMPARISON_FUNC testFunc) noexcept;
 	// Set the blending state
 	void SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD,
 		D3D11_BLEND_OP blendAlphaOp = D3D11_BLEND_OP::D3D11_BLEND_OP_ADD,
 		D3D11_BLEND src = D3D11_BLEND::D3D11_BLEND_ONE, D3D11_BLEND dest = D3D11_BLEND::D3D11_BLEND_ZERO,
 		D3D11_BLEND srcAlpha = D3D11_BLEND::D3D11_BLEND_ONE, D3D11_BLEND destAlpha = D3D11_BLEND::D3D11_BLEND_ZERO,
 		bool alphaToCoverage = false
-	);
+	) noexcept;
 	// Set the raster state
 	void SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CULL_MODE cullMode, bool frontCCW,
 		int32_t depthBias = 0, float depthBiasClamp = 0.0f, float slopeScaledDepthBias = 0.0f, bool lineAA = true,
 		bool depthClip = false, bool scissorEnable = false, bool msaa = false
-	);
+	) noexcept;
 
 	// Ideally you would do something a bit more clever, but with what little rendering we do storing a lazy cache like this is fine
 	// Depth
@@ -225,13 +225,13 @@ namespace Render {
 		~DSState() {}
 
 		DSState(const DSState&) = delete;
-		DSState(DSState&& loc) {
+		DSState(DSState&& loc) noexcept {
 			// Doing this, we don't do extra ref counting
 			state.attach(loc.state.get());
 			loc.state.detach();
 		};
 		DSState& operator=(const DSState&) = delete;
-		DSState& operator=(DSState&& loc) {
+		DSState& operator=(DSState&& loc) noexcept {
 			// Doing this, we don't do extra ref counting
 			state.attach(loc.state.get());
 			loc.state.detach();
@@ -321,13 +321,13 @@ namespace Render {
 		~BlendState() {}
 
 		BlendState(const BlendState&) = delete;
-		BlendState(BlendState&& loc) {
+		BlendState(BlendState&& loc) noexcept {
 			// Doing this, we don't do extra ref counting
 			state.attach(loc.state.get());
 			loc.state.detach();
 		};
 		BlendState& operator=(const BlendState&) = delete;
-		BlendState& operator=(BlendState&& loc) {
+		BlendState& operator=(BlendState&& loc) noexcept {
 			// Doing this, we don't do extra ref counting
 			state.attach(loc.state.get());
 			loc.state.detach();
@@ -379,13 +379,13 @@ namespace Render {
 		~RasterState() {}
 
 		RasterState(const RasterState&) = delete;
-		RasterState(RasterState&& loc) {
+		RasterState(RasterState&& loc) noexcept {
 			// Doing this, we don't do extra ref counting
 			state.attach(loc.state.get());
 			loc.state.detach();
 		};
 		RasterState& operator=(const RasterState&) = delete;
-		RasterState& operator=(RasterState&& loc) {
+		RasterState& operator=(RasterState&& loc) noexcept {
 			// Doing this, we don't do extra ref counting
 			state.attach(loc.state.get());
 			loc.state.detach();

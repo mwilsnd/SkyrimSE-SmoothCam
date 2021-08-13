@@ -13,7 +13,7 @@ namespace Debug {
 			const CommandTable& GetCommands() const noexcept;
 
 		private:
-			CommandRegistry() = default;
+			CommandRegistry() noexcept = default;
 			~CommandRegistry() = default;
 			CommandRegistry(const CommandRegistry&) = delete;
 			CommandRegistry(CommandRegistry&&) noexcept = delete;

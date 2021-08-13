@@ -64,7 +64,6 @@ ToggleSetting swapDistanceClampXAxis -> [
 	desc: "When shoulder swapping, will also swap the distance clamping X axis range."
 	page: " Following"
 ]
-
 ListSetting interpMethod -> [
 	settingName: "InterpolationMethod"
 	displayName: "Method"
@@ -107,7 +106,6 @@ ListSetting fovInterpMethod -> [
 	arrayType: interpMethods
 	page: " Following"
 ]
-
 SliderSetting minCameraFollowRate -> [
 	settingName: "MinCameraFollowRate"
 	displayName: "Min Follow Rate"
@@ -293,18 +291,39 @@ SliderSetting cameraDistanceClampZMax -> [
 	displayFormat: "{0}"
 	page: " Following"
 ]
-SliderSetting sepLocalSpaceInterpRate -> [
-	settingName: "SepLocalInterpRate"
-	displayName: "Follow Rate"
-	desc: "The smoothing rate to use for local-space smoothing."
-	defaultValue: 0.5
+SliderSetting minLocalFollowRate -> [
+	settingName: "MinSepLocalFollowRate"
+	displayName: "Min Follow Rate"
+	desc: "The smoothing rate to use when the camera is close to the goal position."
+	defaultValue: 1.0
 	interval: 0.01
 	min: 0.01
 	max: 1.0
 	displayFormat: "{2}"
 	page: " Following"
 ]
-
+SliderSetting maxLocalFollowRate -> [
+	settingName: "MaxSepLocalFollowRate"
+	displayName: "Max Follow Rate"
+	desc: "The smoothing rate to use when the camera is far away from the goal position."
+	defaultValue: 1.0
+	interval: 0.01
+	min: 0.01
+	max: 1.0
+	displayFormat: "{2}"
+	page: " Following"
+]
+SliderSetting maxLocalSmoothingDistance -> [
+	settingName: "SepLocalInterpDistance"
+	displayName: "Max Interpolation Distance"
+	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
+	defaultValue: 100.0
+	interval: 1.0
+	min: 1.0
+	max: 300.0
+	displayFormat: "{0}"
+	page: " Following"
+]
 KeyBindSetting shoulderSwapKey -> [
 	settingName: "ShoulderSwapKeyCode"
 	displayName: "Shoulder Swap Key"
@@ -315,5 +334,59 @@ KeyBindSetting nextPresetKey -> [
 	settingName: "NextPresetKeyCode"
 	displayName: "Load Next Preset Key"
 	desc: "Loads the next found valid preset. Note that SmoothCam doesn't save what preset you are currently using between games - When starting skyrim preset 1 will be assumed to be the active preset."
+	page: " Following"
+]
+SliderSetting globalInterpDisableSmoothing -> [
+	settingName: "GlobalInterpDisableSmoothing"
+	displayName: "Interpolator Disable Smoothing"
+	desc: "The smoothing duration (in seconds) to use when interpolation is disabled or enabled by a change in offset states."
+	defaultValue: 2.0
+	interval: 0.01
+	min: 0.01
+	max: 10.0
+	displayFormat: "{2}"
+	page: " Following"
+]
+ListSetting globalInterpDisableMethod -> [
+	settingName: "GlobalInterpDisableMethod"
+	displayName: "Interpolator Disable Method"
+	desc: "The scalar method to use for smoothing transitions from interpolation to a disabled state and back."
+	arrayType: interpMethods
+	page: " Following"
+]
+SliderSetting globalInterpOverrideSmoothing -> [
+	settingName: "GlobalInterpOverrideSmoothing"
+	displayName: "Transition Smoothing"
+	desc: "The smoothing duration (in seconds) to use when interpolation settings change (because of an override being made active or inactive)."
+	defaultValue: 1.0
+	interval: 0.01
+	min: 0.01
+	max: 10.0
+	displayFormat: "{2}"
+	page: " Following"
+]
+ListSetting globalInterpOverrideMethod -> [
+	settingName: "GlobalInterpOverrideMethod"
+	displayName: "Transition Method"
+	desc: "The scalar method to use for smoothing interpolation setting changes."
+	arrayType: interpMethods
+	page: " Following"
+]
+SliderSetting localInterpOverrideSmoothing -> [
+	settingName: "LocalInterpOverrideSmoothing"
+	displayName: "Local Transition Smoothing"
+	desc: "The smoothing duration (in seconds) to use when local-space interpolation settings change (because of an override being made active or inactive)."
+	defaultValue: 0.66
+	interval: 0.01
+	min: 0.01
+	max: 10.0
+	displayFormat: "{2}"
+	page: " Following"
+]
+ListSetting localInterpOverrideMethod -> [
+	settingName: "LocalInterpOverrideMethod"
+	displayName: "Local Transition Method"
+	desc: "The scalar method to use for smoothing local-space interpolation setting changes."
+	arrayType: interpMethods
 	page: " Following"
 ]

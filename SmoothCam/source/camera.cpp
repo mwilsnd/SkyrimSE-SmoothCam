@@ -1,5 +1,6 @@
 #include "camera.h"
 #include "crosshair.h"
+#include "compat.h"
 #ifdef DEVELOPER
 #include "trackir/trackir.h"
 #endif
@@ -8,7 +9,7 @@
 
 #include "debug/eh.h"
 
-Camera::Camera::Camera() : config(Config::GetCurrentConfig()) {
+Camera::Camera::Camera() noexcept : config(Config::GetCurrentConfig()) {
 	cameraFirst = eastl::make_unique<Firstperson>(this);
 	cameraThird = eastl::make_unique<Thirdperson>(this);
 
@@ -85,7 +86,7 @@ const bool Camera::Camera::UpdateCameraPOVState(const PlayerCharacter* player, c
 		GameState::IsInCameraTransition(camera) || GameState::IsInUsingObjectCamera(camera) ||
 		GameState::IsInKillMove(camera) || GameState::IsInBleedoutCamera(camera) ||
 		GameState::IsInFurnitureCamera(camera) || GameState::IsInHorseCamera(player, camera) ||
-		GameState::IsInDragonCamera(camera) || GameState::IsThirdPerson(player, camera);
+		GameState::IsInDragonCamera(camera) || GameState::IsThirdPerson(camera);
 	return povIsThird;
 }
 
@@ -101,44 +102,8 @@ const Camera::CameraActionState Camera::Camera::GetCurrentCameraActionState() co
 const GameState::CameraState Camera::Camera::UpdateCurrentCameraState(const PlayerCharacter* player,
 	const CorrectedPlayerCamera* camera) noexcept
 {
-	GameState::CameraState newState = GameState::CameraState::Unknown;
+	const GameState::CameraState newState = GameState::GetCameraState(player, camera);
 	const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraState);
-
-	// Improved camera - Sitting
-	if (config->compatIC && GameState::IC_InFirstPersonState(player, camera) &&
-		!GameState::IsInHorseCamera(player, camera) && !GameState::IsInDragonCamera(camera) &&
-		GameState::IsSitting(player) && !GameState::IsSleeping(player))
-	{
-		newState = GameState::CameraState::FirstPerson;
-		goto applyStateTransition; // SUE ME
-	}
-
-	newState = GameState::GetCameraState(player, camera);
-	
-	// Improved camera - Horse and dragon
-	if (newState == GameState::CameraState::Horseback && config->compatIC && !config->compatIFPV) {
-		if (tps) {
-			if (GameState::IC_InFirstPersonState(player, camera))
-				newState = GameState::CameraState::FirstPerson;
-			else
-				newState = GameState::CameraState::Horseback;
-
-		} else {
-			newState = GameState::CameraState::Horseback;
-		}
-	} else if (newState == GameState::CameraState::Dragon && config->compatIC && !config->compatIFPV) {
-		if (tps) {
-			if (GameState::IC_InFirstPersonState(player, camera))
-				newState = GameState::CameraState::FirstPerson;
-			else
-				newState = GameState::CameraState::Dragon;
-
-		} else {
-			newState = GameState::CameraState::Dragon;
-		}
-	}
-
-applyStateTransition:
 	if (newState != currentState) {
 		lastState = currentState;
 		currentState = newState;
@@ -158,26 +123,28 @@ const Camera::CameraActionState Camera::Camera::UpdateCurrentCameraActionState(c
 	} else if (GameState::IsWerewolf(player)) {
 		newState = CameraActionState::Werewolf;
 	} else if (camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Horse]) {
-		// Improved camera compat
-		if (!povIsThird) {
+		// FPV camera mod compat
+		if (GameState::IsFirstPerson(camera)) {
 			newState = CameraActionState::FirstPersonHorseback;
 		} else if (GameState::IsDisMountingHorse(player)) {
 			newState = CameraActionState::DisMounting;
 		} else {
-			newState = CameraActionState::Standing;
+			newState = CameraActionState::Horseback;
 		}
 	} else if (GameState::IsInDragonCamera(camera)) {
-		// Improved camera compat
-		if (currentState == GameState::CameraState::FirstPerson) {
+		// FPV camera mod compat
+		if (GameState::IsFirstPerson(camera)) {
 			newState = CameraActionState::FirstPersonDragon;
+		} else {
+			newState = CameraActionState::Dragon;
 		}
 	} else if (GameState::IsSleeping(player)) {
 		newState = CameraActionState::Sleeping;
 	} else if (GameState::IsInFurnitureCamera(camera)) {
 		newState = CameraActionState::SittingTransition;
 	} else if (GameState::IsSitting(player)) {
-		// Improved camera compat
-		if (currentState == GameState::CameraState::FirstPerson) {
+		// FPV camera mod compat
+		if (GameState::IsFirstPerson(camera)) {
 			newState = CameraActionState::FirstPersonSitting;
 		} else {
 			newState = CameraActionState::Sitting;
@@ -217,7 +184,7 @@ void Camera::Camera::OnCameraActionStateTransition(const PlayerCharacter* player
 
 // Triggers when the camera state changes
 void Camera::Camera::OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-	const GameState::CameraState newState, const GameState::CameraState oldState)
+	const GameState::CameraState newState, const GameState::CameraState oldState) noexcept
 {
 	if (activeCamera)
 		activeCamera->OnCameraStateTransition(player, camera, newState, oldState);
@@ -244,7 +211,7 @@ void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCame
 
 void Camera::Camera::UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera) noexcept {
 	// Run the THT to get a world to scaleform matrix
-	auto lastRotation = cameraNi->m_worldTransform.rot;
+	const auto lastRotation = cameraNi->m_worldTransform.rot;
 	cameraNi->m_worldTransform.rot = rot.THT();
 	// Force the game to compute the matrix for us
 	typedef void(*UpdateWorldToScreenMtx)(NiCamera*);
@@ -263,10 +230,10 @@ const NiFrustum& Camera::Camera::GetFrustum() const noexcept {
 }
 
 NiPointer<Actor> Camera::Camera::GetCurrentCameraTarget(const CorrectedPlayerCamera* camera) noexcept {
-	auto ctrls = PlayerControls::GetSingleton();
+	const auto ctrls = PlayerControls::GetSingleton();
 	if (!ctrls) return *g_thePlayer;
 
-	auto controlled = reinterpret_cast<tArray<UInt32>*>(&ctrls->unk150);
+	auto controlled = reinterpret_cast<const tArray<UInt32>*>(&ctrls->unk150);
 	auto controlledRef = controlled->count > 0 ? controlled->entries[controlled->count-1] : 0x0;
 
 	if (controlledRef == 0) return *g_thePlayer;
@@ -328,6 +295,21 @@ void Camera::Camera::Render(Render::D3DContext& ctx) {
 bool Camera::Camera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera,
 	BSTSmartPointer<TESCameraState>& nextState)
 {
+	if (Messaging::SmoothCamAPIV1::GetInstance()->IsCameraTaken()) return false;
+
+	// Check if ACC should be in control of the camera
+	if (MenuTopicManager::GetSingleton()->unkB1 && Compat::IsPresent(Compat::Mod::AlternateConversationCamera)) {
+		if (!accControl) {
+			accSavePitch = player->rot.x;
+			accControl = true;
+		}
+		return false;
+	} else if (accControl) {
+		player->rot.x = accSavePitch;
+		wasDialogOpen = true;
+		accControl = false;
+	}
+
 	// Force the camera to a new state
 	if (wantNewCameraState) {
 		auto wantState = camera->cameraStates[wantNewState];
@@ -362,11 +344,28 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 	BSTSmartPointer<TESCameraState>& nextState)
 {
 	// Check if the user has turned the camera off
-	if (config->modDisabled) {
-		if (ranLastFrame)
+	// Also check if another mod has been given camera control via the interface
+	if (config->modDisabled || Messaging::SmoothCamAPIV1::GetInstance()->IsCameraTaken()) {
+		if (ranLastFrame) {
+			if (activeCamera) activeCamera->OnEnd(player, camera, nullptr);
 			cameraThird->GetCrosshairManager()->Reset();
+			activeCamera = nullptr;
+		}
 		ranLastFrame = false;
 		return;
+	}
+
+	// Check if ACC should be in control of the camera
+	if (MenuTopicManager::GetSingleton()->unkB1 && Compat::IsPresent(Compat::Mod::AlternateConversationCamera)) {
+		if (!accControl) {
+			accSavePitch = player->rot.x;
+			accControl = true;
+		}
+		return;
+	} else if (accControl) {
+		player->rot.x = accSavePitch;
+		wasDialogOpen = true;
+		accControl = false;
 	}
 
 	// If we don't have an NiCamera, something else is likely very wrong
@@ -393,10 +392,7 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 
 	// Now based on POV state, select the active camera
 	ICamera* nextCamera = nullptr;
-	if (camera->cameraState == camera->cameraStates[CorrectedPlayerCamera::kCameraState_FirstPerson] ||
-		(config->compatIC && GameState::IC_InFirstPersonState(player, camera)) ||
-		(config->compatIFPV && GameState::IFPV_InFirstPersonState(player, camera)))
-	{
+	if (GameState::IsFirstPerson(camera)) {
 		nextCamera = cameraFirst.get();
 		// Only query TrackIR in first person mode
 #ifdef DEVELOPER
@@ -420,4 +416,5 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 	cameraNi = nullptr;
 	wasLoading = false;
 	ranLastFrame = true;
+	wasDialogOpen = false;
 }

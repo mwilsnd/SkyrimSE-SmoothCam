@@ -11,7 +11,7 @@ std::unique_ptr<VersionDb>& Offsets::GetDB() {
 
 bool Offsets::Initialize() {
 	db = std::make_unique<VersionDb>();
-	auto status = db->Load();
+	const auto status = db->Load();
 	if (status) {
 		dbLoaded = true;
 		for (const auto& it : addrMap)

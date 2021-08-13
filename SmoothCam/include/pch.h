@@ -17,26 +17,26 @@ extern "C" {
     int __cdecl Vsnprintf8(char* p, size_t n, const char* pFormat, va_list arguments);
 }
 
-#define EASTL_EASTDC_VSNPRINTF 0
-#include <EASTL/shared_ptr.h>
-#include <EASTL/unique_ptr.h>
-#include <EASTL/string.h>
-#include <EASTL/numeric_limits.h>
-#include <EASTL/algorithm.h>
-#include <EASTL/functional.h>
-#include <EASTL/bitset.h>
-#include <EASTL/unordered_map.h>
-#include <EASTL/array.h>
-#include <EASTL/tuple.h>
-#include <EASTL/vector.h>
-#include <EASTL/fixed_vector.h>
-#include <EASTL/fixed_slist.h>
-#include <EASTL/fixed_list.h>
-
 #include "code_analysis.h"
 
 // Ignore all warnings from external code
 SILENCE_CODE_ANALYSIS;
+#   define EASTL_EASTDC_VSNPRINTF 0
+#   include <EASTL/shared_ptr.h>
+#   include <EASTL/unique_ptr.h>
+#   include <EASTL/string.h>
+#   include <EASTL/numeric_limits.h>
+#   include <EASTL/algorithm.h>
+#   include <EASTL/functional.h>
+#   include <EASTL/bitset.h>
+#   include <EASTL/unordered_map.h>
+#   include <EASTL/array.h>
+#   include <EASTL/tuple.h>
+#   include <EASTL/vector.h>
+#   include <EASTL/fixed_vector.h>
+#   include <EASTL/fixed_slist.h>
+#   include <EASTL/fixed_list.h>
+
 #   define WIN32_LEAN_AND_MEAN
 #   define NOMINMAX
 #   include <Windows.h>
@@ -140,9 +140,9 @@ RESTORE_CODE_ANALYSIS;
 #pragma warning( disable : 26409 ) // avoid naked new and delete - required for papyrus registration
 #pragma warning( disable : 26486 ) // invalid pointer passing - also busted?
 
+#include "modapi.h"
 #include "util.h"
 #include "debug/console.h"
-
 #include "addrlib/offsets.h"
 #include "timer.h"
 

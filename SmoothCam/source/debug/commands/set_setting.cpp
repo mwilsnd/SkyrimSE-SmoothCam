@@ -5,7 +5,7 @@
 Debug::SetSetting::~SetSetting() {}
 
 void Debug::SetSetting::Run(const eastl::string& args) noexcept {
-	auto pos = args.find_first_of(' ', 0);
+	const auto pos = args.find_first_of(' ', 0);
 	auto name = pos != std::string::npos ? args.substr(0, pos) : args;
 	auto value = pos != std::string::npos ? args.substr(glm::min(pos+1, args.length())) : "";
 

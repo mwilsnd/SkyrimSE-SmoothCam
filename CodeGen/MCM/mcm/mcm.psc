@@ -4,6 +4,7 @@ string[] interpMethods
 string[] presets
 string[] crosshairTypes
 string activePage
+#DeclArena<int, 128> pagePool;
 
 #include "include/native_functions.psc"
 
@@ -34,7 +35,7 @@ endFunction
 ]
 
 ScriptMeta scriptMetaInfo -> [
-	version: 13
+	version: 14
 ]
 
 int Function GetVersion()
@@ -46,7 +47,7 @@ event OnConfigInit()
 		" General", " Following", " Crosshair", " Standing",
 		" Walking", " Running", " Sprinting", " Sneaking",
 		" Swimming", " Bow Aiming", " Sitting", " Horseback",
-		" Dragon", " Vampire Lord", " Werewolf", " Group Edit", " Presets"
+		" Dragon", " Vampire Lord", " Werewolf", " Custom", " Group Edit", " Presets"
 	]
 	interpMethods = new string[] -> [
 		"linear", "quadraticEaseIn", "quadraticEaseOut",
@@ -61,6 +62,7 @@ event OnConfigInit()
 	crosshairTypes = new string[] -> [
 		"Skyrim", "Dot"
 	]
+	#ImplArena(pagePool)
 endEvent
 
 event OnVersionUpdate(int version)
@@ -81,6 +83,7 @@ event OnPageReset(string a_page)
 		#StructInvokeOn(implControl, [
 			modEnabled, modEnabledKey,
 			toggleCustomZOffset, customZOffsetAmount,
+			toggleUserDefinedOffset
 		])
 
 		SetCursorPosition(1)
@@ -90,12 +93,17 @@ event OnPageReset(string a_page)
 			reset, enableCrashDumps
 		])
 
-		AddHeaderOption("Compatibility Options")
-		int icDetected = AddTextOption("Improved Camera Beta4", SmoothCam_IsImprovedCameraDetected(), OPTION_FLAG_DISABLED)
+		AddHeaderOption("Compatibility")
+		AddTextOption("Alternate Conversation Camera", SmoothCam_IsModDetected(2), OPTION_FLAG_DISABLED)
+		AddTextOption("Archery Gameplay Overhaul", SmoothCam_IsModDetected(3), OPTION_FLAG_DISABLED)
+		AddTextOption("Immersive First-Person View", SmoothCam_IsModDetected(1), OPTION_FLAG_DISABLED)
+		AddTextOption("Improved Camera Beta4", SmoothCam_IsModDetected(0), OPTION_FLAG_DISABLED)
 
-		#StructInvokeOn(implControl, [
-			accCompat, icCompat, ifpvCompat, agoCompat
-		])
+		int count = SmoothCam_NumAPIConsumers()
+		While count
+			count -= 1
+			AddTextOption(SmoothCam_GetAPIConsumerName(count), "API Consumer", OPTION_FLAG_DISABLED)
+		endWhile
 
 	elseIf (a_page == " Following")
 		AddHeaderOption("Interpolation")
@@ -110,7 +118,8 @@ event OnPageReset(string a_page)
 
 		AddHeaderOption("Local-Space Interpolation")
 		#StructInvokeOn(implControl, [
-			sepLocalInterpEnabled, sepLocalInterpMethod, sepLocalSpaceInterpRate
+			sepLocalInterpEnabled, sepLocalInterpMethod, minLocalFollowRate,
+			maxLocalFollowRate, maxLocalSmoothingDistance
 		])
 
 		AddHeaderOption("Offset Interpolation")
@@ -135,6 +144,14 @@ event OnPageReset(string a_page)
 			cameraDistanceClampYEnable, cameraDistanceClampYMin, cameraDistanceClampYMax,
 			cameraDistanceClampZEnable, cameraDistanceClampZMin, cameraDistanceClampZMax
 		])
+
+		AddHeaderOption("Interpolator Blending")
+		globalInterpDisableSmoothing->!implControl
+		globalInterpDisableMethod->!implControl
+		globalInterpOverrideSmoothing->!implControl
+		globalInterpOverrideMethod->!implControl
+		localInterpOverrideSmoothing->!implControl
+		localInterpOverrideMethod->!implControl
 
 		AddHeaderOption("Misc")
 		#StructInvokeOn(implControl, [
@@ -188,7 +205,6 @@ event OnPageReset(string a_page)
 		#ImplOffsetGroupPage(Swimming)
 
 	elseIf (a_page == " Bow Aiming")
-		AddHeaderOption("Bow Aiming Offsets")
 		#StructInvokeOn(implControl, [
 			bowaim_sideOffset,
 			bowaim_upOffset,
@@ -205,11 +221,45 @@ event OnPageReset(string a_page)
 		])
 
 		SetCursorPosition(1)
-		AddHeaderOption("Interpolation")
 		#StructInvokeOn(implControl, [
 			bowaim_interp,
-			bowaim_interpHorseback,
-			bowaim_interpSneaking
+			bowaim_overrideInterp,
+			bowaim_interpMethod,
+			bowaim_minFollowRate,
+			bowaim_maxFollowRate,
+			bowaim_maxSmoothingInterpDistance,
+
+			bowaim_overrideLocalInterp,
+			bowaim_LocalnterpMethod,
+			bowaim_localMinFollowRate,
+			bowaim_localMaxFollowRate,
+			bowaim_localMaxSmoothingInterpDistance,
+			
+			bowaimHorseback_interp,
+			bowaimHorseback_overrideInterp,
+			bowaimHorseback_interpMethod,
+			bowaimHorseback_minFollowRate,
+			bowaimHorseback_maxFollowRate,
+			bowaimHorseback_maxSmoothingInterpDistance,
+
+			bowaimHorseback_overrideLocalInterp,
+			bowaimHorseback_LocalnterpMethod,
+			bowaimHorseback_localMinFollowRate,
+			bowaimHorseback_localMaxFollowRate,
+			bowaimHorseback_localMaxSmoothingInterpDistance,
+			
+			bowaimSneaking_interp,
+			bowaimSneaking_overrideInterp,
+			bowaimSneaking_interpMethod,
+			bowaimSneaking_minFollowRate,
+			bowaimSneaking_maxFollowRate,
+			bowaimSneaking_maxSmoothingInterpDistance,
+
+			bowaimSneaking_overrideLocalInterp,
+			bowaimSneaking_LocalnterpMethod,
+			bowaimSneaking_localMinFollowRate,
+			bowaimSneaking_localMaxFollowRate,
+			bowaimSneaking_localMaxSmoothingInterpDistance,
 		])
 
 	elseIf (a_page == " Sitting")
@@ -226,6 +276,9 @@ event OnPageReset(string a_page)
 
 	elseIf (a_page == " Werewolf")
 		#ImplOffsetGroupPage(Werewolf)
+
+	elseIf (a_page == " Custom")
+		#ImplOffsetGroupPage(Custom)
 
 	elseIf (a_page == " Group Edit")
 		AddHeaderOption("Edit All Offset Groups")

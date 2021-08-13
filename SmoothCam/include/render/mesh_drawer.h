@@ -13,7 +13,8 @@ namespace Render {
 
 	class MeshDrawer {
 		public:
-			explicit MeshDrawer(MeshCreateInfo& info, eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx);
+			explicit MeshDrawer(MeshCreateInfo& info, const eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx)
+				noexcept;
 			~MeshDrawer();
 			MeshDrawer(const MeshDrawer&) = delete;
 			MeshDrawer(MeshDrawer&&) noexcept = delete;
@@ -21,7 +22,7 @@ namespace Render {
 			MeshDrawer& operator=(MeshDrawer&&) noexcept = delete;
 
 			// Draw the mesh using the given model matrix
-			void Submit(glm::mat4& modelMatrix) noexcept;
+			void Submit(const glm::mat4& modelMatrix) noexcept;
 
 			// Set the shaders used by the mesh for rendering
 			void SetShaders(eastl::shared_ptr<Shader>& vs, eastl::shared_ptr<Shader>& ps);

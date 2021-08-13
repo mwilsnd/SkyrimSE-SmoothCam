@@ -12,4 +12,6 @@ float Function SmoothCam_GetFloatConfig(string member) global native
 string Function SmoothCam_SaveAsPreset(int index, string name) global native
 bool Function SmoothCam_LoadPreset(int index) global native
 string Function SmoothCam_GetPresetNameAtIndex(int index) global native
-string Function SmoothCam_IsImprovedCameraDetected() global native
+string Function SmoothCam_IsModDetected(int modID) global native
+int Function SmoothCam_NumAPIConsumers() global native
+string Function SmoothCam_GetAPIConsumerName(int index) global native

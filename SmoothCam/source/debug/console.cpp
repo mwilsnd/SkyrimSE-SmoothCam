@@ -42,7 +42,7 @@ void Debug::StartREPL(FILE* outStream) noexcept {
 
 			std::lock_guard<std::mutex> listLock(commandListLock);
 
-			auto pos = command.find_first_of(' ', 0);
+			const auto pos = command.find_first_of(' ', 0);
 			auto cmd = pos != std::string::npos ? command.substr(0, pos) : command;
 			auto args = pos != std::string::npos ? command.substr(glm::min(pos+1, command.length())) : "";
 			commandList.push_back(eastl::tie(eastl::string(cmd.c_str()), eastl::string(args.c_str())));

@@ -8,6 +8,10 @@ Camera::State::BaseThird::BaseThird(Thirdperson* camera) noexcept : camera(camer
 
 Camera::State::BaseThird::~BaseThird() {}
 
+void Camera::State::BaseThird::Update(PlayerCharacter* player, const Actor* cameraRef,
+	const CorrectedPlayerCamera* cameraState) noexcept
+{}
+
 void Camera::State::BaseThird::StateHandOff(BaseThird* nextState) const noexcept {
 	if (!nextState) return;
 	nextState->interpSmoother = interpSmoother;
@@ -173,11 +177,11 @@ glm::vec3 Camera::State::BaseThird::GetCameraWorldPosition(const TESObjectREFR* 
 }
 
 // Performs all camera offset math using the view rotation matrix and local offsets, returns a local position
-glm::vec3 Camera::State::BaseThird::GetTransformedCameraLocalPosition() const {
+glm::vec3 Camera::State::BaseThird::GetTransformedCameraLocalPosition(const CorrectedPlayerCamera* playerCamera) const {
 	const auto cameraLocal = GetCameraOffsetStatePosition();
 	auto translated = camera->rotation.ToRotationMatrix() * glm::vec4(
 		cameraLocal.x,
-		cameraLocal.y,
+		cameraLocal.y - camera->config->minCameraFollowDistance + camera->zoomTransitionState.currentPosition,
 		0.0f,
 		1.0f
 	);
@@ -186,13 +190,13 @@ glm::vec3 Camera::State::BaseThird::GetTransformedCameraLocalPosition() const {
 }
 
 // Interpolates the given position
-glm::vec3 Camera::State::BaseThird::UpdateInterpolatedLocalPosition(const glm::vec3& rot) {
+glm::vec3 Camera::State::BaseThird::UpdateInterpolatedLocalPosition(const PlayerCharacter* player, const glm::vec3& rot) {
 	const auto pos = mmath::Interpolate<glm::dvec3, double>(
 		camera->lastPosition.local, rot,
-		camera->GetCurrentSmoothingScalar(
-			camera->config->localScalarRate,
-			ScalarSelector::LocalSpace
-		)
+		static_cast<double>(camera->localSmoother.BlendResult<float, mmath::Local::Yes>(
+			glm::length(rot - camera->lastPosition.local),
+			!GetConfig()->disableDeltaTime
+		))
 	);
 	camera->currentPosition.local = static_cast<glm::vec3>(pos);
 	return pos;
@@ -213,7 +217,8 @@ glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const Player
 
 		if (interpSmoother.running) {
 			return mmath::UpdateFixedTransitionGoal<glm::vec3, InterpSmoother>(
-				GameTime::CurTime(), 2.0f, Config::ScalarMethods::CUBIC_OUT, interpSmoother, pos
+				GameTime::CurTime(), GetConfig()->globalInterpDisableSmoothing,
+				GetConfig()->globalInterpDisableMehtod, interpSmoother, pos
 			);
 		} else {
 			return pos;
@@ -230,9 +235,31 @@ glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const Player
 		}
 
 		if (interpSmoother.running) {
-			return mmath::UpdateFixedTransitionGoal<glm::vec3, InterpSmoother>(
-				GameTime::CurTime(), 2.0f, Config::ScalarMethods::CUBIC_OUT, interpSmoother, pos
+			const auto itp = camera->globalSmoother.BlendResult(distance, !GetConfig()->disableDeltaTime);
+			const auto blend = mmath::UpdateFixedTransitionGoal<glm::vec3, InterpSmoother>(
+				GameTime::CurTime(), GetConfig()->globalInterpDisableSmoothing,
+				GetConfig()->globalInterpDisableMehtod, interpSmoother, pos
 			);
+			
+			glm::dvec3 fromLerped = {};
+			if (GetConfig()->separateZInterp) {
+				const auto xy = mmath::Interpolate<glm::dvec3, double>(fromPos, pos, itp);
+				const auto z = mmath::Interpolate<glm::dvec3, double>(
+					fromPos, pos, camera->GetCurrentSmoothingScalar(player, distance, ScalarSelector::SepZ)
+				);
+				fromLerped = { xy.x, xy.y, z.z };
+
+			} else {
+				const auto ret = mmath::Interpolate<glm::dvec3, double>(fromPos, pos, itp);
+				fromLerped = static_cast<glm::vec3>(ret);
+			}
+
+			const auto scalar = glm::clamp(
+				static_cast<float>(GameTime::CurTime() - interpSmoother.startTime) / glm::max(GetConfig()->globalInterpDisableSmoothing, 0.01f),
+				0.0f, 1.0f
+			);
+
+			return static_cast<glm::vec3>(mmath::Interpolate<glm::dvec3, double>(fromLerped, pos, scalar));
 		} else {
 			return pos;
 		}
@@ -240,27 +267,28 @@ glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const Player
 
 	// Otherwise, we lerp
 	wasInterpLastFrame = true;
+	const auto itp = camera->globalSmoother.BlendResult(distance, !GetConfig()->disableDeltaTime);
 
 	if (GetConfig()->separateZInterp) {
-		const auto xy = mmath::Interpolate<glm::dvec3, double>(
-			fromPos, pos, camera->GetCurrentSmoothingScalar(distance)
-		);
-
+		const auto xy = mmath::Interpolate<glm::dvec3, double>(fromPos, pos, itp);
 		const auto z = mmath::Interpolate<glm::dvec3, double>(
-			fromPos, pos, camera->GetCurrentSmoothingScalar(distance, ScalarSelector::SepZ)
+			fromPos, pos, camera->GetCurrentSmoothingScalar(player, distance, ScalarSelector::SepZ)
 		);
-
 		return { xy.x, xy.y, z.z };
 
 	} else {
-		const auto ret = mmath::Interpolate<glm::dvec3, double>(
-			fromPos, pos, camera->GetCurrentSmoothingScalar(distance)
-		);
+		const auto ret = mmath::Interpolate<glm::dvec3, double>(fromPos, pos, itp);
 		return static_cast<glm::vec3>(ret);
 	}
 }
 
-void Camera::State::BaseThird::ApplyLocalSpaceGameOffsets(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) {
+bool Camera::State::BaseThird::IsLocalInterpAllowed() const noexcept {
+	return GetConfig()->separateLocalInterp;
+}
+
+void Camera::State::BaseThird::ApplyLocalSpaceGameOffsets(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera)
+	noexcept
+{
 	auto state = reinterpret_cast<CorrectedThirdPersonState*>(playerCamera->cameraState);
 	const auto& euler = camera->rotation.euler;
 

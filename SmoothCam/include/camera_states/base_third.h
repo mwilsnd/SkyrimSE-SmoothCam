@@ -1,6 +1,12 @@
 ﻿#pragma once
 #include "game_state.h"
 
+#ifdef WITH_D2D
+namespace Render {
+	class StateOverlay;
+}
+#endif
+
 namespace Camera {
 	class Thirdperson;
 	enum class CameraState : uint8_t;
@@ -8,7 +14,7 @@ namespace Camera {
 
 	namespace State {
 		/* The base camera state - exposes higher level methods for operating on the camera */
-		class __declspec(novtable) BaseThird {
+		class BaseThird {
 			public:
 				BaseThird(Thirdperson* camera) noexcept;
 				BaseThird(const BaseThird&) = delete;
@@ -23,7 +29,7 @@ namespace Camera {
 				virtual void OnEnd(const PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera,
 					BaseThird* nextState) noexcept = 0;
 				virtual void Update(PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera)
-					noexcept = 0;
+					noexcept;
 
 			protected:
 				// Hand of internal state to the next state
@@ -65,16 +71,17 @@ namespace Camera {
 				// Returns the world position to apply local offsets to
 				glm::vec3 GetCameraWorldPosition(const TESObjectREFR* ref, const CorrectedPlayerCamera* playerCamera) const;
 				// Performs all camera offset math using the view rotation matrix and local offsets, returns a local position
-				glm::vec3 GetTransformedCameraLocalPosition() const;
+				glm::vec3 GetTransformedCameraLocalPosition(const CorrectedPlayerCamera* camera) const;
 				// Interpolates the given position, stores last interpolated rotation
-				glm::vec3 UpdateInterpolatedLocalPosition(const glm::vec3& rot);
+				glm::vec3 UpdateInterpolatedLocalPosition(const PlayerCharacter* player, const glm::vec3& rot);
 				// Interpolates the given position, stores last interpolated position
 				glm::vec3 UpdateInterpolatedWorldPosition(const PlayerCharacter* player, const glm::vec3& fromPos,
 					const glm::vec3& pos, const float distance);
 
+				// Returns true if the camera should perform separate local interpolation
+				bool IsLocalInterpAllowed() const noexcept;
 				// Applies a local space offset to the camera to force the interaction raycast to properly align with the crosshair
-				void ApplyLocalSpaceGameOffsets(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera);
-
+				void ApplyLocalSpaceGameOffsets(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) noexcept;
 				// Returns true if the player is moving
 				bool IsPlayerMoving(const PlayerCharacter* player) const noexcept;
 				// Returns the user config
@@ -88,6 +95,10 @@ namespace Camera {
 				using InterpSmoother = mmath::FixedTransitionGoal<glm::vec3>;
 				InterpSmoother interpSmoother;
 				bool wasInterpLastFrame = false;
+
+#ifdef WITH_D2D
+				friend class Render::StateOverlay;
+#endif
 		};
 	}
 }

@@ -1,6 +1,5 @@
 #include "game_state.h"
-
-extern HMODULE hImprovedCamera;
+#include "compat.h"
 
 // Returns the bits for player->actorState->flags04 which appear to convey movement info
 const eastl::bitset<32> GameState::GetPlayerMovementBits(const Actor* player) noexcept {
@@ -14,53 +13,41 @@ const eastl::bitset<32> GameState::GetPlayerActionBits(const Actor* player) noex
 	return bits;
 }
 
-const bool GameState::IC_InFirstPersonState(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	// ImprovedCamera compat is kinda a nightmare - let's choose violence 
-	// IC 1.0.0.4 - > 18004d510 = g_isThirdPerson
-	if (hImprovedCamera != NULL) {
-		const auto g_isThirdPerson = reinterpret_cast<bool*>(
-			reinterpret_cast<uintptr_t>(hImprovedCamera) + 0x4d510
-		);
-		return *g_isThirdPerson;
-	}
-
-	return false;
+const bool GameState::IC_InFirstPersonState() noexcept {
+	if (Compat::IsPresent(Compat::Mod::ImprovedCamera))
+		return Compat::IC_IsFirstPerson();
+	else
+		return false;
 }
 
-const bool GameState::IFPV_InFirstPersonState(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	static BSFixedString faceGen = "BSFaceGenNiNodeSkinned";
-	if (!ref->loadedState || !ref->loadedState->node || !faceGen.data) return false;
-
-	const auto npc = ref->loadedState->node->GetObjectByName(&faceGen.data);
-	if (!npc) return false;
-
-	const auto bits = eastl::bitset<32>(npc->m_flags);
-	return bits[0];
+const bool GameState::IFPV_InFirstPersonState() noexcept {
+	if (Compat::IsPresent(Compat::Mod::ImmersiveFirstPersonView))
+		return Compat::IFPV_IsFirstPerson();
+	else
+		return false;
 }
 
 // Returns true if the player is in first person
-const bool GameState::IsFirstPerson(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	if (Config::GetCurrentConfig()->compatIFPV) {
+const bool GameState::IsFirstPerson(const CorrectedPlayerCamera* camera) noexcept {
+	if (Compat::IsPresent(Compat::Mod::ImmersiveFirstPersonView)) {
 		const auto fps = camera->cameraState == camera->cameraStates[camera->kCameraState_FirstPerson];
-		return fps || IFPV_InFirstPersonState(ref, camera);
+		return fps || IFPV_InFirstPersonState();
+	} else if (Compat::IsPresent(Compat::Mod::ImprovedCamera)) {
+		const auto fps = camera->cameraState == camera->cameraStates[camera->kCameraState_FirstPerson];
+		return fps || IC_InFirstPersonState();
 	} else {
 		return camera->cameraState == camera->cameraStates[camera->kCameraState_FirstPerson];
 	}
 }
 
 // Returns true if the player is in third person
-const bool GameState::IsThirdPerson(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	if (Config::GetCurrentConfig()->compatIFPV) {
-		const auto tps = camera->cameraState == camera->cameraStates[camera->kCameraState_ThirdPerson2];
-		return tps && !IFPV_InFirstPersonState(ref, camera);
-	} else {
-		return camera->cameraState == camera->cameraStates[camera->kCameraState_ThirdPerson2];
-	}
+const bool GameState::IsThirdPerson(const CorrectedPlayerCamera* camera) noexcept {
+	return camera->cameraState == camera->cameraStates[camera->kCameraState_ThirdPerson2] && !IsFirstPerson(camera);
 }
 
 // Returns true if the player has a weapon drawn and in third person
 const bool GameState::IsThirdPersonCombat(const Actor* player, const CorrectedPlayerCamera* camera) noexcept {
-	return GameState::IsThirdPerson(player, camera) && GameState::IsWeaponDrawn(player);
+	return GameState::IsThirdPerson(camera) && GameState::IsWeaponDrawn(player);
 }
 
 // Returns true if a kill move is playing
@@ -105,13 +92,7 @@ const bool GameState::IsInFurnitureCamera(const CorrectedPlayerCamera* camera) n
 
 // Returns true if the player is riding a horse
 const bool GameState::IsInHorseCamera(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	if (Config::GetCurrentConfig()->compatIFPV) {
-		auto horse = camera->cameraStates[PlayerCamera::kCameraState_Horse];
-		return camera->cameraState == horse && !IFPV_InFirstPersonState(ref, camera);
-
-	} else {
-		return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Horse];
-	}
+	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Horse] && !IsFirstPerson(camera);
 }
 
 // Returns true if the player is bleeding out
@@ -147,14 +128,14 @@ const GameState::CameraState GameState::GetCameraState(const Actor* player, cons
 		newState = CameraState::IronSights;
 	} else if (GameState::IsInFurnitureCamera(camera)) {
 		newState = CameraState::Furniture;
-	} else if (GameState::IsFirstPerson(player, camera)) {
+	} else if (GameState::IsFirstPerson(camera)) {
 		newState = CameraState::FirstPerson;
 	} else if (GameState::IsInHorseCamera(player, camera)) {
 		newState = CameraState::Horseback;
 	} else if (GameState::IsInDragonCamera(camera)) {
 		newState = CameraState::Dragon;
 	} else {
-		if (GameState::IsThirdPerson(player, camera)) {
+		if (GameState::IsThirdPerson(camera)) {
 			if (GameState::IsThirdPersonCombat(player, camera)) {
 				// We have a custom handler for third person with a weapon out
 				newState = CameraState::ThirdPersonCombat;
@@ -208,7 +189,7 @@ bool GameState::IsUsingMagicItem(const Actor* player, bool leftHand) noexcept {
 	if (leftHand && !player->leftHandSpell) return false;
 	if (!leftHand && !player->rightHandSpell) return false;
 
-	EnchantmentItem* ench = leftHand ?
+	const EnchantmentItem* ench = leftHand ?
 		DYNAMIC_CAST(player->leftHandSpell, TESForm, EnchantmentItem) :
 		DYNAMIC_CAST(player->rightHandSpell, TESForm, EnchantmentItem);
 
@@ -372,8 +353,8 @@ const bool GameState::IsSprinting(const Actor* player) noexcept {
 // Returns true if the player is running
 const bool GameState::IsRunning(const Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
-	return (movementBits[0] || movementBits[1]) && (movementBits[2] || movementBits[3]) &&
-		movementBits[7];
+	return ((movementBits[0] || movementBits[1]) && (movementBits[2] || movementBits[3]) &&
+		movementBits[7]) && !IsOverEncumbered(player);
 }
 
 // Returns true if the player is swimming
@@ -386,7 +367,7 @@ const bool GameState::IsSwimming(const Actor* player) noexcept {
 const bool GameState::IsWalking(const Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return (movementBits[0] || movementBits[1]) && (movementBits[2] || movementBits[3]) &&
-		movementBits[6];
+		(movementBits[6] || (movementBits[7] && IsOverEncumbered(player)));
 }
 
 // Returns true if the player is holding a bow and an arrow is drawn
@@ -395,7 +376,7 @@ const bool GameState::IsBowDrawn(const Actor* player) noexcept {
 	const auto actionBits = GameState::GetPlayerActionBits(player);
 
 	// AGO compat
-	if (Config::GetCurrentConfig()->compatAGO && !GameState::IsUsingCrossbow(player)) {
+	if (Compat::IsPresent(Compat::Mod::ArcheryGameplayOverhaul) && !GameState::IsUsingCrossbow(player)) {
 		// We get 1 frame here with AGO where we are at our limits just checking the action bits
 		// This convoluted bit of a state machine works around that
 		static float lastDrawnTimer = 0.0f;
@@ -475,4 +456,9 @@ const bool GameState::IsVampireLord(const Actor* player) noexcept {
 const bool GameState::IsWerewolf(const Actor* player) noexcept {
 	if (!player->race) return false;
 	return strcmp(player->race->fullName.name.c_str(), "Werewolf") == 0;
+}
+
+const bool GameState::IsOverEncumbered(const Actor* player) noexcept {
+	typedef bool(*getter)(const Actor*);
+	return Offsets::Get<getter>(36457)(player);
 }

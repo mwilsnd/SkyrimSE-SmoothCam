@@ -1,5 +1,5 @@
 #constexpr_struct SliderSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	float min = -100.0
 	float max = 100.0
 	float interval = 1.0
@@ -9,8 +9,12 @@
 	string desc = ""
 	string displayFormat = "{1}"
 	string page = ""
+	string header = ""
 
 	MACRO implControl = [
+		#if (header)
+		AddHeaderOption(this->header)
+		#endif
 		this->ref = AddSliderOption(this->displayName, SmoothCam_GetFloatConfig(this->settingName), this->displayFormat)
 	]
 
@@ -31,13 +35,17 @@
 	]
 ]
 #constexpr_struct ToggleSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	mangle string settingName = ""
 	string displayName = ""
 	string desc = ""
 	string page = ""
+	string header = ""
 
 	MACRO implControl = [
+		#if (header)
+		AddHeaderOption(this->header)
+		#endif
 		this->ref = AddToggleOption(this->displayName, SmoothCam_GetBoolConfig(this->settingName))
 	]
 
@@ -51,7 +59,7 @@
 	]
 ]
 #constexpr_struct ResetSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	string displayName = ""
 	string desc = ""
 	string page = ""
@@ -73,7 +81,7 @@
 	]
 ]
 #constexpr_struct ResetCrosshairSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	string displayName = ""
 	string desc = ""
 	string page = ""
@@ -93,7 +101,7 @@
 	]
 ]
 #constexpr_struct FixStateSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	string displayName = ""
 	string desc = ""
 	string page = ""
@@ -114,14 +122,18 @@
 	]
 ]
 #constexpr_struct ListSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	mangle string settingName = ""
 	string displayName = ""
 	string desc = ""
 	literal arrayType = PLACEHOLDER
 	string page = ""
+	string header = ""
 
 	MACRO implControl = [
+		#if (header)
+		AddHeaderOption(this->header)
+		#endif
 		this->ref = AddMenuOption(this->displayName, this->arrayType[GetCurrentArrayIndex(this->settingName, this->arrayType)])
 	]
 
@@ -141,7 +153,7 @@
 	]
 ]
 #constexpr_struct SavePresetSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	int presetIndex = 0
 	string displayName = ""
 	string desc = "Save your current settings to this preset slot"
@@ -174,7 +186,7 @@
 	]
 ]
 #constexpr_struct LoadPresetSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	int presetIndex = 0
 	string displayName = ""
 	string desc = "Load this preset"
@@ -198,13 +210,17 @@
 	]
 ]
 #constexpr_struct KeyBindSetting [
-	real int ref = 0
+	arena<pagePool, page> ref = 0
 	mangle string settingName = ""
 	string displayName = ""
 	string desc = ""
 	string page = ""
+	string header = ""
 
 	MACRO implControl = [
+		#if (header)
+		AddHeaderOption(this->header)
+		#endif
 		this->ref = AddKeyMapOption(this->displayName, SmoothCam_GetIntConfig(this->settingName))
 	]
 

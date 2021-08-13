@@ -1,5 +1,6 @@
 module constructs.const_struct;
 import constructs.iconstruct;
+import constructs.arena;
 
 import keywords;
 import tokenizer : Token, TokenStream;
@@ -32,6 +33,14 @@ struct MemberVar {
     bool isReal = false;
     /// Should we mangle this string value?
     bool mangle = false;
+    /// Is this governed by an arena?
+    bool isArena = false;
+    /// Name of the arena being used
+    string arenaName;
+    /// Name of the member used as a guard for arena index allocation
+    string arenaPageGuard;
+    /// For impls, assigned arena index - not valid for decls
+    uint arenaIndex = 0;
     /// The value assigned
     VarValue defaultValue;
 
@@ -87,6 +96,178 @@ struct ConstStructDecl {
     MemberVar[string] memberVars;
     /// Macros
     MemberMacro[string] memberMacros;
+
+    /** 
+     * Process #if #endif branches inside MACRO blocks
+     * Params:
+     *   impl = Implementation of the struct to process and populate
+     * Returns: Result
+     */
+    Result!TokenStream processIfMacros(ref ConstStructImpl impl, ref const MemberMacro mac) const
+    in(impl.typeName == this.typeName, "Attempt to generate macro impl for mismatched struct types!")
+    {
+        /// @Note: We don't support nested branches - DON'T try it
+        /// This tool has no brain, use your own
+        struct Memory {
+            ulong startIndex = 0;
+            ulong branchStartIndex = 0;
+            ulong branchEndIndex = 0;
+            Token condToken;
+        }
+
+        enum State {
+            ExpectHash,
+            ExpectIf,
+            ExpectOpenParen,
+            ExpectCond,
+            ExpectCloseParen,
+            ExpectEndHash,
+            ExpectEndIf,
+        }
+
+        enum Res {
+            Continue,
+            BreakInner,
+            BreakOuter,
+        }
+
+        LexMachine!(
+            State, State.ExpectHash,
+            Res, Res.Continue,
+            Memory
+        ) state;
+
+        state.onState(State.ExpectHash, Tok.Hash,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.mem.startIndex = position;
+                state.gotoState(State.ExpectIf);
+                return Result!(Res).make(Res.Continue);
+            },
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectIf, Tok.kIf,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                if (tok.value == "if") {
+                    state.gotoState(State.ExpectOpenParen);
+                } else {
+                    state.resetMemory();
+                    state.gotoState(State.ExpectHash);
+                }
+                return Result!(Res).make(Res.Continue);
+            },
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.resetMemory();
+                state.gotoState(State.ExpectHash);
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectOpenParen, Tok.OpenParen,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.gotoState(State.ExpectCond);
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectCond, Tok.OtherValue,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.mem.condToken = tok;
+                state.gotoState(State.ExpectCloseParen);
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectCloseParen, Tok.CloseParen,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.mem.branchStartIndex = position+1;
+                state.gotoState(State.ExpectEndHash);
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectEndHash, Tok.Hash,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.mem.branchEndIndex = position;
+                state.gotoState(State.ExpectEndIf);
+                return Result!(Res).make(Res.Continue);
+            },
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+        
+        state.onState(State.ExpectEndIf, Tok.kEndIf,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                import std.conv : to;
+                if (tok.value != "endif") {
+                    state.gotoState(State.ExpectHash);
+                    return Result!(Res).make(Res.Continue);    
+                }
+
+                auto pre = TokenStream(stream[0..state.mem.startIndex]);
+                auto post = TokenStream(stream[position+1..$]);
+                TokenStream branch;
+
+                auto var = state.mem.condToken.value in impl.memberVars;
+                if (var !is null) {
+                    if (var.isReal) return Result!(Res).fail("Cannot #if 'real' member var " ~ state.mem.condToken.value);
+                    bool cond = false;
+
+                    switch (var.type) {
+                        case Tok.tBool:
+                            cond = var.defaultValue.boolValue; break;
+                        case Tok.tInt:
+                            cond = to!bool(var.defaultValue.intValue); break;
+                        case Tok.tFloat:
+                            cond = to!bool(var.defaultValue.floatValue); break;
+                        case Tok.tString:
+                            cond = var.defaultValue.stringValue.length > 0; break;
+                        default:
+                            return Result!(Res).fail("Cannot #if member var " ~ state.mem.condToken.value);
+                    }
+
+                    if (cond) {
+                        // Include the branch contents
+                        branch ~= stream[state.mem.branchStartIndex..state.mem.branchEndIndex];
+                    }
+                } else {
+                    return Result!(Res).fail("Undefined member var " ~ state.mem.condToken.value);
+                }
+
+                stream = trim(pre ~ branch ~ post);
+                state.resetMemory();
+                return Result!(Res).make(Res.BreakInner);
+            },
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.gotoState(State.ExpectHash);
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onEOS((ref TokenStream stream) {
+            if (state.mem.startIndex != 0)
+                return Result!(Res).fail("Unexpected end of stream while reading #if branch");
+
+            return Result!(Res).make(Res.BreakOuter);
+        });
+
+        auto code = TokenStream(mac.code[0..$]);
+        while (true) {
+            state.resetMemory();
+            state.gotoState(State.ExpectHash);
+
+            const auto res = state.exec(code);
+            if (!res.isOk()) return Result!(TokenStream).failFrom(res);
+            if (res.unwrap() == Res.BreakOuter) break;
+            state.resetMemory();
+            state.gotoState(State.ExpectHash);
+        }
+
+        return Result!(TokenStream).make(code);
+    }
 
     /** 
      * Generate processed macro code for the given impl
@@ -162,14 +343,16 @@ struct ConstStructDecl {
         foreach (string macroName, const MemberMacro mac; memberMacros) {
             // We need to find and replace this-><memberVar> with impl.memberToActual
             // Copy the code
-            auto code = TokenStream(mac.code[0..$]);
+            auto code = processIfMacros(impl, mac);
+            if (!code.isOk()) return Result!(bool).failFrom(code);
+            auto macroCode = code.unwrap();
 
             // Lex
             while (true) {
                 state.resetMemory();
                 state.gotoState(State.ExpectThis);
 
-                const auto res = state.exec(code);
+                const auto res = state.exec(macroCode);
                 if (!res.isOk()) return Result!(bool).failFrom(res);
                 if (res.unwrap() == Res.BreakOuter) break;
                 state.resetMemory();
@@ -177,7 +360,7 @@ struct ConstStructDecl {
             }
 
             // Register with impl
-            impl.macroCode[macroName] = code;
+            impl.macroCode[macroName] = macroCode;
         }
 
         return Result!(bool).make(true);
@@ -212,6 +395,18 @@ struct ConstStructImpl {
             return Result!(TokenStream).fail(memberName ~ " is not a member of " ~ implName ~ "!");
         
         TokenStream output;
+        if (it.isArena) {
+            if (!isRef)
+                Result!(TokenStream).fail("Non-reference access to an arena is forbidden! '" ~ memberName ~ "'");
+            
+            output ~= Token(Tok.OtherValue, it.arenaName);
+            output ~= Token(Tok.OpenBrace, "[");
+            output ~= Token(Tok.NumericValue, to!string(it.arenaIndex));
+            output ~= Token(Tok.CloseBrace, "]");
+            return Result!(TokenStream).make(output);
+        }
+
+
         if (it.isReal) {
             if (!isRef) {
                 output ~= Token(it.type, typeToString(it.type));
@@ -305,6 +500,10 @@ final class ConstStructParser : IConstruct {
             return Result!(bool).make(true);
         }
 
+        void setArena(ref Arena arenaMgr) {
+            arena = arenaMgr;
+        }
+
         /** 
          * Gets the struct decl using the given name
          * Params:
@@ -341,6 +540,7 @@ final class ConstStructParser : IConstruct {
         }
 
     private:
+        Arena arena = null;
         ConstStructDecl[string] decls;
         ConstStructImpl[string] impls;
 
@@ -444,6 +644,9 @@ final class ConstStructParser : IConstruct {
                 bool isMacro = false;
                 bool isReal = false;
                 bool mangle = false;
+                bool isArena = false;
+                string arenaName;
+                string arenaGuardMember;
                 Token type;
                 Token name;
             }
@@ -453,6 +656,13 @@ final class ConstStructParser : IConstruct {
                 ExpectAssignment,
                 ExpectMacroCode,
                 ExpectVarValue,
+
+                ExpectOpenAngle,
+                ExpectArenaName,
+                ExpectArenaComma,
+                ExpectArenaGuard,
+                ExpectCloseAngle,
+                
             }
             enum Res {
                 Continue,
@@ -466,6 +676,51 @@ final class ConstStructParser : IConstruct {
             ) state;
 
             state.onState(
+                State.ExpectOpenAngle, Tok.OpenAngle,
+                (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
+                    state.gotoState(State.ExpectArenaName);
+                    return Result!(Res).make(Res.Continue);
+                }
+            );
+            state.onState(
+                State.ExpectArenaName, Tok.OtherValue,
+                (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
+                    state.mem.arenaName = tok.value;
+                    state.gotoState(State.ExpectArenaComma);
+                    return Result!(Res).make(Res.Continue);
+                }
+            );
+            state.onState(
+                State.ExpectArenaComma, Tok.Comma,
+                (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
+                    state.gotoState(State.ExpectArenaGuard);
+                    return Result!(Res).make(Res.Continue);
+                }
+            );
+            state.onState(
+                State.ExpectArenaGuard, Tok.OtherValue,
+                (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
+                    state.mem.arenaGuardMember = tok.value;
+                    state.gotoState(State.ExpectCloseAngle);
+                    return Result!(Res).make(Res.Continue);
+                }
+            );
+            state.onState(
+                State.ExpectCloseAngle, Tok.CloseAngle,
+                (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
+                    auto it = arena.getNamedArena(state.mem.arenaName);
+                    if (it is null)
+                        return Result!(Res).fail(
+                            "Undefined arena '" ~ state.mem.arenaName ~ "'!"
+                        );
+
+                    state.mem.type = Token(it.type, typeToString(it.type));
+                    state.gotoState(State.ExpectName);
+                    return Result!(Res).make(Res.Continue);
+                }
+            );
+
+            state.onState(
                 State.ExpectType,
                 [Tok.OtherValue, Tok.tBool, Tok.tString, Tok.tInt, Tok.tFloat, Tok.tLiteral],
                 (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
@@ -473,6 +728,11 @@ final class ConstStructParser : IConstruct {
                         if (state.mem.isReal)
                             return Result!(Res).fail(
                                 "Cannot apply 'real' twice to member '" ~ tok.value ~ "'!"
+                            );
+                        
+                        if (state.mem.isArena)
+                            return Result!(Res).fail(
+                                "Cannot apply 'real' to arena allocated member '" ~ tok.value ~ "'!"
                             );
                         state.mem.isReal = true;
 
@@ -483,11 +743,23 @@ final class ConstStructParser : IConstruct {
                             );
                         state.mem.mangle = true;
 
+                    } else if (tok.value == "arena") {
+                        if (state.mem.isReal)
+                            return Result!(Res).fail(
+                                "Cannot apply 'real' to arena allocated member '" ~ tok.value ~ "'!"
+                            );
+                        if (state.mem.isArena)
+                            return Result!(Res).fail(
+                                "Cannot apply 'arena' twice to member '" ~ tok.value ~ "'!"
+                            );
+                        state.mem.isArena = true;
+                        state.gotoState(State.ExpectOpenAngle);
+
                     } else {
                         if (tok.value == "MACRO") {
-                            if (state.mem.isReal || state.mem.mangle)
+                            if (state.mem.isReal || state.mem.mangle || state.mem.isArena)
                                 return Result!(Res).fail(
-                                    "Cannot apply 'real' or 'mangle' to macro '" ~ tok.value ~ "'!"
+                                    "Cannot apply 'real' 'mangle' or 'arena' to macro '" ~ tok.value ~ "'!"
                                 );
                             
                             state.mem.isMacro = true;
@@ -497,8 +769,8 @@ final class ConstStructParser : IConstruct {
                             switch (tok.type) {
                                 case Tok.tLiteral:
                                     // Reals are actual variables and require a defined storage class
-                                    if (state.mem.isReal)
-                                        return Result!(Res).fail("Cannot apply 'real' attr to a literal type!");
+                                    if (state.mem.isReal || state.mem.isArena)
+                                        return Result!(Res).fail("Cannot apply 'real' or 'arena' attr to a literal type!");
                                     goto case;
 
                                 case Tok.tBool: goto case;
@@ -575,6 +847,9 @@ final class ConstStructParser : IConstruct {
                     var.type = state.mem.type.type;
                     var.mangle = state.mem.mangle;
                     var.isReal = state.mem.isReal;
+                    var.isArena = state.mem.isArena;
+                    var.arenaName = state.mem.arenaName;
+                    var.arenaPageGuard = state.mem.arenaGuardMember;
                     
                     switch (var.type) {
                         case Tok.tBool:
@@ -720,11 +995,17 @@ final class ConstStructParser : IConstruct {
                     state.resetMemory();
                     state.gotoState(State.ExpectType);
                     return Result!(Res).make(Res.Continue);
+                },
+                (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
+                    state.resetMemory();
+                    state.gotoState(State.ExpectType);
+                    return Result!(Res).make(Res.Continue);
+                    //return Result!(Res).fail("Expected OpenBrace, got " ~ tok.value ~ " - " ~ state.mem.implName);
                 }
             );
 
             const auto res = state.exec(stream);
-            if (!res.isOk()) Result!(bool).failFrom(res);
+            if (!res.isOk()) return Result!(bool).failFrom(res);
 
             return Result!(bool).make(true);
         }
@@ -763,7 +1044,7 @@ final class ConstStructParser : IConstruct {
             impl.typeName = decl.typeName;
             impl.implName = name;
 
-            // First copy over all defaults from the decl
+            // First copy over all defaults from the decl, check for arenas and allocate
             foreach (ref const(string) memName, ref const(MemberVar) var; decl.memberVars) {
                 impl.memberVars[memName] = var;
             }
@@ -800,6 +1081,9 @@ final class ConstStructParser : IConstruct {
                     // Then expect that exact type - for tLiteral, we want Tok.OtherValue
                     MemberVar* expectType = state.mem.memberName in impl.memberVars;
                     assert(expectType !is null);
+
+                    if (expectType.isArena)
+                        return Result!(Res).fail("Attempt to assign initializer to an arena type '" ~ tok.value ~ "'!");
 
                     switch (expectType.type) {
                         case Tok.tInt:
@@ -852,11 +1136,39 @@ final class ConstStructParser : IConstruct {
             // Now for each var we see in the block, assert it is in our list above,
             // then overwrite the value in the impl with what we read
             const auto res = state.exec(stream);
-            if (!res.isOk()) Result!(bool).failFrom(res);
+            if (!res.isOk())
+                return Result!(bool).failFrom(res);
+
+            // Now resolve arena page indices
+            foreach (ref const(string) memName, ref const(MemberVar) var; decl.memberVars) {
+                if (!var.isArena) continue;
+                auto it = arena.getNamedArena(var.arenaName);
+                if (it is null)
+                    return Result!(bool).fail("Unknown arena '" ~ var.arenaName ~ "'!");
+                
+                if (var.arenaPageGuard !in decl.memberVars)
+                    return Result!(bool).fail("Undefined arena page guard '" ~ var.arenaPageGuard ~ "'!");
+
+                MemberVar* guard = var.arenaPageGuard in impl.memberVars;
+                if (guard is null)
+                    return Result!(bool).fail("Unknown arena page guard '" ~ var.arenaPageGuard ~ "'!");
+
+                auto page = it.getPage(guard.valueToString());
+                if (page is null)
+                    return Result!(bool).fail("Arena page allocation failed for '" ~ var.arenaPageGuard ~ "'!");
+                
+                const auto index = page.allocateIndex();
+                if (index < 0)
+                    return Result!(bool).fail("Arena page allocation: Arena is out of space! '" ~ var.arenaPageGuard ~ "'!");
+
+                impl.memberVars[memName].arenaIndex = index;
+            }
 
             // Register the impl and generate macro code
             auto macGen = decl.generateMacroCodeForImpl(impl);
-            if (!macGen.isOk()) return macGen;
+            if (!macGen.isOk())
+                return macGen;
+            
             impls[impl.implName] = impl;
 
             return Result!(bool).make(true);

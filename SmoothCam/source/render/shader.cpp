@@ -5,13 +5,13 @@ Render::Shader::Shader(const ShaderCreateInfo& createInfo, D3DContext& ctx) noex
 	if (!validBinary) return;
 
 	if (stage == PipelineStage::Vertex) {
-		auto result = context.device->CreateVertexShader(binary->GetBufferPointer(), binary->GetBufferSize(),
+		const auto result = context.device->CreateVertexShader(binary->GetBufferPointer(), binary->GetBufferSize(),
 			nullptr, &program.vertex);
 		validProgram = SUCCEEDED(result);
 		if (!validProgram)
 			_ERROR("SmoothCam: A shader failed to compile.");
 	} else {
-		auto result = context.device->CreatePixelShader(binary->GetBufferPointer(), binary->GetBufferSize(),
+		const auto result = context.device->CreatePixelShader(binary->GetBufferPointer(), binary->GetBufferSize(),
 			nullptr, &program.fragment);
 		validProgram = SUCCEEDED(result);
 		if (!validProgram)
@@ -46,14 +46,14 @@ bool Render::Shader::IsValid() const noexcept {
 }
 
 bool Render::Shader::Compile(const eastl::string& source, const eastl::string& entryName, const eastl::string& version) noexcept {
-	UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PACK_MATRIX_COLUMN_MAJOR;
+	constexpr UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PACK_MATRIX_COLUMN_MAJOR;
 	winrt::com_ptr<ID3DBlob> errorBlob;
 
 	auto versionStr = stage == PipelineStage::Vertex ?
 		eastl::string("vs_").append(version) :
 		eastl::string("ps_").append(version);
 
-	auto result = D3DCompile(
+	const auto result = D3DCompile(
 		source.c_str(), source.length(), nullptr, nullptr, nullptr,
 		entryName.c_str(),
 		versionStr.c_str(),

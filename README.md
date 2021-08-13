@@ -14,10 +14,10 @@ Notable features include:
 ## Compatibility
 SmoothCam is going to have issues with any other mod that tries to position the third-person camera (Other third-person mods, likely some lock-on mods, etc).
 
-The following mods are supported, with patches that can be enabled in the MCM:
+The following mods are supported:
 * Improved Camera (Only with the reddit release build of Improved Camera beta 4)
-* Immersive First Person View
-* Alternate Conversation Camera
+* Immersive First Person View (Requires the optional file `IFPV Detector Plugin` on the download page)
+* Alternate Conversation Camera (Should also work with Alternate Conversation Camera Plus)
 * Archery Gameplay Overhaul
 
 True Directional Movement is compatible and fully supported.
@@ -64,6 +64,10 @@ As of version 1.4, you can enable the general setting "Enable Crash Dump Handler
 
 You must install the correct version for compatibility features to work with Improved Camera correctly. Only the reddit release DLL of beta 4 is supported.
 
+> Under "Compatibility Options", Immersive First Person View shows "NOT DETECTED" but I have it installed?
+
+You need to install the optional `IFPV Detector Plugin` on the mod's download page.
+
 > My camera got stuck in a strange state and I can't rotate my camera anymore, what gives?
 
 This is a pretty rare issue, I've only had it happen once myself. You can try the general option "Force camera to thirdperson" which may work. The problem appears to be caused by the camera getting stuck in the "Furniture" camera state.
@@ -78,7 +82,7 @@ Two causes: Either the general setting "Disable SmoothCam" is enabled, or you us
 
 > Camera movement is very jittery when rotating around the player character.
 
-This is most commonly caused by local-space interpolation when you have a low frame rate. You can eliminate the jitter by keeping local space interpolation enabled and setting the method to "linear" and follow rate to "1.0".
+This is most commonly caused by local-space interpolation when you have a low frame rate. You can eliminate the jitter by keeping local space interpolation enabled and setting the method to "linear" and both follow rates to "1.0".
 
 > I used the "Load Next Preset" hotkey and now it doesn't work anymore.
 

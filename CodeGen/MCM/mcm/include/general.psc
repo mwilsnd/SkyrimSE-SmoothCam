@@ -48,28 +48,9 @@ SliderSetting customZOffsetAmount -> [
 	displayFormat: "{0}"
 	page: " General"
 ]
-
-ToggleSetting icCompat -> [
-	settingName: "ICCompat"
-	displayName: "Improved Camera"
-	desc: "Enable compat fixes for Improved Camera. You must be using the offical release of Improved Camera (beta4), no other build will work and will show VERSION MISMATCH."
-	page: " General"
-]
-ToggleSetting accCompat -> [
-	settingName: "ACCCompat"
-	displayName: "Alternate Conversation Camera"
-	desc: "Enable compat fixes for Alternate Conversation Camera."
-	page: " General"
-]
-ToggleSetting ifpvCompat -> [
-	settingName: "IFPVCompat"
-	displayName: "Immersive First Person View"
-	desc: "Enable compat fixes for Improved First Person View."
-	page: " General"
-]
-ToggleSetting agoCompat -> [
-	settingName: "AGOCompat"
-	displayName: "Archery Gameplay Overhaul"
-	desc: "Enable compat fixes for AGO when using the 3D crosshair/prediction arc."
+KeyBindSetting toggleUserDefinedOffset -> [
+	settingName: "ToggleUserDefinedOffsetKeyCode"
+	displayName: "Toggle Custom Offset Group"
+	desc: "When pressed, enables/disable the 'Custom' offset group, overloading the normal camera state."
 	page: " General"
 ]

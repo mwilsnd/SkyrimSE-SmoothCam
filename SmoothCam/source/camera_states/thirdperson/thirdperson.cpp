@@ -21,17 +21,19 @@ void Camera::State::ThirdpersonState::OnEnd(const PlayerCharacter* player, const
 void Camera::State::ThirdpersonState::Update(PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera)
 	noexcept
 {
+	BaseThird::Update(player, cameraRef, camera);
+
 	// Get our computed local-space xyz offset.
 	const auto cameraLocal = GetCameraOffsetStatePosition();
 	// Get the base world position for the camera which we will offset with the local-space values.
 	const auto worldTarget = GetCameraWorldPosition(cameraRef, camera);
 	// Transform the camera offsets based on the computed view matrix
-	const auto transformedLocalPos = GetTransformedCameraLocalPosition();
+	const auto transformedLocalPos = GetTransformedCameraLocalPosition(camera);
 
-	glm::vec3 preFinalPos;
-	if (GetConfig()->separateLocalInterp) {
+	glm::vec3 preFinalPos{};
+	if (IsLocalInterpAllowed()) {
 		// Handle separate local-space interpolation
-		const auto loc = UpdateInterpolatedLocalPosition(transformedLocalPos);
+		const auto loc = UpdateInterpolatedLocalPosition(player, transformedLocalPos);
 
 		const auto& last = GetLastCameraPosition();
 		// Last offset position from ref

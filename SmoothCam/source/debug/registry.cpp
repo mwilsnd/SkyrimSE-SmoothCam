@@ -16,7 +16,7 @@ const Debug::CommandRegistry::CommandTable& Debug::CommandRegistry::GetCommands(
 }
 
 Debug::ICommand* Debug::CommandRegistry::Find(const eastl::string& name) const noexcept {
-	auto it = registry.find(name);
+	const auto it = registry.find(name);
 	if (it == registry.end()) return nullptr;
 	return it->second.get();
 }

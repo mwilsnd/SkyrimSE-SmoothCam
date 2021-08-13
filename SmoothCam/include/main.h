@@ -8,7 +8,7 @@
 #   include "render/d2d.h"
 #endif
 
-constexpr eastl::array<uintptr_t, 35> idsToCache({
+constexpr eastl::array<uintptr_t, 36> idsToCache({
 	// arrow fixes
 	42537, 42536, 12204, 514905, 514725,
 	49866, 42998, 43008, 42928,
@@ -24,6 +24,9 @@ constexpr eastl::array<uintptr_t, 35> idsToCache({
 
 	// main
 	75446,
+
+	// game state
+	36457,
 
 	// physics
 	18536,

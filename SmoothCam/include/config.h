@@ -17,6 +17,7 @@ namespace Config {
 		SINE_IN, SINE_OUT, SINE_INOUT,
 		CIRC_IN, CIRC_OUT, CIRC_INOUT,
 		EXP_IN, EXP_OUT, EXP_INOUT,
+		USER_DEFINED,
 	};
 
 	enum class CrosshairType : uint8_t {
@@ -44,6 +45,7 @@ namespace Config {
 		Dragon,
 		VampireLord,
 		Werewolf,
+		UserDefined,
 		Unknown,
 		MAX_OFS
 	};
@@ -108,6 +110,22 @@ namespace Config {
 		{ CrosshairType::Dot, "DOT" }
 	});
 
+	typedef struct OffsetGroupScalar {
+		bool overrideInterp = false;
+		ScalarMethods currentScalar = ScalarMethods::SINE_IN;
+		float minCameraFollowRate = 0.25f;
+		float maxCameraFollowRate = 0.66f;
+		float zoomMaxSmoothingDistance = 650.0f;
+
+		bool overrideLocalInterp = false;
+		ScalarMethods separateLocalScalar = ScalarMethods::EXP_IN;
+		float localMinFollowRate = 0.7f;
+		float localMaxFollowRate = 0.98f;
+		float localMaxSmoothingDistance = 60.0f;
+	} OffsetGroupScalar;
+	void to_json(json& j, const OffsetGroupScalar& obj);
+	void from_json(const json& j, OffsetGroupScalar& obj);
+
 	typedef struct offsetGroup {
 		float sideOffset = 25.0;
 		float upOffset = 0.0;
@@ -140,6 +158,12 @@ namespace Config {
 		bool interpMeleeCombat = true;
 		bool interpHorseback = true;
 
+		OffsetGroupScalar interpConf;
+		OffsetGroupScalar interpRangedConf;
+		OffsetGroupScalar interpMagicConf;
+		OffsetGroupScalar interpMeleeConf;
+		OffsetGroupScalar interpHorsebackConf;
+
 		OffsetGroupID id = OffsetGroupID::Unknown;
 	} OffsetGroup;
 	void to_json(json& j, const OffsetGroup& obj);
@@ -151,9 +175,11 @@ namespace Config {
 		float b = 0.0f;
 		float a = 0.0f;
 
-		configColor() {};
-		configColor(float r, float g, float b, float a) : r(r), g(g), b(b), a(a) {}
+		configColor() noexcept {};
+		configColor(float r, float g, float b, float a) noexcept : r(r), g(g), b(b), a(a) {}
 	} Color;
+	void to_json(json& j, const Color& obj);
+	void from_json(const json& j, Color& obj);
 
 	typedef struct parsedConfig {
 		// Crosshair
@@ -161,22 +187,22 @@ namespace Config {
 		bool use3DMagicCrosshair = true;
 		bool hideNonCombatCrosshair = false;
 		bool hideCrosshairMeleeCombat = false;
-		bool enableCrosshairSizeManip = false;
+		bool enableCrosshairSizeManip = true;
 		float crosshairNPCHitGrowSize = 16.0f;
 		float crosshairMinDistSize = 16.0f;
 		float crosshairMaxDistSize = 24.0f;
-		bool useWorldCrosshair = false;
+		bool useWorldCrosshair = true;
 		bool worldCrosshairDepthTest = false;
 		CrosshairType worldCrosshairType = CrosshairType::Skyrim;
 		float stealthMeterXOffset = 0.0f;
-		float stealthMeterYOffset = 0.0f;
-		bool offsetStealthMeter = false;
-		bool alwaysOffsetStealthMeter = false;
+		float stealthMeterYOffset = 250.0f;
+		bool offsetStealthMeter = true;
+		bool alwaysOffsetStealthMeter = true;
 
 		// Arrow prediction
-		bool useArrowPrediction = false;
-		bool drawArrowArc = false;
-		Color arrowArcColor = Color(255.0f, 255.0f, 255.0f, 127.0f);
+		bool useArrowPrediction = true;
+		bool drawArrowArc = true;
+		Color arrowArcColor = Color(255.0f, 255.0f, 255.0f, 200.0f);
 		float maxArrowPredictionRange = 10000.0f;
 
 		// Misc
@@ -190,17 +216,13 @@ namespace Config {
 		int applyZOffsetKey = -1;
 		bool zOffsetActive = false; // @NOSAVE
 		bool enableCrashDumps = false;
-		
-		// Compat
-		bool compatIC = false;
-		bool compatIFPV = false;
-		bool compatAGO = false;
-		bool compatACC = false;
+		int toggleUserDefinedOffsetGroupKey = -1;
+		bool userDefinedOffsetActive = false; // @NOSAVE
 
 		// Primary interpolation
 		bool enableInterp = true;
 		ScalarMethods currentScalar = ScalarMethods::SINE_IN;
-		float minCameraFollowDistance = 64.0f;
+		float minCameraFollowDistance = 80.0f;
 		float minCameraFollowRate = 0.25f;
 		float maxCameraFollowRate = 0.66f;
 		float zoomMul = 500.0f;
@@ -209,37 +231,47 @@ namespace Config {
 		// Separate local space interpolation
 		bool separateLocalInterp = true;
 		ScalarMethods separateLocalScalar = ScalarMethods::EXP_IN;
-		float localScalarRate = 1.0f;
+		float localMinFollowRate = 0.7;
+		float localMaxFollowRate = 0.98f;
+		float localMaxSmoothingDistance = 60.0f;
 
 		// Separate Z
 		bool separateZInterp = true;
 		ScalarMethods separateZScalar = ScalarMethods::SINE_IN;
-		float separateZMaxSmoothingDistance = 60.0f;
-		float separateZMinFollowRate = 0.2f;
-		float separateZMaxFollowRate = 0.6f;
+		float separateZMaxSmoothingDistance = 55.0f;
+		float separateZMinFollowRate = 0.4f;
+		float separateZMaxFollowRate = 1.0f;
 
 		// Offset interpolation
 		bool enableOffsetInterpolation = true;
 		ScalarMethods offsetScalar = ScalarMethods::SINE_INOUT;
-		float offsetInterpDurationSecs = 0.25f;
+		float offsetInterpDurationSecs = 1.0f;
 
 		// Zoom interpolation
 		bool enableZoomInterpolation = true;
 		ScalarMethods zoomScalar = ScalarMethods::LINEAR;
-		float zoomInterpDurationSecs = 0.1f;
+		float zoomInterpDurationSecs = 0.06f;
 
 		// FOV interpolation
 		bool enableFOVInterpolation = true;
-		ScalarMethods fovScalar = ScalarMethods::LINEAR;
-		float fovInterpDurationSecs = 0.1f;
+		ScalarMethods fovScalar = ScalarMethods::QUAD_INOUT;
+		float fovInterpDurationSecs = 1.0f;
+
+		// Interp override smoother
+		float globalInterpDisableSmoothing = 2.0f;
+		ScalarMethods globalInterpDisableMehtod = ScalarMethods::LINEAR;
+		float globalInterpOverrideSmoothing = 1.5f;
+		ScalarMethods globalInterpOverrideMethod = ScalarMethods::LINEAR;
+		float localInterpOverrideSmoothing = 2.0f;
+		ScalarMethods localInterpOverrideMethod = ScalarMethods::LINEAR;
 
 		// Distance clamping
 		bool cameraDistanceClampXEnable = true;
 		float cameraDistanceClampXMin = -75.0f;
 		float cameraDistanceClampXMax = 35.0f;
 		bool cameraDistanceClampYEnable = true;
-		float cameraDistanceClampYMin = -100.0f;
-		float cameraDistanceClampYMax = 10.0f;
+		float cameraDistanceClampYMin = -150.0f;
+		float cameraDistanceClampYMax = 0.0f;
 		bool cameraDistanceClampZEnable = true;
 		float cameraDistanceClampZMin = -60.0f;
 		float cameraDistanceClampZMax = 60.0f;
@@ -257,6 +289,7 @@ namespace Config {
 		OffsetGroup dragon; // @TODO
 		OffsetGroup vampireLord;
 		OffsetGroup werewolf;
+		OffsetGroup userDefined;
 	} UserConfig;
 	void to_json(json& j, const UserConfig& obj);
 	void from_json(const json& j, UserConfig& obj);
@@ -268,8 +301,7 @@ namespace Config {
 	void to_json(json& j, const Preset& obj);
 	void from_json(const json& j, Preset& obj);
 
-	void to_json(json& j, const Color& obj);
-	void from_json(const json& j, Color& obj);
+	const UserConfig& GetDefaultConfig() noexcept;
 
 	void ReadConfigFile();
 	void SaveCurrentConfig();

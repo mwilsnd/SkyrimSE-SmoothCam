@@ -1,3 +1,25 @@
+# Beta 1.5
+* Bumped module and MCM version number to 14
+
+**Fixes:**
+* Fix shouts having an incorrect trajectory when using True Directional Movement.
+* Fix Alternate Conversation Camera patch not working correctly when starting dialogue while in first-person.
+* Running offsets will no longer apply when over encumbered, walking offsets now correctly selected.
+* Proper compatibility with Immersive First Person View, thanks meh321 & Ershin! Also fixes some helmets disabling the camera, caused by the old detection method. Requires the optional file 'IFPV Detector Plugin'.
+
+**New Stuff:**
+* Added global and local-space interpolation parameter overrides to each offset group (for each combat stance!).
+* Added a new 'Custom' offset group which can be turned off and on with a hot-key, will overload all normal camera states when enabled.
+* Added options to control the duration of fixed-time smoothers (ie: from active interpolation to a disabled state, blending from one interp override to a different one, so on...).
+* Added options to control the scalar method used for fixed-time smoothers.
+* Added a public modder's API for requesting control of common game resources from SmoothCam (like camera control, crosshair control, etc) - Available to other SKSE plugins.
+
+**Changes:**
+* Changed local-space interpolation to use the same distance function as global and separate-z (Why wasn't it using this before, and why did I never notice...). Old presets will have the follow rate ported to the new settings automatically, being applied to both min and max follow rate which will yield the same result as the old system in 1.4.x and earlier.
+* Changed how the zoom offset is applied, resulting in a cleaner offset position transition.
+* Compatibility options now auto-detect their respective mods and enable on their own.
+* Adjusted default values for all camera settings, in addition to the new per-state interpolator overload options.
+
 # Beta 1.4
 * Bumped module and MCM version number to 13
 

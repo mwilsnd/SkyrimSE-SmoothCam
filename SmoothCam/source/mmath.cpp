@@ -3,7 +3,10 @@
 	typedef NiPoint3(__thiscall TESObjectREFR::* GetBoundMax)();
 }
 
-bool mmath::IsInf(const float& f) noexcept {
+bool mmath::IsInf(const float f) noexcept {
+	return glm::isinf(f);
+}
+bool mmath::IsInf(const double f) noexcept {
 	return glm::isinf(f);
 }
 bool mmath::IsInf(const glm::vec3& v) noexcept {
@@ -13,7 +16,10 @@ bool mmath::IsInf(const glm::vec4& v) noexcept {
 	return glm::isinf(v.x) || glm::isinf(v.y) || glm::isinf(v.z) || glm::isinf(v.w);
 }
 
-bool mmath::IsNan(const float& f) noexcept {
+bool mmath::IsNan(const float f) noexcept {
+	return glm::isnan(f);
+}
+bool mmath::IsNan(const double f) noexcept {
 	return glm::isnan(f);
 }
 bool mmath::IsNan(const glm::vec3& v) noexcept {
@@ -23,7 +29,10 @@ bool mmath::IsNan(const glm::vec4& v) noexcept {
 	return glm::isnan(v.x) || glm::isnan(v.y) || glm::isnan(v.z) || glm::isnan(v.w);
 }
 
-bool mmath::IsValid(const float& f) noexcept {
+bool mmath::IsValid(const float f) noexcept {
+	return !mmath::IsInf(f) && !mmath::IsNan(f);
+}
+bool mmath::IsValid(const double f) noexcept {
 	return !mmath::IsInf(f) && !mmath::IsNan(f);
 }
 bool mmath::IsValid(const glm::vec3& v) noexcept {

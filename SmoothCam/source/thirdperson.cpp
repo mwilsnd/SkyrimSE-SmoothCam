@@ -1,4 +1,5 @@
 #include "thirdperson.h"
+#include "compat.h"
 #include "debug/eh.h"
 
 Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, CameraID::Thirdperson) {
@@ -85,8 +86,9 @@ void Camera::Thirdperson::OnBegin(PlayerCharacter* player, CorrectedPlayerCamera
 	if (!currentFocusObject)
 		currentFocusObject = player;
 
-	if (lastState && lastState->m_id == CameraID::Firstperson) {
+	if (!lastState || lastState->m_id == CameraID::Firstperson) {
 		// We want to invalidate any interpolation state when exiting first-person
+		// If lastState is null, we should do this too
 		MoveToGoalPosition(player, camera);
 	}
 }
@@ -107,8 +109,7 @@ bool Camera::Thirdperson::OnPreGameUpdate(PlayerCharacter* player, CorrectedPlay
 	auto horse = camera->cameraStates[CorrectedPlayerCamera::kCameraState_Horse];
 	auto tps = camera->cameraStates[CorrectedPlayerCamera::kCameraState_ThirdPerson2];
 	if (cstate->fromState == horse && cstate->toState == tps) {
-		if (!(config->compatIFPV && GameState::IFPV_InFirstPersonState(player, camera)) &&
-			!(config->compatIC && GameState::IC_InFirstPersonState(player, camera)))
+		if (!GameState::IsFirstPerson(camera))
 		{
 			// Getting off a horse, MURDER THIS STATE
 			// @TODO: Write our own transition for this state - It still looks nicer with it disabled anyways though
@@ -149,7 +150,6 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 #ifdef WITH_CHARTS
 	Profiler prof;
 #endif
-
 	// Update POV switch smoothing
 	switch (m_camera->GetCurrentCameraState()) {
 		case GameState::CameraState::ThirdPerson:
@@ -174,7 +174,7 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 	// Invalidate while we are in a loading screen state
 	// Also if we were in the dialog menu - I'm not able to replicate this particular issue but it doesn't hurt
 	// to do it in this case also.
-	if (m_camera->InLoadingScreen() || wasDialogMenuOpen)
+	if (m_camera->InLoadingScreen() || m_camera->wasDialogOpen)
 		crosshair->InvalidateEnablementCache();
 
 	// Update our current crosshair selection if required
@@ -201,7 +201,7 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 	}
 
 	// And set our current reference position
-	if (m_camera->wasLoading || (wasDialogMenuOpen && config->compatACC)) {
+	if (m_camera->wasLoading || (m_camera->wasDialogOpen && Compat::IsPresent(Compat::Mod::AlternateConversationCamera))) {
 		// Exiting a loading screen or dialog with ACC, set the goal positon
 		MoveToGoalPosition(player, camera);
 	}
@@ -209,7 +209,7 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 	// Save our last position
 	lastPosition = currentPosition;
 	
-	if (!shouldRun || (config->compatACC && dialogMenuOpen)) {
+	if (!shouldRun) {
 		//
 
 	} else {
@@ -217,13 +217,13 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 		currentPosition.SetRef(currentFocusObject->pos, currentFocusObject->rot);
 
 		// Update transition states
-		mmath::UpdateTransitionState<glm::vec2, OffsetTransition>(
+		mmath::UpdateTransitionState<glm::vec3, OffsetTransition>(
 			curTime,
 			config->enableOffsetInterpolation,
 			config->offsetInterpDurationSecs,
 			config->offsetScalar,
 			offsetTransitionState,
-			{ currentOffset.x, currentOffset.z }
+			{ currentOffset.x, currentOffset.y, currentOffset.z }
 		);
 
 		if (!povWasPressed && !povTransitionState.running) {
@@ -233,11 +233,11 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 				config->zoomInterpDurationSecs,
 				config->zoomScalar,
 				zoomTransitionState,
-				currentOffset.y
+				GetCurrentCameraDistance(camera)
 			);
 		} else {
 			zoomTransitionState.lastPosition = zoomTransitionState.currentPosition =
-				zoomTransitionState.targetPosition = currentOffset.y;
+				zoomTransitionState.targetPosition = GetCurrentCameraDistance(camera);
 		}
 
 		mmath::UpdateTransitionState<float, ZoomTransition>(
@@ -251,35 +251,53 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 
 		offsetState.position = {
 			offsetTransitionState.currentPosition.x,
-			zoomTransitionState.currentPosition,
-			offsetTransitionState.currentPosition.y
+			offsetTransitionState.currentPosition.y,
+			offsetTransitionState.currentPosition.z
 		};
 		offsetState.fov = fovTransitionState.currentPosition;
 		SetFOVOffset(offsetState.fov);
+
+		UpdateOffsetSmoothers(player, curTime);
 
 		// Now run the active camera state
 		switch (m_camera->GetCurrentCameraState()) {
 			case GameState::CameraState::ThirdPerson: {
 				UpdateInternalRotation(camera);
-				cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson))->Update(player, currentFocusObject, camera);
+				auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson));
+				state->Update(player, currentFocusObject, camera);
+#ifdef WITH_D2D
+				stateOverlay->SetThirdPersonState(state.get());
+#endif
 				break;
 			}
 			case GameState::CameraState::ThirdPersonCombat: {
 				UpdateInternalRotation(camera);
-				cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat))->Update(player, currentFocusObject, camera);
+				auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat));
+				state->Update(player, currentFocusObject, camera);
+#ifdef WITH_D2D
+				stateOverlay->SetThirdPersonState(state.get());
+#endif
 				break;
 			}
 			case GameState::CameraState::Horseback: {
 				UpdateInternalRotation(camera);
-				cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback))->Update(player, currentFocusObject, camera);
+				auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback));
+				state->Update(player, currentFocusObject, camera);
+#ifdef WITH_D2D
+				stateOverlay->SetThirdPersonState(state.get());
+#endif
 				break;
 			}
-			default: break;
+			default: {
+#ifdef WITH_D2D
+				stateOverlay->SetThirdPersonState(nullptr);
+#endif
+				break;
+			}
 		}
 	}
 
 	povWasPressed = false;
-	wasDialogMenuOpen = false;
 
 	if (!m_camera->InLoadingScreen())
 		crosshair->Update(player, camera);
@@ -348,7 +366,7 @@ void Camera::Thirdperson::Render(Render::D3DContext& ctx) noexcept {
 			graph_rotation->AddPoint(0, rotation.euler.x);
 			graph_rotation->AddPoint(1, rotation.euler.y);
 
-			if (GameState::IsThirdPerson(currentFocusObject, CorrectedPlayerCamera::GetSingleton())) {
+			if (GameState::IsThirdPerson(CorrectedPlayerCamera::GetSingleton())) {
 				auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(CorrectedPlayerCamera::GetSingleton()->cameraState);
 				graph_tpsRotation->AddPoint(0, tps->yaw1);
 				graph_tpsRotation->AddPoint(1, tps->yaw2);
@@ -400,6 +418,8 @@ bool Camera::Thirdperson::OnKeyPress(const ButtonEvent* ev) noexcept {
 		return true;
 	} else if (config->applyZOffsetKey >= 0 && config->applyZOffsetKey == code && ev->timer <= 0.000001f) {
 		config->zOffsetActive = !config->zOffsetActive;
+	} else if (config->toggleUserDefinedOffsetGroupKey >= 0 && config->toggleUserDefinedOffsetGroupKey == code && ev->timer <= 0.000001f) {
+		config->userDefinedOffsetActive = !config->userDefinedOffsetActive;
 	}
 
 	return false;
@@ -407,15 +427,6 @@ bool Camera::Thirdperson::OnKeyPress(const ButtonEvent* ev) noexcept {
 
 bool Camera::Thirdperson::OnMenuOpenClose(MenuID id, const MenuOpenCloseEvent* const ev) noexcept {
 	switch (id) {
-		case MenuID::DialogMenu: {
-			if (dialogMenuOpen && !ev->opening) wasDialogMenuOpen = true;
-			dialogMenuOpen = ev->opening;
-
-			if (dialogMenuOpen && config->compatACC) {
-				stateCopyData.accPitch = (*g_thePlayer)->rot.x;
-			}
-			return true;
-		}
 		case MenuID::MapMenu: {
 			SetFOVOffset(0.0f, true);
 			return true;
@@ -549,7 +560,7 @@ void Camera::Thirdperson::GetCameraGoalPosition(const CorrectedPlayerCamera* cam
 	const auto cameraLocal = offsetState.position;
 	auto translated = rotation.ToRotationMatrix() * glm::vec4(
 		cameraLocal.x,
-		cameraLocal.y,
+		cameraLocal.y - config->minCameraFollowDistance + zoomTransitionState.currentPosition,
 		0.0f,
 		1.0f
 	);
@@ -609,12 +620,13 @@ void Camera::Thirdperson::MoveToGoalPosition(const PlayerCharacter* player, cons
 	offsetState.currentGroup = GetOffsetForState(actionState);
 
 	auto ofs = GetCurrentCameraOffset(player, camera);
+	zoomTransitionState.currentPosition = zoomTransitionState.lastPosition = GetCurrentCameraDistance(camera);
 	offsetTransitionState.currentPosition = offsetTransitionState.lastPosition = {
-		ofs.x, ofs.z
+		ofs.x,
+		ofs.y,
+		ofs.z
 	};
-	zoomTransitionState.currentPosition = zoomTransitionState.lastPosition = ofs.y;
 	fovTransitionState.currentPosition = fovTransitionState.lastPosition = ofs.w;
-
 	GetCameraGoalPosition(camera, currentPosition.world, currentPosition.local);
 	lastPosition = currentPosition;
 }
@@ -623,26 +635,15 @@ void Camera::Thirdperson::UpdateInternalRotation(CorrectedPlayerCamera* camera) 
 	const auto tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
 	if (!tps) return;
 
-	if (config->compatACC && wasDialogMenuOpen) {
-		auto pl = *g_thePlayer;
-		if (pl) {
-			tps->rotation = rotation.ToNiQuat();
-			tps->yaw1 = tps->yaw2 = rotation.euler.y;
-			camera->lookYaw = rotation.euler.y;
-			pl->rot.x = stateCopyData.accPitch;
-		}
-
-	} else {
-		// Alright, just lie and force the game to compute yaw for us
-		// We get some jitter when things like magic change our character, not sure why yet @TODO
-		auto last = tps->freeRotationEnabled;
-		auto pl = *g_thePlayer;
-		tps->freeRotationEnabled = true;
-		tps->UpdateRotation();
+	// Alright, just lie and force the game to compute yaw for us
+	// We get some jitter when things like magic change our character, not sure why yet @TODO
+	auto last = tps->freeRotationEnabled;
+	auto pl = *g_thePlayer;
+	tps->freeRotationEnabled = true;
+	tps->UpdateRotation();
 		rotation.SetQuaternion(tps->rotation);
-		tps->freeRotationEnabled = last;
-		tps->UpdateRotation();
-	}
+	tps->freeRotationEnabled = last;
+	tps->UpdateRotation();
 }
 
 NiAVObject* Camera::Thirdperson::FindFollowBone(const TESObjectREFR* ref) const noexcept {
@@ -655,6 +656,10 @@ NiAVObject* Camera::Thirdperson::FindFollowBone(const TESObjectREFR* ref) const 
 	}
 
 	return nullptr;
+}
+
+float Camera::Thirdperson::GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept {
+	return -(GetCurrentCameraZoom(camera, m_camera->currentState) * config->zoomMul);
 }
 
 float Camera::Thirdperson::GetCurrentCameraZoom(const CorrectedPlayerCamera* camera,
@@ -690,9 +695,9 @@ float Camera::Thirdperson::GetCameraZoomScalar(const CorrectedPlayerCamera* came
 	return state->cameraZoom + (minZoom *-1);
 }
 
-bool Camera::Thirdperson::IsInterpAllowed(const PlayerCharacter* player) const noexcept {
+bool Camera::Thirdperson::IsInterpAllowed(const Actor* player) const noexcept {
 	auto ofs = offsetState.currentGroup;
-	if (m_camera->currentState == GameState::CameraState::Horseback) {
+	if (m_camera->currentState == GameState::CameraState::Horseback && !config->userDefinedOffsetActive) {
 		if (GameState::IsBowDrawn(player)) {
 			return config->bowAim.interpHorseback;
 		} else {
@@ -700,7 +705,7 @@ bool Camera::Thirdperson::IsInterpAllowed(const PlayerCharacter* player) const n
 		}
 	}
 
-	if (GameState::IsSneaking(player)) {
+	if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive) {
 		if (GameState::IsBowDrawn(player)) {
 			return config->bowAim.interpMeleeCombat;
 		}
@@ -716,8 +721,96 @@ bool Camera::Thirdperson::IsInterpAllowed(const PlayerCharacter* player) const n
 	return ofs->interpMeleeCombat;
 }
 
+bool Camera::Thirdperson::IsInterpOverloaded(const Actor* player) const noexcept {
+	auto ofs = offsetState.currentGroup;
+	if (m_camera->currentState == GameState::CameraState::Horseback && !config->userDefinedOffsetActive) {
+		if (GameState::IsBowDrawn(player)) {
+			return config->bowAim.interpHorsebackConf.overrideInterp;
+		} else {
+			ofs = &config->horseback;
+		}
+	}
+
+	if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive) {
+		if (GameState::IsBowDrawn(player)) {
+			return config->bowAim.interpMeleeConf.overrideInterp;
+		}
+	}
+
+	if (!GameState::IsWeaponDrawn(player)) return ofs->interpConf.overrideInterp;
+	if (GameState::IsRangedWeaponDrawn(player)) {
+		return ofs->interpRangedConf.overrideInterp;
+	}
+	if (GameState::IsMagicDrawn(player)) {
+		return ofs->interpMagicConf.overrideInterp;
+	}
+	return ofs->interpMeleeConf.overrideInterp;
+}
+
+bool Camera::Thirdperson::IsLocalInterpOverloaded(const Actor* player) const noexcept {
+	auto ofs = offsetState.currentGroup;
+	if (m_camera->currentState == GameState::CameraState::Horseback && !config->userDefinedOffsetActive) {
+		if (GameState::IsBowDrawn(player)) {
+			return config->bowAim.interpHorsebackConf.overrideLocalInterp;
+		} else {
+			ofs = &config->horseback;
+		}
+	}
+
+	if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive) {
+		if (GameState::IsBowDrawn(player)) {
+			return config->bowAim.interpMeleeConf.overrideLocalInterp;
+		}
+	}
+
+	if (!GameState::IsWeaponDrawn(player)) return ofs->interpConf.overrideLocalInterp;
+	if (GameState::IsRangedWeaponDrawn(player)) {
+		return ofs->interpRangedConf.overrideLocalInterp;
+	}
+	if (GameState::IsMagicDrawn(player)) {
+		return ofs->interpMagicConf.overrideLocalInterp;
+	}
+	return ofs->interpMeleeConf.overrideLocalInterp;
+}
+
+const Config::OffsetGroupScalar* Camera::Thirdperson::GetCurrentScalarGroup(const Actor* player,
+	const Config::OffsetGroup* currentGroup) const noexcept
+{
+	if (m_camera->currentState == GameState::CameraState::Horseback && !config->userDefinedOffsetActive) {
+		if (GameState::IsBowDrawn(player)) {
+			// Aiming with a bow on horseback
+			return &currentGroup->interpHorsebackConf;
+		}
+	}
+
+	if (GameState::IsBowDrawn(player)) {
+		if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive) // Aiming with a bow while sneaking
+			return &currentGroup->interpMeleeConf;
+		else
+			return &currentGroup->interpRangedConf; // All other bow aim cases use ranged
+
+	} else if (GameState::IsMagicDrawn(player)) {
+		return &currentGroup->interpMagicConf;
+	} else if (GameState::IsRangedWeaponDrawn(player)) {
+		return &currentGroup->interpRangedConf;
+	} else if (GameState::IsWeaponDrawn(player)) {
+		return &currentGroup->interpMeleeConf;
+	} else {
+		return &currentGroup->interpConf;
+	}
+}
+
 const Config::OffsetGroup* Camera::Thirdperson::GetOffsetForState(const CameraActionState state) const noexcept {
+	if (config->userDefinedOffsetActive)
+		return &config->userDefined;
+
 	switch (state) {
+		case CameraActionState::Horseback: {
+			return &config->horseback;
+		}
+		case CameraActionState::Dragon: {
+			return &config->dragon;
+		}
 		case CameraActionState::VampireLord: {
 			return &config->vampireLord;
 		}
@@ -760,7 +853,7 @@ const Config::OffsetGroup* Camera::Thirdperson::GetOffsetForState(const CameraAc
 	}
 }
 
-float Camera::Thirdperson::GetActiveWeaponStateZoomOffset(const PlayerCharacter* player,
+float Camera::Thirdperson::GetActiveWeaponStateForwardOffset(const Actor* player,
 	const Config::OffsetGroup* group) const noexcept
 {
 	if (!GameState::IsWeaponDrawn(player)) return group->zoomOffset;
@@ -773,7 +866,7 @@ float Camera::Thirdperson::GetActiveWeaponStateZoomOffset(const PlayerCharacter*
 	return group->combatMeleeZoomOffset;
 }
 
-float Camera::Thirdperson::GetActiveWeaponStateUpOffset(const PlayerCharacter* player,
+float Camera::Thirdperson::GetActiveWeaponStateUpOffset(const Actor* player,
 	const Config::OffsetGroup* group) const noexcept
 {
 	if (!GameState::IsWeaponDrawn(player)) return group->upOffset;
@@ -786,7 +879,7 @@ float Camera::Thirdperson::GetActiveWeaponStateUpOffset(const PlayerCharacter* p
 	return group->combatMeleeUpOffset;
 }
 
-float Camera::Thirdperson::GetActiveWeaponStateSideOffset(const PlayerCharacter* player,
+float Camera::Thirdperson::GetActiveWeaponStateSideOffset(const Actor* player,
 	const Config::OffsetGroup* group) const noexcept
 {
 	if (!GameState::IsWeaponDrawn(player)) return group->sideOffset;
@@ -799,7 +892,7 @@ float Camera::Thirdperson::GetActiveWeaponStateSideOffset(const PlayerCharacter*
 	return group->combatMeleeSideOffset;
 }
 
-float Camera::Thirdperson::GetActiveWeaponStateFOVOffset(const PlayerCharacter* player,
+float Camera::Thirdperson::GetActiveWeaponStateFOVOffset(const Actor* player,
 	const Config::OffsetGroup* group) const noexcept
 {
 	if (!GameState::IsWeaponDrawn(player)) return group->fovOffset;
@@ -812,18 +905,19 @@ float Camera::Thirdperson::GetActiveWeaponStateFOVOffset(const PlayerCharacter* 
 	return group->combatMeleeFOVOffset;
 }
 
-float Camera::Thirdperson::GetCurrentCameraZoomOffset(const PlayerCharacter* player) const noexcept {
-	switch (m_camera->currentState) {
-		case GameState::CameraState::Horseback: {
-			if (GameState::IsBowDrawn(player)) {
-				return config->bowAim.horseZoomOffset;
-			} else {
-				return GetActiveWeaponStateZoomOffset(player, &config->horseback);
+float Camera::Thirdperson::GetCurrentCameraForwardOffset(const Actor* player) const noexcept {
+	if (!config->userDefinedOffsetActive)
+		switch (m_camera->currentState) {
+			case GameState::CameraState::Horseback: {
+				if (GameState::IsBowDrawn(player)) {
+					return config->bowAim.horseZoomOffset;
+				} else {
+					return GetActiveWeaponStateForwardOffset(player, &config->horseback);
+				}
 			}
+			default:
+				break;
 		}
-		default:
-			break;
-	}
 
 	switch (m_camera->currentActionState) {
 		case CameraActionState::DisMounting:
@@ -833,7 +927,7 @@ float Camera::Thirdperson::GetCurrentCameraZoomOffset(const PlayerCharacter* pla
 			return offsetState.currentGroup->zoomOffset;
 		}
 		case CameraActionState::Aiming: {
-			if (GameState::IsSneaking(player))
+			if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive)
 				return config->bowAim.combatMeleeZoomOffset;
 			return offsetState.currentGroup->zoomOffset;
 		}
@@ -844,7 +938,7 @@ float Camera::Thirdperson::GetCurrentCameraZoomOffset(const PlayerCharacter* pla
 		case CameraActionState::Walking:
 		case CameraActionState::Running:
 		case CameraActionState::Standing: {
-			return GetActiveWeaponStateZoomOffset(player, offsetState.currentGroup);
+			return GetActiveWeaponStateForwardOffset(player, offsetState.currentGroup);
 		}
 		default: {
 			break;
@@ -853,18 +947,19 @@ float Camera::Thirdperson::GetCurrentCameraZoomOffset(const PlayerCharacter* pla
 	return 0.0f;
 }
 
-float Camera::Thirdperson::GetCurrentCameraHeight(const PlayerCharacter* player) const noexcept {
-	switch (m_camera->currentState) {
-		case GameState::CameraState::Horseback: {
-			if (GameState::IsBowDrawn(player)) {
-				return config->bowAim.horseUpOffset;
-			} else {
-				return GetActiveWeaponStateUpOffset(player, &config->horseback);
+float Camera::Thirdperson::GetCurrentCameraHeight(const Actor* player) const noexcept {
+	if (!config->userDefinedOffsetActive)
+		switch (m_camera->currentState) {
+			case GameState::CameraState::Horseback: {
+				if (GameState::IsBowDrawn(player)) {
+					return config->bowAim.horseUpOffset;
+				} else {
+					return GetActiveWeaponStateUpOffset(player, &config->horseback);
+				}
 			}
+			default:
+				break;
 		}
-		default:
-			break;
-	}
 
 	switch (m_camera->currentActionState) {
 		case CameraActionState::DisMounting:
@@ -874,7 +969,7 @@ float Camera::Thirdperson::GetCurrentCameraHeight(const PlayerCharacter* player)
 			return offsetState.currentGroup->upOffset;
 		}
 		case CameraActionState::Aiming: {
-			if (GameState::IsSneaking(player))
+			if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive)
 				return config->bowAim.combatMeleeUpOffset;
 			return offsetState.currentGroup->upOffset;
 		}
@@ -894,20 +989,21 @@ float Camera::Thirdperson::GetCurrentCameraHeight(const PlayerCharacter* player)
 	return 0.0f;
 }
 
-float Camera::Thirdperson::GetCurrentCameraSideOffset(const PlayerCharacter* player,
+float Camera::Thirdperson::GetCurrentCameraSideOffset(const Actor* player,
 	const CorrectedPlayerCamera* camera) const noexcept
 {
-	switch (m_camera->currentState) {
-		case GameState::CameraState::Horseback: {
-			if (GameState::IsBowDrawn(player)) {
-				return config->bowAim.horseSideOffset * shoulderSwap;
-			} else {
-				return GetActiveWeaponStateSideOffset(player, &config->horseback) * shoulderSwap;
+	if (!config->userDefinedOffsetActive)
+		switch (m_camera->currentState) {
+			case GameState::CameraState::Horseback: {
+				if (GameState::IsBowDrawn(player)) {
+					return config->bowAim.horseSideOffset * shoulderSwap;
+				} else {
+					return GetActiveWeaponStateSideOffset(player, &config->horseback) * shoulderSwap;
+				}
 			}
+			default:
+				break;
 		}
-		default:
-			break;
-	}
 
 	switch (m_camera->currentActionState) {
 		case CameraActionState::DisMounting:
@@ -917,7 +1013,7 @@ float Camera::Thirdperson::GetCurrentCameraSideOffset(const PlayerCharacter* pla
 			return offsetState.currentGroup->sideOffset * shoulderSwap;
 		}
 		case CameraActionState::Aiming: {
-			if (GameState::IsSneaking(player))
+			if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive)
 				return config->bowAim.combatMeleeSideOffset * shoulderSwap;
 			return offsetState.currentGroup->sideOffset * shoulderSwap;
 		}
@@ -937,18 +1033,19 @@ float Camera::Thirdperson::GetCurrentCameraSideOffset(const PlayerCharacter* pla
 	return 0.0f;
 }
 
-float Camera::Thirdperson::GetCurrentCameraFOVOffset(const PlayerCharacter* player) const noexcept {
-	switch (m_camera->currentState) {
-		case GameState::CameraState::Horseback: {
-			if (GameState::IsBowDrawn(player)) {
-				return config->bowAim.horseFOVOffset;
-			} else {
-				return GetActiveWeaponStateFOVOffset(player, &config->horseback);
+float Camera::Thirdperson::GetCurrentCameraFOVOffset(const Actor* player) const noexcept {
+	if (!config->userDefinedOffsetActive)
+		switch (m_camera->currentState) {
+			case GameState::CameraState::Horseback: {
+				if (GameState::IsBowDrawn(player)) {
+					return config->bowAim.horseFOVOffset;
+				} else {
+					return GetActiveWeaponStateFOVOffset(player, &config->horseback);
+				}
 			}
+			default:
+				break;
 		}
-		default:
-			break;
-	}
 
 	switch (m_camera->currentActionState) {
 		case CameraActionState::DisMounting:
@@ -958,7 +1055,7 @@ float Camera::Thirdperson::GetCurrentCameraFOVOffset(const PlayerCharacter* play
 			return offsetState.currentGroup->fovOffset;
 		}
 		case CameraActionState::Aiming:{
-			if (GameState::IsSneaking(player))
+			if (GameState::IsSneaking(player) && !config->userDefinedOffsetActive)
 				return config->bowAim.combatMeleeFOVOffset;
 			return offsetState.currentGroup->fovOffset;
 		}
@@ -978,22 +1075,20 @@ float Camera::Thirdperson::GetCurrentCameraFOVOffset(const PlayerCharacter* play
 	return 0.0f;
 }
 
-float Camera::Thirdperson::GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept {
-	return -(config->minCameraFollowDistance + (GetCurrentCameraZoom(camera, m_camera->currentState) * config->zoomMul));
-}
-
-glm::vec4 Camera::Thirdperson::GetCurrentCameraOffset(const PlayerCharacter* player,
+glm::vec4 Camera::Thirdperson::GetCurrentCameraOffset(const Actor* player,
 	const CorrectedPlayerCamera* camera) const noexcept
 {
 	return {
 		GetCurrentCameraSideOffset(player, camera),
-		GetCurrentCameraDistance(camera) + GetCurrentCameraZoomOffset(player),
+		GetCurrentCameraForwardOffset(player),
 		GetCurrentCameraHeight(player) + (config->zOffsetActive ? config->customZOffset : 0.0f),
 		GetCurrentCameraFOVOffset(player)
 	};
 }
 
-double Camera::Thirdperson::GetCurrentSmoothingScalar(const float distance, ScalarSelector method) const {
+double Camera::Thirdperson::GetCurrentSmoothingScalar(const Actor* player, const float distance,
+	ScalarSelector method) const
+{
 	Config::ScalarMethods scalarMethod;
 
 	// Work in FP64 here to eek out some more precision
@@ -1012,8 +1107,24 @@ double Camera::Thirdperson::GetCurrentSmoothingScalar(const float distance, Scal
 		);
 		scalarMethod = config->separateZScalar;
 	} else if (method == ScalarSelector::LocalSpace) {
-		remapped = distance;
+		auto max = static_cast<double>(config->localMaxSmoothingDistance);
+		auto minFollow = static_cast<double>(config->localMinFollowRate);
+		auto maxFollow = static_cast<double>(config->localMaxFollowRate);
 		scalarMethod = config->separateLocalScalar;
+
+		if (IsLocalInterpOverloaded(player)) {
+			const auto group = GetCurrentScalarGroup(player, offsetState.currentGroup);
+			max = static_cast<double>(group->localMaxSmoothingDistance);
+			minFollow = static_cast<double>(group->localMinFollowRate);
+			maxFollow = static_cast<double>(group->localMaxFollowRate);
+			scalarMethod = group->separateLocalScalar;
+		}
+
+		scalar = glm::clamp(glm::max(1.0 - (max - distance), minZero) / max, 0.0, 1.0);
+		remapped = mmath::Remap<double>(
+			scalar, 0.0, 1.0, minFollow, maxFollow
+		);
+		
 	} else {
 		const auto max = static_cast<double>(config->zoomMaxSmoothingDistance);
 		scalar = glm::clamp(glm::max(1.0 - (max - distance), minZero) / max, 0.0, 1.0);
@@ -1079,6 +1190,8 @@ void Camera::Thirdperson::SetFOVOffset(float fov, bool force) noexcept {
 				*Offsets::Get<float*>(527997) = 0.0f;
 		}
 	}
+
+	if (fov == 0.0f) return;
 
 	// This is an offset value applied to any call to SetFOV.
 	// Used internally in the game by things like zooming with the bow.
@@ -1157,4 +1270,41 @@ bool Camera::Thirdperson::UpdatePOVSwitchState(CorrectedPlayerCamera* camera, ui
 	}
 
 	return false;
+}
+
+void Camera::Thirdperson::UpdateOffsetSmoothers(const Actor* player, float curTime) noexcept {
+	globalValues.currentScalar = config->currentScalar;
+	globalValues.minCameraFollowRate = config->minCameraFollowRate;
+	globalValues.maxCameraFollowRate = config->maxCameraFollowRate;
+	globalValues.zoomMaxSmoothingDistance = config->zoomMaxSmoothingDistance;
+
+	globalValues.separateLocalScalar = config->separateLocalScalar;
+	globalValues.localMinFollowRate = config->localMinFollowRate;
+	globalValues.localMaxFollowRate = config->localMaxFollowRate;
+	globalValues.localMaxSmoothingDistance = config->localMaxSmoothingDistance;
+
+	// Check if we need to move to a new scalar state
+	const Config::OffsetGroupScalar* curS = GetCurrentScalarGroup(player, offsetState.currentGroup);
+
+	const auto globalGroup = IsInterpOverloaded(player) ? curS : &globalValues;
+	const auto localGroup = IsLocalInterpOverloaded(player) ? curS : &globalValues;
+
+	// First run - enforce state
+	if (!globalSmoother.hasEverUpdated)
+		globalSmoother.MoveTo(globalGroup, config->globalInterpOverrideMethod, curTime, config->globalInterpOverrideSmoothing);
+
+	if (!localSmoother.hasEverUpdated)
+		localSmoother.MoveTo(localGroup, config->localInterpOverrideMethod, curTime, config->localInterpOverrideSmoothing);
+
+	// Global
+	if (globalSmoother.GetGoal() != globalGroup)
+		globalSmoother.MoveTo(globalGroup, config->globalInterpOverrideMethod, curTime, config->globalInterpOverrideSmoothing);
+	else
+		globalSmoother.Update(curTime);
+
+	// Local
+	if (localSmoother.GetGoal() != localGroup)
+		localSmoother.MoveTo(localGroup, config->localInterpOverrideMethod, curTime, config->localInterpOverrideSmoothing);
+	else
+		localSmoother.Update(curTime);
 }

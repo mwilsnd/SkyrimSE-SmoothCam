@@ -116,14 +116,14 @@ namespace GameState {
 	const eastl::bitset<32> GetPlayerActionBits(const Actor* player) noexcept;
 
 	// Check if the camera is near the player's head (for first person mods)
-	const bool IC_InFirstPersonState(const TESObjectREFR* player, const CorrectedPlayerCamera* camera) noexcept;
-	const bool IFPV_InFirstPersonState(const TESObjectREFR* player, const CorrectedPlayerCamera* camera) noexcept;
+	const bool IC_InFirstPersonState() noexcept;
+	const bool IFPV_InFirstPersonState() noexcept;
 
 	/// Camera state detection
 	// Returns true if the player is in first person
-	const bool IsFirstPerson(const TESObjectREFR* player, const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsFirstPerson(const CorrectedPlayerCamera* camera) noexcept;
 	// Returns true if the player is in third person
-	const bool IsThirdPerson(const TESObjectREFR* player, const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsThirdPerson(const CorrectedPlayerCamera* camera) noexcept;
 	// Returns true if the player has a weapon drawn and in third person
 	const bool IsThirdPersonCombat(const Actor* player, const CorrectedPlayerCamera* camera) noexcept;
 	// Returns true if a kill move is playing
@@ -199,4 +199,6 @@ namespace GameState {
 	const bool IsVampireLord(const Actor* player) noexcept;
 	// Returns true if the player is a werewolf
 	const bool IsWerewolf(const Actor* player) noexcept;
+	// Returns true if the player is over-encumbered
+	const bool IsOverEncumbered(const Actor* player) noexcept;
 }

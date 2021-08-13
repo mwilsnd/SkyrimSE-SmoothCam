@@ -129,12 +129,13 @@ static bool ReadSwapChain() {
 		if (!SUCCEEDED(data->swapChain->GetDesc(&desc)))
 			return false;
 
-		gameContext.windowSize.x = static_cast<float>(data->windowW);
-		gameContext.windowSize.y = static_cast<float>(data->windowH);
+		gameContext.windowSize.x = static_cast<float>(desc.BufferDesc.Width/*data->windowW*/);
+		gameContext.windowSize.y = static_cast<float>(desc.BufferDesc.Height/*data->windowH*/);
 		gameContext.hWnd = data->window;
 	} __except (1) {
 		return false;
 	}
+
 	return true;
 }
 
@@ -187,11 +188,11 @@ winrt::com_ptr<ID3D11RenderTargetView>& Render::GetGameRT() noexcept {
 	return d3dObjects.gameRTV;
 }
 
-void Render::OnPresent(DrawFunc&& callback) {
+void Render::OnPresent(DrawFunc&& callback) noexcept {
 	presentCallbacks.emplace_back(callback);
 }
 
-void Render::SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D3D11_COMPARISON_FUNC testFunc) {
+void Render::SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D3D11_COMPARISON_FUNC testFunc) noexcept {
 	auto key = DSStateKey{ writeEnable, testEnable, testFunc };
 	auto it = d3dObjects.loadedDepthStates.find(key);
 	if (it != d3dObjects.loadedDepthStates.end()) {
@@ -206,6 +207,7 @@ void Render::SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D
 
 void Render::SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp, D3D11_BLEND_OP blendAlphaOp,
 	D3D11_BLEND src, D3D11_BLEND dest, D3D11_BLEND srcAlpha, D3D11_BLEND destAlpha, bool alphaToCoverage)
+	noexcept
 {
 	auto key = BlendStateKey{};
 	key.desc.AlphaToCoverageEnable = alphaToCoverage;
@@ -233,7 +235,7 @@ void Render::SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp,
 
 void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CULL_MODE cullMode, bool frontCCW,
 	int32_t depthBias, float depthBiasClamp, float slopeScaledDepthBias, bool lineAA, bool depthClip,
-	bool scissorEnable, bool msaa)
+	bool scissorEnable, bool msaa) noexcept
 {
 	D3D11_RASTERIZER_DESC desc;
 	desc.FillMode = fillMode;
@@ -259,14 +261,14 @@ void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CUL
 	d3dObjects.loadedRasterStates.emplace(key, std::move(state));
 }
 
-Render::GBuffer::WrappedCameraData* Render::GBuffer::CameraSwap(NiCamera* inCamera, byte flags) {
+Render::GBuffer::WrappedCameraData* Render::GBuffer::CameraSwap(NiCamera* inCamera, byte flags) noexcept {
 	// FUN_140d7d7b0
 	typedef WrappedCameraData*(*ty)(GBuffer* param_1, NiCamera* param_2, byte param_3);
 	static auto fn = Offsets::Get<ty>(75713);
 	return fn(this, inCamera, flags);
 }
 
-void Render::GBuffer::UpdateGPUCameraData(NiCamera* inCamera, byte flags) {
+void Render::GBuffer::UpdateGPUCameraData(NiCamera* inCamera, byte flags) noexcept {
 	// FUN_140d7bab0
 	typedef void(*ty)(GBuffer* param_1, NiCamera* param_2, byte param_3);
 	static auto fn = Offsets::Get<ty>(75694);

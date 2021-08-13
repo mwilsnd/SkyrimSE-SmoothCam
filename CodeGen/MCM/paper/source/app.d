@@ -9,11 +9,13 @@ import constructs.struct_invoke_switchifeq;
 import constructs.auto_array;
 import constructs.decl_offset_group;
 import constructs.impl_offset_group;
+import constructs.arena;
 
 import fs = std.file;
 import std.stdio;
 import std.container.array;
 import std.path;
+import std.utf;
 
 void main(string[] args) {
 	writeln("paper - I probably over-engineered this");
@@ -73,12 +75,22 @@ void main(string[] args) {
 		}
 	}
 
+	auto arena = new Arena();
+	err = arena.apply(tokens);
+	if (!err.isOk()) {
+		writeln(err.msg);
+		return;
+	}
+
 	auto constStruct = new ConstStructParser();
+	constStruct.setArena(arena);
 	err = constStruct.parse(tokens);
 	if (!err.isOk()) {
 		writeln(err.msg);
 		return;
 	}
+
+	arena.report();
 
 	{
 		scope auto allOfStruct = new AllOfStruct();
@@ -122,35 +134,11 @@ void main(string[] args) {
 		return;
 	}
 
-	/*{
-		scope auto concat = new Concat();
-		err = concat.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-
-	{
-		scope auto en = new Enumeration();
-		err = en.parse(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-
-		err = en.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}*/
-
 	try {
 		if (fs.exists(args[2]))
 			fs.remove(args[2]);
 		
-		fs.append(args[2], streamToString(tokens));
+		fs.write(args[2].toUTF8, streamToString(tokens).toUTF8);
 	} catch (fs.FileException e) {
 		writeln("Failed to write to output file: ", e.toString());
 	}

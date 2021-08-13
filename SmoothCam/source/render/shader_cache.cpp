@@ -9,7 +9,7 @@ void Render::ShaderCache::Release() noexcept {
 eastl::shared_ptr<Render::Shader> Render::ShaderCache::Load(const ShaderCreateInfo& info, Render::D3DContext& ctx)
 	noexcept
 {
-	auto it = shaders.find(info);
+	const auto it = shaders.find(info);
 	if (it != shaders.end()) {
 		if (auto ptr = it->second.lock(); ptr != nullptr) {
 			return ptr;

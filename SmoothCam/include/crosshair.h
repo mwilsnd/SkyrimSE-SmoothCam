@@ -8,9 +8,26 @@
 #include "crosshair/base.h"
 
 namespace Crosshair {
+	class Manager;
+
 	class Manager {
 		public:
-			Manager();
+			struct CurrentCrosshairData {
+				glm::dvec2 ofs = { 0.0, 0.0 };
+				glm::dvec2 position = { 0.0, 0.0 };
+				glm::dvec2 scale = { 1.0, 1.0 };
+
+				glm::dvec2 stealthMeterOfs = { 0.0, 0.0 };
+				glm::dvec2 stealthMeterPosition = { 0.0, 0.0 };
+
+				bool enabled = true;
+				bool invalidated = false;
+				bool alertMode = false;
+				bool stealthMeterMutated = false;
+			};
+
+		public:
+			Manager() noexcept;
 			~Manager();
 
 			// Get a normal vector pointing in the direction of the crosshair
@@ -58,6 +75,11 @@ namespace Crosshair {
 
 			// Reset mutations, hard reset = true to clear crosshair related user settings
 			void Reset(bool hard = false) noexcept;
+			void ResetCrosshair() noexcept;
+			void ResetStealthMeter(bool hard = false) noexcept;
+
+			// Get the current state of the cached crosshair data
+			CurrentCrosshairData& GetCurrentCrosshairData() noexcept;
 
 		private:
 			// Returns true if the manager has captured the base crosshair data correctly
@@ -80,21 +102,6 @@ namespace Crosshair {
 
 			// Try to find the arrow node on the player. It can either be attached to the weapon node or a magic node.
 			NiAVObject* FindArrowNode(const PlayerCharacter* player) const noexcept;
-
-		public:
-			struct CurrentCrosshairData {
-				glm::dvec2 ofs = { 0.0, 0.0 };
-				glm::dvec2 position = { 0.0, 0.0 };
-				glm::dvec2 scale = { 1.0, 1.0 };
-
-				glm::dvec2 stealthMeterOfs = { 0.0, 0.0 };
-				glm::dvec2 stealthMeterPosition = { 0.0, 0.0 };
-
-				bool enabled = true;
-				bool invalidated = false;
-				bool alertMode = false;
-				bool stealthMeterMutated = false;
-			};
 
 		private:
 			struct {

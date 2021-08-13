@@ -20,19 +20,19 @@ void Camera::State::ThirdpersonHorseState::OnEnd(const PlayerCharacter* player, 
 void Camera::State::ThirdpersonHorseState::Update(PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera)
 	noexcept
 {
+	BaseThird::Update(player, cameraRef, camera);
+
 	// Get our computed local-space xyz offset.
 	const auto cameraLocal = GetCameraOffsetStatePosition();
 	// Get the base world position for the camera which we will offset with the local-space values.
 	const auto worldTarget = GetCameraWorldPosition(cameraRef, camera);
 	// Transform the camera offsets based on the computed view matrix
-	const auto transformedLocalPos = GetTransformedCameraLocalPosition();
-	// Define the starting point for our raycast
-	const auto start = worldTarget + glm::vec3(0.0f, 0.0f, cameraLocal.z);
+	const auto transformedLocalPos = GetTransformedCameraLocalPosition(camera);
 
-	glm::vec3 preFinalPos;
-	if (GetConfig()->separateLocalInterp) {
+	glm::vec3 preFinalPos{};
+	if (IsLocalInterpAllowed()) {
 		// Handle separate local-space interpolation
-		const auto loc = UpdateInterpolatedLocalPosition(transformedLocalPos);
+		const auto loc = UpdateInterpolatedLocalPosition(player, transformedLocalPos);
 
 		const auto& last = GetLastCameraPosition();
 		// Last offset position from ref
@@ -93,7 +93,9 @@ void Camera::State::ThirdpersonHorseState::Update(PlayerCharacter* player, const
 	const auto finalPos = ComputeRaycast(rayXOrigin, preFinalPos);
 
 	// Set the position
+	// This sets the rendering position of the camera, and applies game offsets
 	SetCameraPosition(finalPos, player, camera);
+	// And store our world position BEFORE collision
 	GetCameraPosition().SetWorldPosition(preFinalPos);
 	// Update crosshair visibility
 	UpdateCrosshair(player, camera);

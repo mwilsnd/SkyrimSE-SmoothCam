@@ -56,7 +56,8 @@ namespace Raycast {
 	//	RayResult:
 	//		A structure holding the results of the ray cast.
 	//		If the ray hit something, result.hit will be true.
-	RayResult CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize, bool intersectCharacters = false);
+	RayResult CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize, bool intersectCharacters = false)
+		noexcept;
 	
 	// Cast a ray from 'start' to 'end', returning the first thing it hits
 	// This variant collides with pretty much any solid geometry
@@ -68,5 +69,5 @@ namespace Raycast {
 	//	RayResult:
 	//		A structure holding the results of the ray cast.
 	//		If the ray hit something, result.hit will be true.
-	RayResult hkpCastRay(glm::vec4 start, glm::vec4 end);
+	RayResult hkpCastRay(glm::vec4 start, glm::vec4 end) noexcept;
 }

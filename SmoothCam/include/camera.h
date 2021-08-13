@@ -24,6 +24,8 @@ namespace Camera {
 		Aiming,					// Player is aiming with a bow
 		Mounting,				// Player is mounting a horse					!-> Unused
 		DisMounting,			// Player is dismounting a horse
+		Horseback,				// Player is riding a horse
+		Dragon,					// Player is riding a dragon
 		FirstPersonHorseback,	// A special mode for improved camera with custom transition rules
 		FirstPersonDragon,		// A special mode for improved camera with custom transition rules
 		VampireLord,			// Player is a vampire lord
@@ -95,7 +97,7 @@ namespace Camera {
 	// Low level camera, holding both the thirdperson and firstperson cameras
 	class Camera {
 		public:
-			Camera();
+			Camera() noexcept;
 			~Camera();
 			Camera(const Camera&) = delete;
 			Camera(Camera&&) noexcept = delete;
@@ -160,7 +162,7 @@ namespace Camera {
 				const CameraActionState oldState) const noexcept;
 			// Triggers when the camera state changes
 			void OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-				const GameState::CameraState newState, const GameState::CameraState oldState);
+				const GameState::CameraState newState, const GameState::CameraState oldState) noexcept;
 
 			NiPointer<NiCamera> GetNiCamera(CorrectedPlayerCamera* camera) const noexcept;
 
@@ -177,6 +179,11 @@ namespace Camera {
 			bool povIsThird = false;                    // Our current POV state
 			bool povWasPressed = false;					// Change POV was pressed
 			bool wasLoading = false;					// True if we saw the loading screen menu
+
+			bool accControl = false;					// Set when camera assumes ACC should be running
+			bool wasDialogOpen = false;					// Set if the player was in dialog the last time the camera ran, but not this time
+			float accSavePitch = 0.0f;					// ACC messes up pitch rotation when exiting dialog, save and restore it
+
 			int8_t loadScreenDepth = 0;                 // If not 0, we are in a loading screen sequence
 			NiFrustum frustum;                          // Our current view frustum
 			mmath::NiMatrix44 worldToScaleform;         // Our current worldToScreen matrix for the hud

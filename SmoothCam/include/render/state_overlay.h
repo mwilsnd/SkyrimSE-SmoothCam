@@ -5,6 +5,10 @@
 
 namespace Camera {
 	class Thirdperson;
+
+	namespace State {
+		class BaseThird;
+	}
 }
 
 namespace Render {
@@ -21,6 +25,8 @@ namespace Render {
 			void SetPosition(uint32_t x, uint32_t y) noexcept;
 			// Set the size of the graph
 			void SetSize(uint32_t w, uint32_t h) noexcept;
+			// Set the running third-person state
+			void SetThirdPersonState(Camera::State::BaseThird* third) noexcept;
 			// Draw the chart
 			void Draw(const Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept;
 
@@ -31,6 +37,8 @@ namespace Render {
 				D3DContext& ctx) noexcept;
 
 			Camera::Thirdperson* camera = nullptr;
+			Camera::State::BaseThird* thirdState = nullptr;
+
 			uint32_t width = 0;
 			uint32_t height = 0;
 			uint32_t xPos = 0;

@@ -7,6 +7,34 @@ Config::UserConfig currentConfig;
 	obj.member = j.value(#member, def);	\
 }
 
+void Config::to_json(json& j, const OffsetGroupScalar& obj) {
+	j = json{
+		CREATE_JSON_VALUE(obj, overrideInterp),
+		CREATE_JSON_VALUE(obj, currentScalar),
+		CREATE_JSON_VALUE(obj, minCameraFollowRate),
+		CREATE_JSON_VALUE(obj, maxCameraFollowRate),
+		CREATE_JSON_VALUE(obj, zoomMaxSmoothingDistance),
+		CREATE_JSON_VALUE(obj, overrideLocalInterp),
+		CREATE_JSON_VALUE(obj, separateLocalScalar),
+		CREATE_JSON_VALUE(obj, localMinFollowRate),
+		CREATE_JSON_VALUE(obj, localMaxFollowRate),
+		CREATE_JSON_VALUE(obj, localMaxSmoothingDistance),
+	};
+}
+
+void Config::from_json(const json& j, OffsetGroupScalar& obj) {
+	VALUE_FROM_JSON(obj, overrideInterp)
+	VALUE_FROM_JSON(obj, currentScalar)
+	VALUE_FROM_JSON(obj, minCameraFollowRate)
+	VALUE_FROM_JSON(obj, maxCameraFollowRate)
+	VALUE_FROM_JSON(obj, zoomMaxSmoothingDistance)
+	VALUE_FROM_JSON(obj, overrideLocalInterp)
+	VALUE_FROM_JSON(obj, separateLocalScalar)
+	VALUE_FROM_JSON(obj, localMinFollowRate)
+	VALUE_FROM_JSON(obj, localMaxFollowRate)
+	VALUE_FROM_JSON(obj, localMaxSmoothingDistance)
+}
+
 void Config::to_json(json& j, const OffsetGroup& obj) {
 	j = json{
 		CREATE_JSON_VALUE(obj, sideOffset),
@@ -38,7 +66,13 @@ void Config::to_json(json& j, const OffsetGroup& obj) {
 		CREATE_JSON_VALUE(obj, interpRangedCombat),
 		CREATE_JSON_VALUE(obj, interpMagicCombat),
 		CREATE_JSON_VALUE(obj, interpMeleeCombat),
-		CREATE_JSON_VALUE(obj, interpHorseback)
+		CREATE_JSON_VALUE(obj, interpHorseback),
+
+		CREATE_JSON_VALUE(obj, interpConf),
+		CREATE_JSON_VALUE(obj, interpRangedConf),
+		CREATE_JSON_VALUE(obj, interpMagicConf),
+		CREATE_JSON_VALUE(obj, interpMeleeConf),
+		CREATE_JSON_VALUE(obj, interpHorsebackConf)
 	};
 }
 
@@ -73,6 +107,12 @@ void Config::from_json(const json& j, OffsetGroup& obj) {
 	VALUE_FROM_JSON(obj, interpMagicCombat)
 	VALUE_FROM_JSON(obj, interpMeleeCombat)
 	VALUE_FROM_JSON(obj, interpHorseback)
+
+	VALUE_FROM_JSON(obj, interpConf)
+	VALUE_FROM_JSON(obj, interpRangedConf)
+	VALUE_FROM_JSON(obj, interpMagicConf)
+	VALUE_FROM_JSON(obj, interpMeleeConf)
+	VALUE_FROM_JSON(obj, interpHorsebackConf)
 }
 
 void Config::to_json(json& j, const UserConfig& obj) {
@@ -110,12 +150,7 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, customZOffset),
 		CREATE_JSON_VALUE(obj, applyZOffsetKey),
 		CREATE_JSON_VALUE(obj, enableCrashDumps),
-
-		// Comapt
-		CREATE_JSON_VALUE(obj, compatACC),
-		CREATE_JSON_VALUE(obj, compatIC),
-		CREATE_JSON_VALUE(obj, compatIFPV),
-		CREATE_JSON_VALUE(obj, compatAGO),
+		CREATE_JSON_VALUE(obj, toggleUserDefinedOffsetGroupKey),
 
 		// Primary interpolation
 		CREATE_JSON_VALUE(obj, enableInterp),
@@ -129,7 +164,9 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		// Separate local space interpolation
 		CREATE_JSON_VALUE(obj, separateLocalInterp),
 		CREATE_JSON_VALUE(obj, separateLocalScalar),
-		CREATE_JSON_VALUE(obj, localScalarRate),
+		CREATE_JSON_VALUE(obj, localMinFollowRate),
+		CREATE_JSON_VALUE(obj, localMaxFollowRate),
+		CREATE_JSON_VALUE(obj, localMaxSmoothingDistance),
 
 		// Separate Z
 		CREATE_JSON_VALUE(obj, separateZInterp),
@@ -152,6 +189,14 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, enableFOVInterpolation),
 		CREATE_JSON_VALUE(obj, fovScalar),
 		CREATE_JSON_VALUE(obj, fovInterpDurationSecs),
+
+		// Interp override smoother
+		CREATE_JSON_VALUE(obj, globalInterpDisableSmoothing),
+		CREATE_JSON_VALUE(obj, globalInterpDisableMehtod),
+		CREATE_JSON_VALUE(obj, globalInterpOverrideSmoothing),
+		CREATE_JSON_VALUE(obj, globalInterpOverrideMethod),
+		CREATE_JSON_VALUE(obj, localInterpOverrideSmoothing),
+		CREATE_JSON_VALUE(obj, localInterpOverrideMethod),
 
 		// Distance clamping
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXEnable),
@@ -176,7 +221,8 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, horseback),
 		CREATE_JSON_VALUE(obj, dragon),
 		CREATE_JSON_VALUE(obj, vampireLord),
-		CREATE_JSON_VALUE(obj, werewolf)
+		CREATE_JSON_VALUE(obj, werewolf),
+		CREATE_JSON_VALUE(obj, userDefined)
 	};
 }
 
@@ -214,12 +260,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, customZOffset)
 	VALUE_FROM_JSON(obj, applyZOffsetKey)
 	VALUE_FROM_JSON(obj, enableCrashDumps)
-
-	// Compat
-	VALUE_FROM_JSON(obj, compatACC)
-	VALUE_FROM_JSON(obj, compatIC)
-	VALUE_FROM_JSON(obj, compatIFPV)
-	VALUE_FROM_JSON(obj, compatAGO)
+	VALUE_FROM_JSON(obj, toggleUserDefinedOffsetGroupKey)
 
 	// Primary interpolation
 	VALUE_FROM_JSON(obj, enableInterp)
@@ -233,7 +274,17 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	// Separate local space interpolation
 	VALUE_FROM_JSON(obj, separateLocalInterp)
 	VALUE_FROM_JSON(obj, separateLocalScalar)
-	VALUE_FROM_JSON(obj, localScalarRate)
+
+	if (j.contains("localScalarRate")) {
+		// Pre 1.5 porting
+		obj.localMinFollowRate = obj.localMaxFollowRate =
+			j.value("localScalarRate", 1.0f);
+
+	} else {
+		VALUE_FROM_JSON(obj, localMinFollowRate)
+		VALUE_FROM_JSON(obj, localMaxFollowRate)
+		VALUE_FROM_JSON(obj, localMaxSmoothingDistance)
+	}
 
 	// Separate Z
 	VALUE_FROM_JSON(obj, separateZInterp)
@@ -268,6 +319,14 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, cameraDistanceClampZMin)
 	VALUE_FROM_JSON(obj, cameraDistanceClampZMax)
 
+	// Interp override smoother
+	VALUE_FROM_JSON(obj, globalInterpDisableSmoothing)
+	VALUE_FROM_JSON(obj, globalInterpDisableMehtod)
+	VALUE_FROM_JSON(obj, globalInterpOverrideSmoothing)
+	VALUE_FROM_JSON(obj, globalInterpOverrideMethod)
+	VALUE_FROM_JSON(obj, localInterpOverrideSmoothing)
+	VALUE_FROM_JSON(obj, localInterpOverrideMethod)
+
 	// Per state positions
 	VALUE_FROM_JSON(obj, standing)
 	VALUE_FROM_JSON(obj, walking)
@@ -281,6 +340,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, dragon)
 	VALUE_FROM_JSON(obj, vampireLord)
 	VALUE_FROM_JSON(obj, werewolf)
+	VALUE_FROM_JSON(obj, userDefined)
 
 	obj.standing.id = OffsetGroupID::Standing;
 	obj.walking.id = OffsetGroupID::Walking;
@@ -294,6 +354,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	obj.dragon.id = OffsetGroupID::Dragon;
 	obj.vampireLord.id = OffsetGroupID::VampireLord;
 	obj.werewolf.id = OffsetGroupID::Werewolf;
+	obj.userDefined.id = OffsetGroupID::UserDefined;
 }
 
 void Config::to_json(json& j, const Preset& obj) {
@@ -324,6 +385,475 @@ void Config::from_json(const json& j, Color& obj) {
 	VALUE_FROM_JSON(obj, a);
 }
 
+const Config::UserConfig& Config::GetDefaultConfig() noexcept {
+	static auto conf = UserConfig{};
+	conf.standing.sideOffset = 25.0f;
+	conf.standing.upOffset = 0.0f;
+	conf.standing.zoomOffset = 0.0f;
+	conf.standing.fovOffset = 0.0f;
+	conf.standing.combatRangedSideOffset = 40.0f;
+	conf.standing.combatRangedUpOffset = -10.0f;
+	conf.standing.combatRangedZoomOffset = 5.0f;
+	conf.standing.combatRangedFOVOffset = 0.0f;
+	conf.standing.combatMagicSideOffset = 40.0f;
+	conf.standing.combatMagicUpOffset = -10.0f;
+	conf.standing.combatMagicZoomOffset = 0.0f;
+	conf.standing.combatMagicFOVOffset = 0.0f;
+	conf.standing.combatMeleeSideOffset = 30.0f;
+	conf.standing.combatMeleeUpOffset = -5.0f;
+	conf.standing.combatMeleeZoomOffset = 0.0f;
+	conf.standing.combatMeleeFOVOffset = 0.0f;
+	conf.standing.interp = true;
+	conf.standing.interpRangedCombat = true;
+	conf.standing.interpMagicCombat = true;
+	conf.standing.interpMeleeCombat = true;
+	conf.standing.interpHorseback = true;
+	conf.standing.interpConf.overrideInterp = false;
+	conf.standing.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpConf.minCameraFollowRate = 0.33f;
+	conf.standing.interpConf.maxCameraFollowRate = 0.85f;
+	conf.standing.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.standing.interpConf.overrideLocalInterp = true;
+	conf.standing.interpConf.separateLocalScalar = ScalarMethods::QUAD_IN;
+	conf.standing.interpConf.localMinFollowRate = 0.2f;
+	conf.standing.interpConf.localMaxFollowRate = 0.8f;
+	conf.standing.interpConf.localMaxSmoothingDistance = 150.0f;
+	conf.standing.interpRangedConf.overrideInterp = false;
+	conf.standing.interpRangedConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpRangedConf.minCameraFollowRate = 0.33f;
+	conf.standing.interpRangedConf.maxCameraFollowRate = 0.85f;
+	conf.standing.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.standing.interpRangedConf.overrideLocalInterp = true;
+	conf.standing.interpRangedConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpRangedConf.localMinFollowRate = 0.5f;
+	conf.standing.interpRangedConf.localMaxFollowRate = 0.85f;
+	conf.standing.interpRangedConf.localMaxSmoothingDistance = 120.0f;
+	conf.standing.interpMagicConf.overrideInterp = false;
+	conf.standing.interpMagicConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpMagicConf.minCameraFollowRate = 0.33f;
+	conf.standing.interpMagicConf.maxCameraFollowRate = 0.85f;
+	conf.standing.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.standing.interpMagicConf.overrideLocalInterp = true;
+	conf.standing.interpMagicConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpMagicConf.localMinFollowRate = 0.5f;
+	conf.standing.interpMagicConf.localMaxFollowRate = 0.85f;
+	conf.standing.interpMagicConf.localMaxSmoothingDistance = 120.0f;
+	conf.standing.interpMeleeConf.overrideInterp = false;
+	conf.standing.interpMeleeConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpMeleeConf.minCameraFollowRate = 0.33f;
+	conf.standing.interpMeleeConf.maxCameraFollowRate = 0.85f;
+	conf.standing.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.standing.interpMeleeConf.overrideLocalInterp = true;
+	conf.standing.interpMeleeConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.standing.interpMeleeConf.localMinFollowRate = 0.5f;
+	conf.standing.interpMeleeConf.localMaxFollowRate = 0.85f;
+	conf.standing.interpMeleeConf.localMaxSmoothingDistance = 120.0f;
+	conf.standing.id = OffsetGroupID::Standing;
+
+	conf.walking.sideOffset = 25.0f;
+	conf.walking.upOffset = 0.0f;
+	conf.walking.zoomOffset = 0.0f;
+	conf.walking.fovOffset = 0.0f;
+	conf.walking.combatRangedSideOffset = 40.0f;
+	conf.walking.combatRangedUpOffset = -10.0f;
+	conf.walking.combatRangedZoomOffset = 5.0f;
+	conf.walking.combatRangedFOVOffset = 0.0f;
+	conf.walking.combatMagicSideOffset = 40.0f;
+	conf.walking.combatMagicUpOffset = -10.0f;
+	conf.walking.combatMagicZoomOffset = 0.0f;
+	conf.walking.combatMagicFOVOffset = 0.0f;
+	conf.walking.combatMeleeSideOffset = 30.0f;
+	conf.walking.combatMeleeUpOffset = -5.0f;
+	conf.walking.combatMeleeZoomOffset = 0.0f;
+	conf.walking.combatMeleeFOVOffset = 0.0f;
+	conf.walking.interp = true;
+	conf.walking.interpRangedCombat = true;
+	conf.walking.interpMagicCombat = true;
+	conf.walking.interpMeleeCombat = true;
+	conf.walking.interpHorseback = true;
+	conf.walking.interpConf.overrideInterp = true;
+	conf.walking.interpConf.currentScalar = ScalarMethods::CUBIC_IN;
+	conf.walking.interpConf.minCameraFollowRate = 0.45f;
+	conf.walking.interpConf.maxCameraFollowRate = 0.79f;
+	conf.walking.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.walking.interpConf.overrideLocalInterp = true;
+	conf.walking.interpConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpConf.localMinFollowRate = 0.35f;
+	conf.walking.interpConf.localMaxFollowRate = 0.98f;
+	conf.walking.interpConf.localMaxSmoothingDistance = 60.0f;
+	conf.walking.interpRangedConf.overrideInterp = false;
+	conf.walking.interpRangedConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpRangedConf.minCameraFollowRate = 0.33f;
+	conf.walking.interpRangedConf.maxCameraFollowRate = 0.85f;
+	conf.walking.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.walking.interpRangedConf.overrideLocalInterp = true;
+	conf.walking.interpRangedConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpRangedConf.localMinFollowRate = 0.77f;
+	conf.walking.interpRangedConf.localMaxFollowRate = 0.85f;
+	conf.walking.interpRangedConf.localMaxSmoothingDistance = 120.0f;
+	conf.walking.interpMagicConf.overrideInterp = false;
+	conf.walking.interpMagicConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpMagicConf.minCameraFollowRate = 0.33f;
+	conf.walking.interpMagicConf.maxCameraFollowRate = 0.85f;
+	conf.walking.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.walking.interpMagicConf.overrideLocalInterp = true;
+	conf.walking.interpMagicConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpMagicConf.localMinFollowRate = 0.77f;
+	conf.walking.interpMagicConf.localMaxFollowRate = 0.85f;
+	conf.walking.interpMagicConf.localMaxSmoothingDistance = 120.0f;
+	conf.walking.interpMeleeConf.overrideInterp = false;
+	conf.walking.interpMeleeConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpMeleeConf.minCameraFollowRate = 0.33f;
+	conf.walking.interpMeleeConf.maxCameraFollowRate = 0.85f;
+	conf.walking.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.walking.interpMeleeConf.overrideLocalInterp = true;
+	conf.walking.interpMeleeConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.walking.interpMeleeConf.localMinFollowRate = 0.77f;
+	conf.walking.interpMeleeConf.localMaxFollowRate = 0.85f;
+	conf.walking.interpMeleeConf.localMaxSmoothingDistance = 120.0f;
+	conf.walking.id = OffsetGroupID::Walking;
+
+	conf.running.sideOffset = 25.0f;
+	conf.running.upOffset = 0.0f;
+	conf.running.zoomOffset = 0.0f;
+	conf.running.fovOffset = 0.0f;
+	conf.running.combatRangedSideOffset = 40.0f;
+	conf.running.combatRangedUpOffset = -10.0f;
+	conf.running.combatRangedZoomOffset = 5.0f;
+	conf.running.combatRangedFOVOffset = 0.0f;
+	conf.running.combatMagicSideOffset = 40.0f;
+	conf.running.combatMagicUpOffset = -10.0f;
+	conf.running.combatMagicZoomOffset = 0.0f;
+	conf.running.combatMagicFOVOffset = 0.0f;
+	conf.running.combatMeleeSideOffset = 30.0f;
+	conf.running.combatMeleeUpOffset = -5.0f;
+	conf.running.combatMeleeZoomOffset = 0.0f;
+	conf.running.combatMeleeFOVOffset = 0.0f;
+	conf.running.interp = true;
+	conf.running.interpRangedCombat = true;
+	conf.running.interpMagicCombat = true;
+	conf.running.interpMeleeCombat = true;
+	conf.running.interpHorseback = true;
+	conf.running.interpConf.overrideInterp = true;
+	conf.running.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.running.interpConf.minCameraFollowRate = 0.27f;
+	conf.running.interpConf.maxCameraFollowRate = 0.73f;
+	conf.running.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.running.interpConf.overrideLocalInterp = true;
+	conf.running.interpConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.running.interpConf.localMinFollowRate = 1.0f;
+	conf.running.interpConf.localMaxFollowRate = 1.0f;
+	conf.running.interpConf.localMaxSmoothingDistance = 60.0f;
+	conf.running.interpRangedConf.overrideInterp = true;
+	conf.running.interpRangedConf.currentScalar = ScalarMethods::CUBIC_IN;
+	conf.running.interpRangedConf.minCameraFollowRate = 0.4f;
+	conf.running.interpRangedConf.maxCameraFollowRate = 0.75f;
+	conf.running.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.running.interpRangedConf.overrideLocalInterp = true;
+	conf.running.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.running.interpRangedConf.localMinFollowRate = 1.0f;
+	conf.running.interpRangedConf.localMaxFollowRate = 1.0f;
+	conf.running.interpRangedConf.localMaxSmoothingDistance = 60.0f;
+	conf.running.interpMagicConf.overrideInterp = true;
+	conf.running.interpMagicConf.currentScalar = ScalarMethods::CUBIC_IN;
+	conf.running.interpMagicConf.minCameraFollowRate = 0.4f;
+	conf.running.interpMagicConf.maxCameraFollowRate = 0.75f;
+	conf.running.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.running.interpMagicConf.overrideLocalInterp = true;
+	conf.running.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.running.interpMagicConf.localMinFollowRate = 1.0f;
+	conf.running.interpMagicConf.localMaxFollowRate = 1.0f;
+	conf.running.interpMagicConf.localMaxSmoothingDistance = 60.0f;
+	conf.running.interpMeleeConf.overrideInterp = true;
+	conf.running.interpMeleeConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.running.interpMeleeConf.minCameraFollowRate = 0.4f;
+	conf.running.interpMeleeConf.maxCameraFollowRate = 0.75f;
+	conf.running.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.running.interpMeleeConf.overrideLocalInterp = true;
+	conf.running.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.running.interpMeleeConf.localMinFollowRate = 1.0f;
+	conf.running.interpMeleeConf.localMaxFollowRate = 1.0f;
+	conf.running.interpMeleeConf.localMaxSmoothingDistance = 60.0f;
+	conf.running.id = OffsetGroupID::Running;
+
+	conf.sprinting.sideOffset = 40.0f;
+	conf.sprinting.upOffset = -10.0f;
+	conf.sprinting.zoomOffset = 5.0f;
+	conf.sprinting.fovOffset = -5.0f;
+	conf.sprinting.combatRangedSideOffset = 40.0f;
+	conf.sprinting.combatRangedUpOffset = -10.0f;
+	conf.sprinting.combatRangedZoomOffset = 5.0f;
+	conf.sprinting.combatRangedFOVOffset = -5.0;
+	conf.sprinting.combatMagicSideOffset = 40.0f;
+	conf.sprinting.combatMagicUpOffset = -10.0f;
+	conf.sprinting.combatMagicZoomOffset = 5.0f;
+	conf.sprinting.combatMagicFOVOffset = -5.0;
+	conf.sprinting.combatMeleeSideOffset = 30.0f;
+	conf.sprinting.combatMeleeUpOffset = -5.0f;
+	conf.sprinting.combatMeleeZoomOffset = 5.0f;
+	conf.sprinting.combatMeleeFOVOffset = -5.0;
+	conf.sprinting.interp = true;
+	conf.sprinting.interpRangedCombat = true;
+	conf.sprinting.interpMagicCombat = true;
+	conf.sprinting.interpMeleeCombat = true;
+	conf.sprinting.interpHorseback = true;
+	conf.sprinting.interpConf.overrideInterp = true;
+	conf.sprinting.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sprinting.interpConf.minCameraFollowRate = 0.7f;
+	conf.sprinting.interpConf.maxCameraFollowRate = 0.98f;
+	conf.sprinting.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sprinting.interpConf.overrideLocalInterp = true;
+	conf.sprinting.interpConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sprinting.interpConf.localMinFollowRate = 1.0f;
+	conf.sprinting.interpConf.localMaxFollowRate = 1.0f;
+	conf.sprinting.interpConf.localMaxSmoothingDistance = 60.0f;
+	conf.sprinting.interpRangedConf.overrideInterp = true;
+	conf.sprinting.interpRangedConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sprinting.interpRangedConf.minCameraFollowRate = 0.7f;
+	conf.sprinting.interpRangedConf.maxCameraFollowRate = 0.98f;
+	conf.sprinting.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sprinting.interpRangedConf.overrideLocalInterp = true;
+	conf.sprinting.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sprinting.interpRangedConf.localMinFollowRate = 1.0f;
+	conf.sprinting.interpRangedConf.localMaxFollowRate = 1.0f;
+	conf.sprinting.interpRangedConf.localMaxSmoothingDistance = 60.0f;
+	conf.sprinting.interpMagicConf.overrideInterp = true;
+	conf.sprinting.interpMagicConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sprinting.interpMagicConf.minCameraFollowRate = 0.7f;
+	conf.sprinting.interpMagicConf.maxCameraFollowRate = 0.98f;
+	conf.sprinting.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sprinting.interpMagicConf.overrideLocalInterp = true;
+	conf.sprinting.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sprinting.interpMagicConf.localMinFollowRate = 1.0f;
+	conf.sprinting.interpMagicConf.localMaxFollowRate = 1.0f;
+	conf.sprinting.interpMagicConf.localMaxSmoothingDistance = 60.0f;
+	conf.sprinting.interpMeleeConf.overrideInterp = true;
+	conf.sprinting.interpMeleeConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sprinting.interpMeleeConf.minCameraFollowRate = 0.7f;
+	conf.sprinting.interpMeleeConf.maxCameraFollowRate = 0.98f;
+	conf.sprinting.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sprinting.interpMeleeConf.overrideLocalInterp = true;
+	conf.sprinting.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sprinting.interpMeleeConf.localMinFollowRate = 1.0f;
+	conf.sprinting.interpMeleeConf.localMaxFollowRate = 1.0f;
+	conf.sprinting.interpMeleeConf.localMaxSmoothingDistance = 60.0f;
+	conf.sprinting.id = OffsetGroupID::Running;
+
+	conf.sneaking.sideOffset = 40.0f;
+	conf.sneaking.upOffset = -10.0f;
+	conf.sneaking.zoomOffset = 5.0f;
+	conf.sneaking.fovOffset = -5.0f;
+	conf.sneaking.combatRangedSideOffset = 40.0f;
+	conf.sneaking.combatRangedUpOffset = -10.0f;
+	conf.sneaking.combatRangedZoomOffset = 5.0f;
+	conf.sneaking.combatRangedFOVOffset = -5.0;
+	conf.sneaking.combatMagicSideOffset = 40.0f;
+	conf.sneaking.combatMagicUpOffset = -10.0f;
+	conf.sneaking.combatMagicZoomOffset = 5.0f;
+	conf.sneaking.combatMagicFOVOffset = -5.0;
+	conf.sneaking.combatMeleeSideOffset = 35.0f;
+	conf.sneaking.combatMeleeUpOffset = -10.0f;
+	conf.sneaking.combatMeleeZoomOffset = 5.0f;
+	conf.sneaking.combatMeleeFOVOffset = -5.0;
+	conf.sneaking.interp = true;
+	conf.sneaking.interpRangedCombat = true;
+	conf.sneaking.interpMagicCombat = true;
+	conf.sneaking.interpMeleeCombat = true;
+	conf.sneaking.interpHorseback = true;
+	conf.sneaking.interpConf.overrideInterp = true;
+	conf.sneaking.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sneaking.interpConf.minCameraFollowRate = 0.7f;
+	conf.sneaking.interpConf.maxCameraFollowRate = 0.98f;
+	conf.sneaking.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sneaking.interpConf.overrideLocalInterp = true;
+	conf.sneaking.interpConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sneaking.interpConf.localMinFollowRate = 1.0f;
+	conf.sneaking.interpConf.localMaxFollowRate = 1.0f;
+	conf.sneaking.interpConf.localMaxSmoothingDistance = 60.0f;
+	conf.sneaking.interpRangedConf.overrideInterp = true;
+	conf.sneaking.interpRangedConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sneaking.interpRangedConf.minCameraFollowRate = 0.7f;
+	conf.sneaking.interpRangedConf.maxCameraFollowRate = 0.98f;
+	conf.sneaking.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sneaking.interpRangedConf.overrideLocalInterp = true;
+	conf.sneaking.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sneaking.interpRangedConf.localMinFollowRate = 1.0f;
+	conf.sneaking.interpRangedConf.localMaxFollowRate = 1.0f;
+	conf.sneaking.interpRangedConf.localMaxSmoothingDistance = 60.0f;
+	conf.sneaking.interpMagicConf.overrideInterp = true;
+	conf.sneaking.interpMagicConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sneaking.interpMagicConf.minCameraFollowRate = 0.7f;
+	conf.sneaking.interpMagicConf.maxCameraFollowRate = 0.98f;
+	conf.sneaking.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sneaking.interpMagicConf.overrideLocalInterp = true;
+	conf.sneaking.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sneaking.interpMagicConf.localMinFollowRate = 1.0f;
+	conf.sneaking.interpMagicConf.localMaxFollowRate = 1.0f;
+	conf.sneaking.interpMagicConf.localMaxSmoothingDistance = 60.0f;
+	conf.sneaking.interpMeleeConf.overrideInterp = true;
+	conf.sneaking.interpMeleeConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sneaking.interpMeleeConf.minCameraFollowRate = 0.7f;
+	conf.sneaking.interpMeleeConf.maxCameraFollowRate = 0.98f;
+	conf.sneaking.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sneaking.interpMeleeConf.overrideLocalInterp = true;
+	conf.sneaking.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.sneaking.interpMeleeConf.localMinFollowRate = 1.0f;
+	conf.sneaking.interpMeleeConf.localMaxFollowRate = 1.0f;
+	conf.sneaking.interpMeleeConf.localMaxSmoothingDistance = 60.0f;
+	conf.sneaking.id = OffsetGroupID::Sneaking;
+
+	conf.swimming.sideOffset = 35.0f;
+	conf.swimming.upOffset = 0.0f;
+	conf.swimming.zoomOffset = 0.0f;
+	conf.swimming.fovOffset = 0.0f;
+	conf.swimming.interp = true;
+	conf.swimming.interpConf.overrideInterp = false;
+	conf.swimming.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.swimming.interpConf.minCameraFollowRate = 0.33f;
+	conf.swimming.interpConf.maxCameraFollowRate = 0.85f;
+	conf.swimming.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.swimming.interpConf.overrideLocalInterp = true;
+	conf.swimming.interpConf.separateLocalScalar = ScalarMethods::SINE_IN;
+	conf.swimming.interpConf.localMinFollowRate = 0.4f;
+	conf.swimming.interpConf.localMaxFollowRate = 0.98f;
+	conf.swimming.interpConf.localMaxSmoothingDistance = 120.0f;
+	conf.swimming.id = OffsetGroupID::Swimming;
+
+	conf.bowAim.sideOffset = 40.0f;
+	conf.bowAim.upOffset = -10.0f;
+	conf.bowAim.zoomOffset = 5.0f;
+	conf.bowAim.fovOffset = -5.0f;
+	conf.bowAim.combatMeleeSideOffset = 40.0f;
+	conf.bowAim.combatMeleeUpOffset = -10.0f;
+	conf.bowAim.combatMeleeZoomOffset = 5.0f;
+	conf.bowAim.combatMeleeFOVOffset = -5.0f;
+	conf.bowAim.horseSideOffset = 50.0f;
+	conf.bowAim.horseUpOffset = 20.0f;
+	conf.bowAim.horseZoomOffset = 5.0f;
+	conf.bowAim.horseFOVOffset = -5.0f;
+	conf.bowAim.interp = true;
+	conf.bowAim.interpRangedCombat = true;
+	conf.bowAim.interpMeleeCombat = true;
+	conf.bowAim.interpHorseback = true;
+	conf.bowAim.interpHorsebackConf.overrideInterp = true;
+	conf.bowAim.interpHorsebackConf.currentScalar = ScalarMethods::LINEAR;
+	conf.bowAim.interpHorsebackConf.minCameraFollowRate = 1.0f;
+	conf.bowAim.interpHorsebackConf.maxCameraFollowRate = 1.0f;
+	conf.bowAim.interpHorsebackConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.bowAim.interpHorsebackConf.overrideLocalInterp = true;
+	conf.bowAim.interpHorsebackConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.bowAim.interpHorsebackConf.localMinFollowRate = 1.0f;
+	conf.bowAim.interpHorsebackConf.localMaxFollowRate = 1.0f;
+	conf.bowAim.interpHorsebackConf.localMaxSmoothingDistance = 60.0f;
+	conf.bowAim.interpRangedConf.overrideInterp = true;
+	conf.bowAim.interpRangedConf.currentScalar = ScalarMethods::LINEAR;
+	conf.bowAim.interpRangedConf.minCameraFollowRate = 1.0f;
+	conf.bowAim.interpRangedConf.maxCameraFollowRate = 1.0f;
+	conf.bowAim.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.bowAim.interpRangedConf.overrideLocalInterp = true;
+	conf.bowAim.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.bowAim.interpRangedConf.localMinFollowRate = 1.0f;
+	conf.bowAim.interpRangedConf.localMaxFollowRate = 1.0f;
+	conf.bowAim.interpRangedConf.localMaxSmoothingDistance = 60.0f;
+	conf.bowAim.interpMeleeConf.overrideInterp = true;
+	conf.bowAim.interpMeleeConf.currentScalar = ScalarMethods::LINEAR;
+	conf.bowAim.interpMeleeConf.minCameraFollowRate = 1.0f;
+	conf.bowAim.interpMeleeConf.maxCameraFollowRate = 1.0f;
+	conf.bowAim.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.bowAim.interpMeleeConf.overrideLocalInterp = true;
+	conf.bowAim.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.bowAim.interpMeleeConf.localMinFollowRate = 1.0f;
+	conf.bowAim.interpMeleeConf.localMaxFollowRate = 1.0f;
+	conf.bowAim.interpMeleeConf.localMaxSmoothingDistance = 60.0f;
+	conf.bowAim.id = OffsetGroupID::BowAim;
+
+	conf.sitting.sideOffset = 35.0f;
+	conf.sitting.upOffset = -15.0f;
+	conf.sitting.zoomOffset = 45.0f;
+	conf.sitting.fovOffset = 0.0f;
+	conf.sitting.interp = true;
+	conf.sitting.interpConf.overrideInterp = false;
+	conf.sitting.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.sitting.interpConf.minCameraFollowRate = 0.25f;
+	conf.sitting.interpConf.maxCameraFollowRate = 0.66f;
+	conf.sitting.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.sitting.interpConf.overrideLocalInterp = false;
+	conf.sitting.interpConf.separateLocalScalar = ScalarMethods::EXP_IN;
+	conf.sitting.interpConf.localMinFollowRate = 0.7f;
+	conf.sitting.interpConf.localMaxFollowRate = 0.98f;
+	conf.sitting.interpConf.localMaxSmoothingDistance = 60.0f;
+	conf.sitting.id = OffsetGroupID::Sitting;
+
+	conf.horseback.sideOffset = 35.0f;
+	conf.horseback.upOffset = 20.0f;
+	conf.horseback.zoomOffset = 0.0f;
+	conf.horseback.fovOffset = 0.0f;
+	conf.horseback.combatRangedSideOffset = 50.0f;
+	conf.horseback.combatRangedUpOffset = 20.0f;
+	conf.horseback.combatRangedZoomOffset = 0.0f;
+	conf.horseback.combatRangedFOVOffset = 0.0;
+	conf.horseback.combatMagicSideOffset = 50.0f;
+	conf.horseback.combatMagicUpOffset = 20.0f;
+	conf.horseback.combatMagicZoomOffset = 0.0f;
+	conf.horseback.combatMagicFOVOffset = 0.0;
+	conf.horseback.combatMeleeSideOffset = 50.0f;
+	conf.horseback.combatMeleeUpOffset = 20.0f;
+	conf.horseback.combatMeleeZoomOffset = 0.0f;
+	conf.horseback.combatMeleeFOVOffset = 0.0;
+	conf.horseback.interp = true;
+	conf.horseback.interpRangedCombat = true;
+	conf.horseback.interpMagicCombat = true;
+	conf.horseback.interpMeleeCombat = true;
+	conf.horseback.interpHorseback = true;
+	conf.horseback.interpConf.overrideInterp = false;
+	conf.horseback.interpConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.horseback.interpConf.minCameraFollowRate = 0.33f;
+	conf.horseback.interpConf.maxCameraFollowRate = 0.98f;
+	conf.horseback.interpConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.horseback.interpConf.overrideLocalInterp = true;
+	conf.horseback.interpConf.separateLocalScalar = ScalarMethods::EXP_IN;
+	conf.horseback.interpConf.localMinFollowRate = 0.7f;
+	conf.horseback.interpConf.localMaxFollowRate = 0.98f;
+	conf.horseback.interpConf.localMaxSmoothingDistance = 60.0f;
+	conf.horseback.interpRangedConf.overrideInterp = true;
+	conf.horseback.interpRangedConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.horseback.interpRangedConf.minCameraFollowRate = 0.33f;
+	conf.horseback.interpRangedConf.maxCameraFollowRate = 0.98f;
+	conf.horseback.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.horseback.interpRangedConf.overrideLocalInterp = true;
+	conf.horseback.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.horseback.interpRangedConf.localMinFollowRate = 1.0f;
+	conf.horseback.interpRangedConf.localMaxFollowRate = 1.0f;
+	conf.horseback.interpRangedConf.localMaxSmoothingDistance = 60.0f;
+	conf.horseback.interpMagicConf.overrideInterp = true;
+	conf.horseback.interpMagicConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.horseback.interpMagicConf.minCameraFollowRate = 0.33f;
+	conf.horseback.interpMagicConf.maxCameraFollowRate = 0.98f;
+	conf.horseback.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.horseback.interpMagicConf.overrideLocalInterp = true;
+	conf.horseback.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.horseback.interpMagicConf.localMinFollowRate = 1.0f;
+	conf.horseback.interpMagicConf.localMaxFollowRate = 1.0f;
+	conf.horseback.interpMagicConf.localMaxSmoothingDistance = 60.0f;
+	conf.horseback.interpMeleeConf.overrideInterp = true;
+	conf.horseback.interpMeleeConf.currentScalar = ScalarMethods::SINE_IN;
+	conf.horseback.interpMeleeConf.minCameraFollowRate = 0.33f;
+	conf.horseback.interpMeleeConf.maxCameraFollowRate = 0.98f;
+	conf.horseback.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
+	conf.horseback.interpMeleeConf.overrideLocalInterp = true;
+	conf.horseback.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
+	conf.horseback.interpMeleeConf.localMinFollowRate = 1.0f;
+	conf.horseback.interpMeleeConf.localMaxFollowRate = 1.0f;
+	conf.horseback.interpMeleeConf.localMaxSmoothingDistance = 60.0f;
+	conf.horseback.id = OffsetGroupID::Horseback;
+
+	conf.dragon.id = OffsetGroupID::Dragon;
+	conf.vampireLord.id = OffsetGroupID::VampireLord;
+	conf.werewolf.id = OffsetGroupID::Werewolf;
+
+	return conf;
+}
+
 void Config::ReadConfigFile() {
 	Config::UserConfig cfg;
 
@@ -333,14 +863,16 @@ void Config::ReadConfigFile() {
 			Config::json j;
 			is >> j;
 			cfg = j.get<Config::UserConfig>();
-		} catch (std::exception& e) {
+		} catch (const std::exception& e) {
 			// Welp, something broke
 			// Save the default config
 			_WARNING("%s - %s", "Failed to load user config! Loading Defaults. Error message:", e.what());
+			cfg = currentConfig = GetDefaultConfig();
 			SaveCurrentConfig();
 		}
 	} else {
 		// File not found? save our defaults
+		cfg = currentConfig = GetDefaultConfig();
 		SaveCurrentConfig();
 	}
 
@@ -354,7 +886,7 @@ void Config::ReadConfigFile() {
 
 void Config::SaveCurrentConfig() {
 	std::ofstream os(L"Data/SKSE/Plugins/SmoothCam.json");
-	Config::json j = currentConfig;
+	const Config::json j = currentConfig;
 	os << std::setw(4) << j << std::endl;
 }
 
@@ -363,7 +895,7 @@ Config::UserConfig* Config::GetCurrentConfig() noexcept {
 }
 
 void Config::ResetConfig() {
-	currentConfig = {};
+	currentConfig = GetDefaultConfig();
 	SaveCurrentConfig();
 }
 
@@ -395,7 +927,7 @@ bool Config::LoadPreset(int slot) {
 			Config::json j;
 			is >> j;
 			p = j.get<Config::Preset>();
-		} catch (std::exception& e) {
+		} catch (const std::exception& e) {
 			// Welp, something broke
 			// Save the default config
 			_WARNING("%s <%d> %s", "Failed to load preset config! Error message:", slot, e.what());
@@ -421,7 +953,7 @@ Config::LoadStatus Config::LoadPresetName(int slot, eastl::string& name) {
 			Config::json j;
 			is >> j;
 			p = j.get<Config::Preset>();
-		} catch (std::exception& e) {
+		} catch (const std::exception& e) {
 			// Welp, something broke
 			// Save the default config
 			_WARNING("%s <%d> %s", "Failed to load preset config! Error message:", slot, e.what());

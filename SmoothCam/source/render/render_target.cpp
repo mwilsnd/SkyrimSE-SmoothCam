@@ -29,13 +29,13 @@ Render::RenderTarget::~RenderTarget() {
 	texture.reset();
 }
 
-void Render::RenderTarget::Push(Render::D3DContext& ctx) noexcept {
+void Render::RenderTarget::Push(const Render::D3DContext& ctx) noexcept {
 	auto rtvA = rtv.get();
 	ctx.context->OMSetRenderTargets(1, &rtvA, Render::GetDepthStencilView().get());
 }
 
-void Render::RenderTarget::Clear(Render::D3DContext& ctx, glm::vec4& color) noexcept {
-	float col[4] = {
+void Render::RenderTarget::Clear(const Render::D3DContext& ctx, glm::vec4& color) noexcept {
+	const float col[4] = {
 		color.r,
 		color.g,
 		color.b,
