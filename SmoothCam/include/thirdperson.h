@@ -62,27 +62,34 @@ namespace Camera {
 			virtual void OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 				const GameState::CameraState newState, const GameState::CameraState oldState) noexcept override;
 
+			// Run all interpolators for the frame
+			void UpdateInterpolators(PlayerCharacter* player, CorrectedPlayerCamera* camera) noexcept;
+
 			// Returns the full world-space camera target postion for the current player state
 			glm::vec3 GetCurrentCameraTargetWorldPosition(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) const;
 			// Returns the target world-space position for the camera, with local offsets and rotations applied. This is the goal
 			// position ignoring any interpolation
-			void GetCameraGoalPosition(const CorrectedPlayerCamera* camera, glm::vec3& world, glm::vec3& local);
+			void GetCameraGoalPosition(const CorrectedPlayerCamera* camera, glm::vec3& world, glm::vec3& local,
+				const TESObjectREFR* forRef = nullptr);
 			// Return the euler angles for the player's current aim
 			glm::vec2 GetAimRotation(const TESObjectREFR* ref, const CorrectedPlayerCamera * camera) const;
 			// Return the camera rotation
 			const mmath::Rotation& GetCameraRotation() const noexcept;
 			// Set the camera world position
 			void SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept;
+			// Get the last camera position we set
+			const mmath::Position& GetPosition() const noexcept;
+			// Set the camera to the goal position and invalidate interp state
+			void MoveToGoalPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+				const TESObjectREFR* forRef = nullptr, NiCamera* niCamera = nullptr) noexcept;
 			// Get the crosshair manager
 			Crosshair::Manager* GetCrosshairManager() noexcept;
-
-		private:
-			// Set the camera to the goal position and invalidate interp state
-			void MoveToGoalPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
-			// Update the internal rotation
-			void UpdateInternalRotation(CorrectedPlayerCamera* camera) noexcept;
 			// Find a node to use as the world position for following
 			NiAVObject* FindFollowBone(const TESObjectREFR* ref) const noexcept;
+
+		private:
+			// Update the internal rotation
+			void UpdateInternalRotation(const CorrectedPlayerCamera* camera) noexcept;
 
 			// Returns the ideal camera distance for the current zoom level
 			float GetCurrentCameraDistance(const CorrectedPlayerCamera* camera) const noexcept;

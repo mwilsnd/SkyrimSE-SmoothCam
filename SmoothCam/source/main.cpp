@@ -15,7 +15,6 @@ const SKSEPapyrusInterface* g_papyrus = nullptr;
 static bool hooked = false;
 static bool d3dHooked = false;
 
-eastl::unique_ptr<SmoothCamAPI::IVSmoothCam1> g_SmoothCamAPIv1 = nullptr;
 eastl::unique_ptr<Camera::Camera> g_theCamera = nullptr;
 #ifdef WITH_D2D
 eastl::unique_ptr<Render::D2D> g_D2D = nullptr;
@@ -165,7 +164,7 @@ extern "C" {
 
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "SmoothCam";
-		info->version = 14;
+		info->version = 15;
 
 		g_pluginHandle = skse->GetPluginHandle();
 

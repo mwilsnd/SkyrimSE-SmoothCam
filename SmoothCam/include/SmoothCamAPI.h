@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <stdint.h>
 
 #if !defined(SMOOTHCAM_API_SKSE) && !defined(SMOOTHCAM_API_COMMONLIB)
@@ -26,11 +27,15 @@ namespace SmoothCamAPI {
 
 #ifdef SMOOTHCAM_API_COMMONLIB
 	using PluginHandle = SKSE::PluginHandle;
+	using TESObjectREFR = RE::TESObjectREFR;
+	using NiCamera = RE::NiCamera;
+	using NiPoint3 = RE::NiPoint3;
 #endif
 
 	// Available SmoothCam interface versions
 	enum class InterfaceVersion : uint8_t {
 		V1,
+		V2
 	};
 
 	// Error types that may be returned by the SmoothCam API
@@ -61,81 +66,131 @@ namespace SmoothCamAPI {
 	// SmoothCam's modder interface
 	class IVSmoothCam1 {
 		public:
-			/// <summary>
-			/// Get the thread ID SmoothCam is running in.
-			/// You may compare this with the result of GetCurrentThreadId() to help determine
-			/// if you are using the correct thread.
-			/// </summary>
-			/// <returns>TID</returns>
-			[[nodiscard]] virtual unsigned long GetSmoothCamThreadId() const noexcept = 0;
+		/// <summary>
+		/// Get the thread ID SmoothCam is running in.
+		/// You may compare this with the result of GetCurrentThreadId() to help determine
+		/// if you are using the correct thread.
+		/// </summary>
+		/// <returns>TID</returns>
+		[[nodiscard]] virtual unsigned long GetSmoothCamThreadId() const noexcept = 0;
 
-			/// <summary>
-			/// Request control of the player camera.
-			/// If granted, you may manipulate the camera in whatever ways you wish for the duration of your control.
-			/// SmoothCam will not perform any positional clean-up of the camera or camera states, you get the camera as-is.
-			/// </summary>
-			/// <param name="myPluginHandle">Your assigned plugin handle</param>
-			/// <returns>OK, MustKeep, AlreadyGiven, AlreadyTaken, BadThread</returns>
-			[[nodiscard]] virtual APIResult RequestCameraControl(PluginHandle myPluginHandle) noexcept = 0;
+		/// <summary>
+		/// Request control of the player camera.
+		/// If granted, you may manipulate the camera in whatever ways you wish for the duration of your control.
+		/// SmoothCam will not perform any positional clean-up of the camera or camera states, you get the camera as-is.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <returns>OK, MustKeep, AlreadyGiven, AlreadyTaken</returns>
+		[[nodiscard]] virtual APIResult RequestCameraControl(PluginHandle myPluginHandle) noexcept = 0;
 
-			/// <summary>
-			/// Request control of the HUD crosshair.
-			/// If enabled, SmoothCam will hide the world-space crosshair for the duration of your control
-			/// </summary>
-			/// <param name="myPluginHandle">Your assigned plugin handle</param>
-			/// <param name="restoreDefaults">SmoothCam will first restore the crosshair to default settings</param>
-			/// <returns>OK, MustKeep, AlreadyGiven, AlreadyTaken, BadThread</returns>
-			[[nodiscard]] virtual APIResult RequestCrosshairControl(PluginHandle myPluginHandle,
-				bool restoreDefaults = true) noexcept = 0;
+		/// <summary>
+		/// Request control of the HUD crosshair.
+		/// If enabled, SmoothCam will hide the world-space crosshair for the duration of your control
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <param name="restoreDefaults">SmoothCam will first restore the crosshair to default settings</param>
+		/// <returns>OK, MustKeep, AlreadyGiven, AlreadyTaken</returns>
+		[[nodiscard]] virtual APIResult RequestCrosshairControl(PluginHandle myPluginHandle,
+			bool restoreDefaults = true) noexcept = 0;
 
-			/// <summary>
-			/// Request control of the HUD stealth meter.
-			/// If granted, you may maniuplate the resource in whatever ways you wish for the duration of your control.
-			/// </summary>
-			/// <param name="myPluginHandle">Your assigned plugin handle</param>
-			/// <param name="restoreDefaults">SmoothCam will first restore the stealth meter to default settings</param>
-			/// <returns>OK, MustKeep, AlreadyGiven, AlreadyTaken, BadThread</returns>
-			[[nodiscard]] virtual APIResult RequestStealthMeterControl(PluginHandle myPluginHandle,
-				bool restoreDefaults = true) noexcept = 0;
+		/// <summary>
+		/// Request control of the HUD stealth meter.
+		/// If granted, you may maniuplate the resource in whatever ways you wish for the duration of your control.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <param name="restoreDefaults">SmoothCam will first restore the stealth meter to default settings</param>
+		/// <returns>OK, MustKeep, AlreadyGiven, AlreadyTaken</returns>
+		[[nodiscard]] virtual APIResult RequestStealthMeterControl(PluginHandle myPluginHandle,
+			bool restoreDefaults = true) noexcept = 0;
 
-			/// <summary>
-			/// Returns the current owner of the camera resource
-			/// </summary>
-			/// <returns>Handle or kPluginHandle_Invalid if no one currently owns the resource</returns>
-			virtual PluginHandle GetCameraOwner() const noexcept = 0;
+		/// <summary>
+		/// Returns the current owner of the camera resource
+		/// </summary>
+		/// <returns>Handle or kPluginHandle_Invalid if no one currently owns the resource</returns>
+		virtual PluginHandle GetCameraOwner() const noexcept = 0;
 
-			/// <summary>
-			/// Returns the current owner of the crosshair resource
-			/// </summary>
-			/// <returns>Handle or kPluginHandle_Invalid if no one currently owns the resource</returns>
-			virtual PluginHandle GetCrosshairOwner() const noexcept = 0;
+		/// <summary>
+		/// Returns the current owner of the crosshair resource
+		/// </summary>
+		/// <returns>Handle or kPluginHandle_Invalid if no one currently owns the resource</returns>
+		virtual PluginHandle GetCrosshairOwner() const noexcept = 0;
 
-			/// <summary>
-			/// Returns the current owner of the stealth meter resource
-			/// </summary>
-			/// <returns>Handle or kPluginHandle_Invalid if no one currently owns the resource</returns>
-			virtual PluginHandle GetStealthMeterOwner() const noexcept = 0;
+		/// <summary>
+		/// Returns the current owner of the stealth meter resource
+		/// </summary>
+		/// <returns>Handle or kPluginHandle_Invalid if no one currently owns the resource</returns>
+		virtual PluginHandle GetStealthMeterOwner() const noexcept = 0;
 
-			/// <summary>
-			/// Release your control of the player camera.
-			/// </summary>
-			/// <param name="myPluginHandle">Your assigned plugin handle</param>
-			/// <returns>OK, NotOwner</returns>
-			virtual APIResult ReleaseCameraControl(PluginHandle myPluginHandle) noexcept = 0;
+		/// <summary>
+		/// Release your control of the player camera.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <returns>OK, NotOwner</returns>
+		virtual APIResult ReleaseCameraControl(PluginHandle myPluginHandle) noexcept = 0;
 
-			/// <summary>
-			/// Release your control of the crosshair.
-			/// </summary>
-			/// <param name="myPluginHandle">Your assigned plugin handle</param>
-			/// <returns>OK, NotOwner</returns>
-			virtual APIResult ReleaseCrosshairControl(PluginHandle myPluginHandle) noexcept = 0;
+		/// <summary>
+		/// Release your control of the crosshair.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <returns>OK, NotOwner</returns>
+		virtual APIResult ReleaseCrosshairControl(PluginHandle myPluginHandle) noexcept = 0;
 
-			/// <summary>
-			/// Release your control of the stealth meter.
-			/// </summary>
-			/// <param name="myPluginHandle">Your assigned plugin handle</param>
-			/// <returns>OK, NotOwner</returns>
-			virtual APIResult ReleaseStealthMeterControl(PluginHandle myPluginHandle) noexcept = 0;
+		/// <summary>
+		/// Release your control of the stealth meter.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <returns>OK, NotOwner</returns>
+		virtual APIResult ReleaseStealthMeterControl(PluginHandle myPluginHandle) noexcept = 0;
+	};
+
+	class IVSmoothCam2 : public IVSmoothCam1 {
+		public:
+		/// <summary>
+		/// Get the last world position of the camera set by SmoothCam.
+		/// </summary>
+		/// <returns>World position</returns>
+		virtual NiPoint3 GetLastCameraPosition() const noexcept = 0;
+
+		/// <summary>
+		/// Request that position interpolators continue to update while you have camera control.
+		/// SmoothCam will not update the camera position with interpolators running, but will enable functions like
+		/// `GetLastCameraPosition` to return current, up to date values while you own the camera resource.
+		/// 
+		/// When given control of the camera, the default action is to pause interpolator updates. If you want them
+		/// to continue running, you must call this method each time you gain control of the camera.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <param name="allowUpdates">Allow interpolators to continue updates in the background</param>
+		/// <returns>OK, NotOwner</returns>
+		virtual APIResult RequestInterpolatorUpdates(PluginHandle myPluginHandle, bool allowUpdates) noexcept = 0;
+
+		/// <summary>
+		/// When called before releasing camera control, instructs the camera to move to its goal position once control
+		/// is returned to SmoothCam.
+		/// </summary>
+		/// <param name="myPluginHandle">Your assigned plugin handle</param>
+		/// <param name="shouldMoveToGoal">Instructs the camera to move to it's goal position when control is gained back</param>
+		/// <param name="moveNow">Move to the current goal immediately</param>
+		/// /// <param name="ref">Object reference for rotation calculations</param>
+		/// <returns>OK, NotOwner</returns>
+		virtual APIResult SendToGoalPosition(PluginHandle myPluginHandle, bool shouldMoveToGoal, bool moveNow = false,
+			const TESObjectREFR* ref = nullptr, NiCamera* niCamera = nullptr) noexcept = 0;
+
+		/// <summary>
+		/// Return SmoothCam's current goal position.
+		/// </summary>
+		/// <param name="ref">Object reference for rotation calculations</param>
+		/// <param name="world">World goal position</param>
+		/// <param name="local">Player local goal position</param>
+		/// <returns></returns>
+		virtual void GetGoalPosition(TESObjectREFR* ref, NiPoint3& world, NiPoint3& local) const noexcept = 0;
+
+		/// <summary>
+		/// Returns false if the user has disabled SmoothCam via the MCM/hotkey.
+		/// When in a disabled state, SmoothCam will not update position information.
+		/// </summary>
+		/// <returns>Enabled</returns>
+		virtual bool IsCameraEnabled() const noexcept = 0;
 	};
 
 	struct PluginCommand {
@@ -192,7 +247,7 @@ namespace SmoothCamAPI {
 	/// <returns>If any plugin was listening for this request, true. See skse/PluginAPI.h</returns>
 	[[nodiscard]]
 	inline bool RequestInterface(SKSEMessagingInterface* skseMessaging, PluginHandle myPluginHandle,
-		InterfaceVersion version = InterfaceVersion::V1) noexcept
+		InterfaceVersion version = InterfaceVersion::V2) noexcept
 	{
 		InterfaceRequest req = {};
 		req.interfaceVersion = version;
@@ -260,7 +315,7 @@ namespace SmoothCamAPI {
 	/// <returns>If any plugin was listening for this request, true. See skse/PluginAPI.h</returns>
 	[[nodiscard]]
 	inline bool RequestInterface(const SKSE::MessagingInterface* skseMessaging,
-		InterfaceVersion version = InterfaceVersion::V1) noexcept
+		InterfaceVersion version = InterfaceVersion::V2) noexcept
 	{
 		InterfaceRequest req = {};
 		req.interfaceVersion = version;

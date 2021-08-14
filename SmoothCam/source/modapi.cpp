@@ -1,24 +1,25 @@
 #include "modapi.h"
+#include "camera.h"
+#include "thirdperson.h"
 #include "crosshair.h"
 #include "debug/eh.h"
 
+extern eastl::unique_ptr<Camera::Camera> g_theCamera;
 extern PluginHandle g_pluginHandle;
 extern const SKSEInterface* g_skse;
 extern const SKSEMessagingInterface* g_messaging;
 
-Messaging::SmoothCamAPIV1::SmoothCamAPIV1() noexcept {
+Messaging::SmoothCamInterface::SmoothCamInterface() noexcept {
 	apiTID = GetCurrentThreadId();
 }
 
-Messaging::SmoothCamAPIV1::~SmoothCamAPIV1() noexcept {}
+Messaging::SmoothCamInterface::~SmoothCamInterface() noexcept {}
 
-DWORD Messaging::SmoothCamAPIV1::GetSmoothCamThreadId() const noexcept {
+DWORD Messaging::SmoothCamInterface::GetSmoothCamThreadId() const noexcept {
 	return apiTID;
 }
 
-Messaging::APIResult Messaging::SmoothCamAPIV1::RequestCameraControl(PluginHandle modHandle) noexcept {
-	if (GetCurrentThreadId() != apiTID) return APIResult::BadThread;
-	
+Messaging::APIResult Messaging::SmoothCamInterface::RequestCameraControl(PluginHandle modHandle) noexcept {
 	const auto owner = cameraOwner.load(std::memory_order::memory_order_acquire);
 	if (owner != kPluginHandle_Invalid)
 		if (owner == modHandle)
@@ -31,14 +32,13 @@ Messaging::APIResult Messaging::SmoothCamAPIV1::RequestCameraControl(PluginHandl
 	if (!cameraOwner.compare_exchange_strong(expected, modHandle, std::memory_order::memory_order_acq_rel))
 		return APIResult::AlreadyTaken;
 
+	wantsInterpolatorUpdates = false;
 	return APIResult::OK;
 }
 
-Messaging::APIResult Messaging::SmoothCamAPIV1::RequestCrosshairControl(PluginHandle modHandle,
+Messaging::APIResult Messaging::SmoothCamInterface::RequestCrosshairControl(PluginHandle modHandle,
 	bool restoreDefaults) noexcept
 {
-	if (GetCurrentThreadId() != apiTID) return APIResult::BadThread;
-
 	const auto owner = crosshairOwner.load(std::memory_order::memory_order_acquire);
 	if (owner != kPluginHandle_Invalid)
 		if (owner == modHandle)
@@ -59,11 +59,9 @@ Messaging::APIResult Messaging::SmoothCamAPIV1::RequestCrosshairControl(PluginHa
 	return APIResult::OK;
 }
 
-Messaging::APIResult Messaging::SmoothCamAPIV1::RequestStealthMeterControl(PluginHandle modHandle,
+Messaging::APIResult Messaging::SmoothCamInterface::RequestStealthMeterControl(PluginHandle modHandle,
 	bool restoreDefaults) noexcept
 {
-	if (GetCurrentThreadId() != apiTID) return APIResult::BadThread;
-
 	const auto owner = stealthMeterOwner.load(std::memory_order::memory_order_acquire);
 	if (owner != kPluginHandle_Invalid)
 		if (owner == modHandle)
@@ -84,88 +82,142 @@ Messaging::APIResult Messaging::SmoothCamAPIV1::RequestStealthMeterControl(Plugi
 	return APIResult::OK;
 }
 
-PluginHandle Messaging::SmoothCamAPIV1::GetCameraOwner() const noexcept {
+PluginHandle Messaging::SmoothCamInterface::GetCameraOwner() const noexcept {
 	return cameraOwner;
 }
 
-PluginHandle Messaging::SmoothCamAPIV1::GetCrosshairOwner() const noexcept {
+PluginHandle Messaging::SmoothCamInterface::GetCrosshairOwner() const noexcept {
 	return crosshairOwner;
 }
 
-PluginHandle Messaging::SmoothCamAPIV1::GetStealthMeterOwner() const noexcept {
+PluginHandle Messaging::SmoothCamInterface::GetStealthMeterOwner() const noexcept {
 	return stealthMeterOwner;
 }
 
-Messaging::APIResult Messaging::SmoothCamAPIV1::ReleaseCameraControl(PluginHandle modHandle) noexcept {
+Messaging::APIResult Messaging::SmoothCamInterface::ReleaseCameraControl(PluginHandle modHandle) noexcept {
 	if (cameraOwner != modHandle) return APIResult::NotOwner;
 	cameraOwner.store(kPluginHandle_Invalid, std::memory_order::memory_order_release);
 	return APIResult::OK;
 }
 
-Messaging::APIResult Messaging::SmoothCamAPIV1::ReleaseCrosshairControl(PluginHandle modHandle) noexcept {
+Messaging::APIResult Messaging::SmoothCamInterface::ReleaseCrosshairControl(PluginHandle modHandle) noexcept {
 	if (crosshairOwner != modHandle) return APIResult::NotOwner;
 	crosshairOwner.store(kPluginHandle_Invalid, std::memory_order::memory_order_release);
 	wantCrosshairReset = true;
 	return APIResult::OK;
 }
 
-Messaging::APIResult Messaging::SmoothCamAPIV1::ReleaseStealthMeterControl(PluginHandle modHandle) noexcept {
+Messaging::APIResult Messaging::SmoothCamInterface::ReleaseStealthMeterControl(PluginHandle modHandle) noexcept {
 	if (stealthMeterOwner != modHandle) return APIResult::NotOwner;
 	stealthMeterOwner.store(kPluginHandle_Invalid, std::memory_order::memory_order_release);
 	wantStealthMeterReset = true;
 	return APIResult::OK;
 }
 
-void Messaging::SmoothCamAPIV1::SetCrosshairManager(Crosshair::Manager* mgr) noexcept {
+NiPoint3 Messaging::SmoothCamInterface::GetLastCameraPosition() const noexcept {
+	return g_theCamera->GetThirdpersonCamera()->GetPosition().ToNiPoint3();
+}
+
+Messaging::APIResult Messaging::SmoothCamInterface::RequestInterpolatorUpdates(PluginHandle modHandle, bool allowUpdates) noexcept {
+	if (cameraOwner != modHandle) return APIResult::NotOwner;
+	wantsInterpolatorUpdates = allowUpdates;
+	return APIResult::OK;
+}
+
+Messaging::APIResult Messaging::SmoothCamInterface::SendToGoalPosition(PluginHandle modHandle, bool shouldMoveToGoal,
+	bool moveNow, const TESObjectREFR* ref, NiCamera* niCamera) noexcept
+{
+	if (cameraOwner != modHandle) return APIResult::NotOwner;
+	if (moveNow) {
+		g_theCamera->GetThirdpersonCamera()->MoveToGoalPosition(
+			*g_thePlayer, CorrectedPlayerCamera::GetSingleton(), ref ? ref : *g_thePlayer, niCamera
+		);
+	} else {
+		wantsMoveToGoal = shouldMoveToGoal;
+	}
+	return APIResult::OK;
+}
+
+void Messaging::SmoothCamInterface::GetGoalPosition(TESObjectREFR* ref, NiPoint3& world, NiPoint3& local) const noexcept {
+	if (!ref) {
+		world = {};
+		local = {};
+		return;
+	}
+
+	glm::vec3 vworld{};
+	glm::vec3 vlocal{};
+	g_theCamera->GetThirdpersonCamera()->GetCameraGoalPosition(CorrectedPlayerCamera::GetSingleton(), vworld, vlocal, ref);
+	world = { vworld.x, vworld.y, vworld.z };
+	local = { vlocal.x, vlocal.y, vlocal.z };
+}
+
+bool Messaging::SmoothCamInterface::IsCameraEnabled() const noexcept {
+	return !Config::GetCurrentConfig()->modDisabled;
+}
+
+void Messaging::SmoothCamInterface::SetCrosshairManager(Crosshair::Manager* mgr) noexcept {
 	crosshairMgr = mgr;
 }
 
-void Messaging::SmoothCamAPIV1::SetNeedsCameraControl(bool needsControl) noexcept {
+void Messaging::SmoothCamInterface::SetNeedsCameraControl(bool needsControl) noexcept {
 	needsCameraControl = needsControl;
 }
 
-void Messaging::SmoothCamAPIV1::SetNeedsCrosshairControl(bool needsControl) noexcept {
+void Messaging::SmoothCamInterface::SetNeedsCrosshairControl(bool needsControl) noexcept {
 	needsCrosshairControl = needsControl;
 }
 
-void Messaging::SmoothCamAPIV1::SetNeedsStealthMeterControl(bool needsControl) noexcept {
+void Messaging::SmoothCamInterface::SetNeedsStealthMeterControl(bool needsControl) noexcept {
 	needsStealthMeterControl = needsControl;
 }
 
-bool Messaging::SmoothCamAPIV1::IsCameraTaken() const noexcept {
+bool Messaging::SmoothCamInterface::IsCameraTaken() const noexcept {
 	return cameraOwner.load(std::memory_order::memory_order_acquire) != kPluginHandle_Invalid;
 }
 
-bool Messaging::SmoothCamAPIV1::IsCrosshairTaken() const noexcept {
+bool Messaging::SmoothCamInterface::IsCrosshairTaken() const noexcept {
 	return crosshairOwner.load(std::memory_order::memory_order_acquire) != kPluginHandle_Invalid;
 }
 
-bool Messaging::SmoothCamAPIV1::IsStealthMeterTaken() const noexcept {
+bool Messaging::SmoothCamInterface::IsStealthMeterTaken() const noexcept {
 	return stealthMeterOwner.load(std::memory_order::memory_order_acquire) != kPluginHandle_Invalid;
 }
 
-bool Messaging::SmoothCamAPIV1::CrosshairDirty() const noexcept {
+bool Messaging::SmoothCamInterface::CrosshairDirty() const noexcept {
 	return wantCrosshairReset;
 }
 
-bool Messaging::SmoothCamAPIV1::StealthMeterDirty() const noexcept {
+bool Messaging::SmoothCamInterface::StealthMeterDirty() const noexcept {
 	return wantStealthMeterReset;
 }
 
-void Messaging::SmoothCamAPIV1::ClearCrosshairDirtyFlag() noexcept {
+void Messaging::SmoothCamInterface::ClearCrosshairDirtyFlag() noexcept {
 	wantCrosshairReset = false;
 }
 
-void Messaging::SmoothCamAPIV1::ClearStealthMeterDirtyFlag() noexcept {
+void Messaging::SmoothCamInterface::ClearStealthMeterDirtyFlag() noexcept {
 	wantStealthMeterReset = false;
 }
 
-void Messaging::SmoothCamAPIV1::RegisterConsumer(const char* modName) noexcept {
+bool Messaging::SmoothCamInterface::WantsInterpolatorUpdates() const noexcept {
+	return wantsInterpolatorUpdates;
+}
+
+bool Messaging::SmoothCamInterface::WantsMoveToGoal() const noexcept {
+	return wantsMoveToGoal;
+}
+
+void Messaging::SmoothCamInterface::ClearMoveToGoalFlag() noexcept {
+	wantsMoveToGoal = false;
+}
+
+void Messaging::SmoothCamInterface::RegisterConsumer(const char* modName) noexcept {
 	consumers.push_back(eastl::move(eastl::string(modName)));
 	_MESSAGE("Added API consumer '%s'", modName);
 }
 
-const Messaging::SmoothCamAPIV1::Consumers& Messaging::SmoothCamAPIV1::GetConsumers() const noexcept {
+const Messaging::SmoothCamInterface::Consumers& Messaging::SmoothCamInterface::GetConsumers() const noexcept {
 	return consumers;
 }
 
@@ -191,20 +243,34 @@ void Messaging::HandleInterfaceRequest(SKSEMessagingInterface::Message* msg) noe
 	}
 
 	const auto request = reinterpret_cast<const SmoothCamAPI::InterfaceRequest*>(cmd->commandStructure);
-	if (request->interfaceVersion != SmoothCamAPI::InterfaceVersion::V1) {
+	if (!(request->interfaceVersion == SmoothCamAPI::InterfaceVersion::V1 ||
+		request->interfaceVersion == SmoothCamAPI::InterfaceVersion::V2))
+	{
 		DispatchToPlugin(&packet, msg->sender);
 		return;
 	}
 
-	auto apiV1 = Messaging::SmoothCamAPIV1::GetInstance();
+	auto api = Messaging::SmoothCamInterface::GetInstance();
 	if (msg->sender)
-		apiV1->RegisterConsumer(msg->sender);
+		api->RegisterConsumer(msg->sender);
 	else
 		_MESSAGE("Added unnamed API consumer");
 
 	SmoothCamAPI::InterfaceContainer container = {};
-	container.interfaceVersion = SmoothCamAPI::InterfaceVersion::V1;
-	container.interfaceInstance = apiV1;
+	container.interfaceVersion = request->interfaceVersion;
+
+	switch (request->interfaceVersion) {
+		case SmoothCamAPI::InterfaceVersion::V1:
+			container.interfaceInstance = dynamic_cast<InterfaceVersion1*>(api);
+			break;
+		case SmoothCamAPI::InterfaceVersion::V2:
+			container.interfaceInstance = dynamic_cast<InterfaceVersion2*>(api);
+			break;
+		default:
+			api->RegisterConsumer(msg->sender);
+			return;
+	}
+	
 	packet.type = SmoothCamAPI::PluginResponse::Type::InterfaceProvider;
 	packet.responseData = &container;
 	DispatchToPlugin(&packet, msg->sender);

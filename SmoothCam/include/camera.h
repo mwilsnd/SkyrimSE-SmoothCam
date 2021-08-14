@@ -128,10 +128,12 @@ namespace Camera {
 			const CameraActionState GetCurrentCameraActionState() const noexcept;
 
 			// Set the camera world position
-			void SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept;
+			void SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera, NiCamera* niCamera = nullptr) noexcept;
 
 			// Return the current frustum
 			const NiFrustum& GetFrustum() const noexcept;
+			// Return the last recorded position of the camera set by the game
+			const glm::vec3& GetLastRecordedCameraPosition() const noexcept;
 			// Get the object the camera is currently focused on
 			NiPointer<Actor> GetCurrentCameraTarget(const CorrectedPlayerCamera* camera) noexcept;
 			// Returns true if a loading screen is active
@@ -147,7 +149,8 @@ namespace Camera {
 
 		private:
 			// Update skyrim's screen projection matrix
-			void UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera) noexcept;
+			void UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera,
+				NiCamera* niCamera = nullptr) noexcept;
 			// Updates our POV state to the true value the game expects for each state
 			const bool UpdateCameraPOVState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept;
 			// Returns the current camera state for use in selecting an update method
@@ -180,6 +183,7 @@ namespace Camera {
 			bool povWasPressed = false;					// Change POV was pressed
 			bool wasLoading = false;					// True if we saw the loading screen menu
 
+			bool wasCameraAPIControlled = false;		// Was the camera API controlled last frame?
 			bool accControl = false;					// Set when camera assumes ACC should be running
 			bool wasDialogOpen = false;					// Set if the player was in dialog the last time the camera ran, but not this time
 			float accSavePitch = 0.0f;					// ACC messes up pitch rotation when exiting dialog, save and restore it

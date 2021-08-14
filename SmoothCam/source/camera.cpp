@@ -190,7 +190,7 @@ void Camera::Camera::OnCameraStateTransition(const PlayerCharacter* player, cons
 		activeCamera->OnCameraStateTransition(player, camera, newState, oldState);
 }
 
-void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept {
+void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera, NiCamera* niCamera) noexcept {
 	auto cameraNode = camera->cameraNode;
 
 #ifdef _DEBUG
@@ -200,7 +200,7 @@ void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCame
 	}
 #endif
 
-	cameraNode->m_localTransform.pos = cameraNode->m_worldTransform.pos = cameraNi->m_worldTransform.pos =
+	cameraNode->m_localTransform.pos = cameraNode->m_worldTransform.pos = (niCamera ? niCamera : cameraNi)->m_worldTransform.pos =
 		{ pos.x, pos.y, pos.z };
 
 	if (currentState == GameState::CameraState::ThirdPerson || currentState == GameState::CameraState::ThirdPersonCombat) {
@@ -209,24 +209,31 @@ void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCame
 	}
 }
 
-void Camera::Camera::UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera) noexcept {
+void Camera::Camera::UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera,
+	NiCamera* niCamera) noexcept
+{
+	auto camNi = niCamera ? niCamera : cameraNi;
 	// Run the THT to get a world to scaleform matrix
-	const auto lastRotation = cameraNi->m_worldTransform.rot;
-	cameraNi->m_worldTransform.rot = rot.THT();
+	const auto lastRotation = camNi->m_worldTransform.rot;
+	camNi->m_worldTransform.rot = rot.THT();
 	// Force the game to compute the matrix for us
 	typedef void(*UpdateWorldToScreenMtx)(NiCamera*);
 	static auto toScreenFunc = Offsets::Get<UpdateWorldToScreenMtx>(69271);
-	toScreenFunc(cameraNi);
+	toScreenFunc(camNi);
 	// Grab it
-	worldToScaleform = *reinterpret_cast<mmath::NiMatrix44*>(cameraNi->m_aafWorldToCam);
+	worldToScaleform = *reinterpret_cast<mmath::NiMatrix44*>(camNi->m_aafWorldToCam);
 	// Now restore the normal camera rotation
-	cameraNi->m_worldTransform.rot = lastRotation;
+	camNi->m_worldTransform.rot = lastRotation;
 	// And compute the normal toScreen matrix
-	toScreenFunc(cameraNi);
+	toScreenFunc(camNi);
 }
 
 const NiFrustum& Camera::Camera::GetFrustum() const noexcept {
 	return frustum;
+}
+
+const glm::vec3& Camera::Camera::GetLastRecordedCameraPosition() const noexcept {
+	return gameLastActualPosition;
 }
 
 NiPointer<Actor> Camera::Camera::GetCurrentCameraTarget(const CorrectedPlayerCamera* camera) noexcept {
@@ -295,23 +302,8 @@ void Camera::Camera::Render(Render::D3DContext& ctx) {
 bool Camera::Camera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera,
 	BSTSmartPointer<TESCameraState>& nextState)
 {
-	if (Messaging::SmoothCamAPIV1::GetInstance()->IsCameraTaken()) return false;
-
-	// Check if ACC should be in control of the camera
-	if (MenuTopicManager::GetSingleton()->unkB1 && Compat::IsPresent(Compat::Mod::AlternateConversationCamera)) {
-		if (!accControl) {
-			accSavePitch = player->rot.x;
-			accControl = true;
-		}
-		return false;
-	} else if (accControl) {
-		player->rot.x = accSavePitch;
-		wasDialogOpen = true;
-		accControl = false;
-	}
-
 	// Force the camera to a new state
-	if (wantNewCameraState) {
+	if (wantNewCameraState && !Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken()) {
 		auto wantState = camera->cameraStates[wantNewState];
 		if (wantState && camera->cameraState != wantState) {
 			if (nextState.ptr)
@@ -322,6 +314,10 @@ bool Camera::Camera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamer
 		wantNewCameraState = false;
 		return true;
 	}
+
+	if (Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken() &&
+		!Messaging::SmoothCamInterface::GetInstance()->WantsInterpolatorUpdates())
+		return false;
 
 	if (activeCamera && activeCamera->OnPreGameUpdate(player, camera, nextState))
 		return true;
@@ -345,7 +341,10 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 {
 	// Check if the user has turned the camera off
 	// Also check if another mod has been given camera control via the interface
-	if (config->modDisabled || Messaging::SmoothCamAPIV1::GetInstance()->IsCameraTaken()) {
+	const auto wantsControl = Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken();
+	const auto wantsUpdates = Messaging::SmoothCamInterface::GetInstance()->WantsInterpolatorUpdates();
+
+	if (config->modDisabled || (wantsControl && !wantsUpdates)) {
 		if (ranLastFrame) {
 			if (activeCamera) activeCamera->OnEnd(player, camera, nullptr);
 			cameraThird->GetCrosshairManager()->Reset();
@@ -353,19 +352,6 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 		}
 		ranLastFrame = false;
 		return;
-	}
-
-	// Check if ACC should be in control of the camera
-	if (MenuTopicManager::GetSingleton()->unkB1 && Compat::IsPresent(Compat::Mod::AlternateConversationCamera)) {
-		if (!accControl) {
-			accSavePitch = player->rot.x;
-			accControl = true;
-		}
-		return;
-	} else if (accControl) {
-		player->rot.x = accSavePitch;
-		wasDialogOpen = true;
-		accControl = false;
 	}
 
 	// If we don't have an NiCamera, something else is likely very wrong
@@ -417,4 +403,5 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 	wasLoading = false;
 	ranLastFrame = true;
 	wasDialogOpen = false;
+	wasCameraAPIControlled = !wantsControl;
 }

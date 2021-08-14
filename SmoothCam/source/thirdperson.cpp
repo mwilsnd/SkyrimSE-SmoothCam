@@ -100,6 +100,8 @@ void Camera::Thirdperson::OnEnd(PlayerCharacter* player, CorrectedPlayerCamera* 
 bool Camera::Thirdperson::OnPreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera,
 	BSTSmartPointer<TESCameraState>& nextState)
 {
+	if (Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken()) return false;
+
 	const auto state = GameState::GetCameraState(player, camera);
 	if (state != GameState::CameraState::Transitioning) return false;
 	auto cstate = reinterpret_cast<CorrectedPlayerCameraTransitionState*>(
@@ -144,32 +146,90 @@ bool Camera::Thirdperson::OnPreGameUpdate(PlayerCharacter* player, CorrectedPlay
 	return false;
 }
 
+void Camera::Thirdperson::UpdateInterpolators(PlayerCharacter* player, CorrectedPlayerCamera* camera) noexcept {
+	currentFocusObject = m_camera->GetCurrentCameraTarget(camera);
+	if (!currentFocusObject)
+		currentFocusObject = player;
+
+	const auto currentOffset = GetCurrentCameraOffset(player, camera);
+	const auto curTime = GameTime::CurTime();
+
+	// Update ref position
+	currentPosition.SetRef(currentFocusObject->pos, currentFocusObject->rot);
+
+	// Update transition states
+	mmath::UpdateTransitionState<glm::vec3, OffsetTransition>(
+		curTime,
+		config->enableOffsetInterpolation,
+		config->offsetInterpDurationSecs,
+		config->offsetScalar,
+		offsetTransitionState,
+		{ currentOffset.x, currentOffset.y, currentOffset.z }
+	);
+
+	if (!povWasPressed && !povTransitionState.running) {
+		mmath::UpdateTransitionState<float, ZoomTransition>(
+			curTime,
+			config->enableZoomInterpolation,
+			config->zoomInterpDurationSecs,
+			config->zoomScalar,
+			zoomTransitionState,
+			GetCurrentCameraDistance(camera)
+		);
+	} else {
+		zoomTransitionState.lastPosition = zoomTransitionState.currentPosition =
+			zoomTransitionState.targetPosition = GetCurrentCameraDistance(camera);
+	}
+
+	mmath::UpdateTransitionState<float, ZoomTransition>(
+		curTime,
+		config->enableFOVInterpolation,
+		config->fovInterpDurationSecs,
+		config->fovScalar,
+		fovTransitionState,
+		currentOffset.w
+	);
+
+	offsetState.position = {
+		offsetTransitionState.currentPosition.x,
+		offsetTransitionState.currentPosition.y,
+		offsetTransitionState.currentPosition.z
+	};
+	offsetState.fov = fovTransitionState.currentPosition;
+	
+	UpdateOffsetSmoothers(player, curTime);
+}
+
 void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera,
 	BSTSmartPointer<TESCameraState>& nextState)
 {
 #ifdef WITH_CHARTS
 	Profiler prof;
 #endif
+	const auto wantsControl = Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken();
+	const auto wantsUpdates = Messaging::SmoothCamInterface::GetInstance()->WantsInterpolatorUpdates();
+
 	// Update POV switch smoothing
-	switch (m_camera->GetCurrentCameraState()) {
-		case GameState::CameraState::ThirdPerson:
-		case GameState::CameraState::ThirdPersonCombat: {
-			if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_ThirdPerson2)) return;
-			break;
+	if (!Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken())
+		switch (m_camera->GetCurrentCameraState()) {
+			case GameState::CameraState::ThirdPerson:
+			case GameState::CameraState::ThirdPersonCombat: {
+				if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_ThirdPerson2)) return;
+				break;
+			}
+			case GameState::CameraState::Horseback: {
+				if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_Horse)) return;
+				break;
+			}
+			case GameState::CameraState::Dragon: {
+				if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_Dragon)) return;
+				break;
+			}
+			case GameState::CameraState::Bleedout: {
+				if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_Bleedout)) return;
+				break;
+			}
 		}
-		case GameState::CameraState::Horseback: {
-			if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_Horse)) return;
-			break;
-		}
-		case GameState::CameraState::Dragon: {
-			if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_Dragon)) return;
-			break;
-		}
-		case GameState::CameraState::Bleedout: {
-			if (UpdatePOVSwitchState(camera, PlayerCamera::kCameraState_Bleedout)) return;
-			break;
-		}
-	}
 
 	// Invalidate while we are in a loading screen state
 	// Also if we were in the dialog menu - I'm not able to replicate this particular issue but it doesn't hurt
@@ -186,8 +246,6 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 		currentFocusObject = player;
 
 	offsetState.currentGroup = GetOffsetForState(m_camera->GetCurrentCameraActionState());
-	const auto currentOffset = GetCurrentCameraOffset(player, camera);
-	const auto curTime = GameTime::CurTime();
 
 	// Don't continue to update transition states if we aren't running update code
 	bool shouldRun = false;
@@ -201,9 +259,12 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 	}
 
 	// And set our current reference position
-	if (m_camera->wasLoading || (m_camera->wasDialogOpen && Compat::IsPresent(Compat::Mod::AlternateConversationCamera))) {
-		// Exiting a loading screen or dialog with ACC, set the goal positon
+	if (m_camera->wasLoading || (!wantsControl && m_camera->wasCameraAPIControlled &&
+		Messaging::SmoothCamInterface::GetInstance()->WantsMoveToGoal()))
+	{
+		// Exiting a loading screen or returning from API control
 		MoveToGoalPosition(player, camera);
+		Messaging::SmoothCamInterface::GetInstance()->ClearMoveToGoalFlag();
 	}
 
 	// Save our last position
@@ -213,86 +274,46 @@ void Camera::Thirdperson::OnUpdateCamera(PlayerCharacter* player, CorrectedPlaye
 		//
 
 	} else {
-		// Update ref position
-		currentPosition.SetRef(currentFocusObject->pos, currentFocusObject->rot);
-
-		// Update transition states
-		mmath::UpdateTransitionState<glm::vec3, OffsetTransition>(
-			curTime,
-			config->enableOffsetInterpolation,
-			config->offsetInterpDurationSecs,
-			config->offsetScalar,
-			offsetTransitionState,
-			{ currentOffset.x, currentOffset.y, currentOffset.z }
-		);
-
-		if (!povWasPressed && !povTransitionState.running) {
-			mmath::UpdateTransitionState<float, ZoomTransition>(
-				curTime,
-				config->enableZoomInterpolation,
-				config->zoomInterpDurationSecs,
-				config->zoomScalar,
-				zoomTransitionState,
-				GetCurrentCameraDistance(camera)
-			);
-		} else {
-			zoomTransitionState.lastPosition = zoomTransitionState.currentPosition =
-				zoomTransitionState.targetPosition = GetCurrentCameraDistance(camera);
-		}
-
-		mmath::UpdateTransitionState<float, ZoomTransition>(
-			curTime,
-			config->enableFOVInterpolation,
-			config->fovInterpDurationSecs,
-			config->fovScalar,
-			fovTransitionState,
-			currentOffset.w
-		);
-
-		offsetState.position = {
-			offsetTransitionState.currentPosition.x,
-			offsetTransitionState.currentPosition.y,
-			offsetTransitionState.currentPosition.z
-		};
-		offsetState.fov = fovTransitionState.currentPosition;
-		SetFOVOffset(offsetState.fov);
-
-		UpdateOffsetSmoothers(player, curTime);
+		UpdateInterpolators(player, camera);
 
 		// Now run the active camera state
-		switch (m_camera->GetCurrentCameraState()) {
-			case GameState::CameraState::ThirdPerson: {
-				UpdateInternalRotation(camera);
-				auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson));
-				state->Update(player, currentFocusObject, camera);
+		if (!wantsControl || (wantsControl && wantsUpdates)) {
+			SetFOVOffset(offsetState.fov);
+
+			switch (m_camera->GetCurrentCameraState()) {
+				case GameState::CameraState::ThirdPerson: {
+					UpdateInternalRotation(camera);
+					auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPerson));
+					state->Update(player, currentFocusObject, camera);
 #ifdef WITH_D2D
-				stateOverlay->SetThirdPersonState(state.get());
+					stateOverlay->SetThirdPersonState(state.get());
 #endif
-				break;
-			}
-			case GameState::CameraState::ThirdPersonCombat: {
-				UpdateInternalRotation(camera);
-				auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat));
-				state->Update(player, currentFocusObject, camera);
+					break;
+				}
+				case GameState::CameraState::ThirdPersonCombat: {
+					UpdateInternalRotation(camera);
+					auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::ThirdPersonCombat));
+					state->Update(player, currentFocusObject, camera);
 #ifdef WITH_D2D
-				stateOverlay->SetThirdPersonState(state.get());
+					stateOverlay->SetThirdPersonState(state.get());
 #endif
-				break;
-			}
-			case GameState::CameraState::Horseback: {
-				UpdateInternalRotation(camera);
-				auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback));
-				state->Update(player, currentFocusObject, camera);
+					break;
+				}
+				case GameState::CameraState::Horseback: {
+					UpdateInternalRotation(camera);
+					auto& state = cameraStates.at(static_cast<size_t>(GameState::CameraState::Horseback));
+					state->Update(player, currentFocusObject, camera);
 #ifdef WITH_D2D
-				stateOverlay->SetThirdPersonState(state.get());
+					stateOverlay->SetThirdPersonState(state.get());
 #endif
-				break;
-			}
-			default: {
+					break;
+				}
+				default: {
 #ifdef WITH_D2D
-				stateOverlay->SetThirdPersonState(nullptr);
+					stateOverlay->SetThirdPersonState(nullptr);
 #endif
-				break;
+					break;
+				}
 			}
 		}
 	}
@@ -556,7 +577,9 @@ glm::vec3 Camera::Thirdperson::GetCurrentCameraTargetWorldPosition(const TESObje
 	};
 }
 
-void Camera::Thirdperson::GetCameraGoalPosition(const CorrectedPlayerCamera* camera, glm::vec3& world, glm::vec3& local) {
+void Camera::Thirdperson::GetCameraGoalPosition(const CorrectedPlayerCamera* camera, glm::vec3& world, glm::vec3& local,
+	const TESObjectREFR* forRef)
+{
 	const auto cameraLocal = offsetState.position;
 	auto translated = rotation.ToRotationMatrix() * glm::vec4(
 		cameraLocal.x,
@@ -568,7 +591,7 @@ void Camera::Thirdperson::GetCameraGoalPosition(const CorrectedPlayerCamera* cam
 
 	local = static_cast<glm::vec3>(translated);
 	world = 
-		GetCurrentCameraTargetWorldPosition(currentFocusObject, camera) +
+		GetCurrentCameraTargetWorldPosition(forRef ? forRef : currentFocusObject, camera) +
 		local;
 }
 
@@ -606,32 +629,48 @@ const mmath::Rotation& Camera::Thirdperson::GetCameraRotation() const noexcept {
 }
 
 void Camera::Thirdperson::SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera) noexcept {
+	// If an API consumer is controlling the camera and has requested updates, we don't want to be setting the position
+	if (Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken()) return;
+
 	m_camera->SetPosition(pos, camera);
 	m_camera->UpdateInternalWorldToScreenMatrix(rotation, camera);
+}
+
+const mmath::Position& Camera::Thirdperson::GetPosition() const noexcept {
+	return lastPosition;
 }
 
 Crosshair::Manager* Camera::Thirdperson::GetCrosshairManager() noexcept {
 	return crosshair.get();
 }
 
-void Camera::Thirdperson::MoveToGoalPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept {
+void Camera::Thirdperson::MoveToGoalPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+	const TESObjectREFR* forRef, NiCamera* niCamera) noexcept
+{
 	const auto pov = m_camera->UpdateCameraPOVState(player, camera);
 	const auto actionState = m_camera->UpdateCurrentCameraActionState(player, camera);
 	offsetState.currentGroup = GetOffsetForState(actionState);
 
 	auto ofs = GetCurrentCameraOffset(player, camera);
 	zoomTransitionState.currentPosition = zoomTransitionState.lastPosition = GetCurrentCameraDistance(camera);
+	zoomTransitionState.running = false;
+
 	offsetTransitionState.currentPosition = offsetTransitionState.lastPosition = {
 		ofs.x,
 		ofs.y,
 		ofs.z
 	};
+	offsetTransitionState.running = false;
+
 	fovTransitionState.currentPosition = fovTransitionState.lastPosition = ofs.w;
-	GetCameraGoalPosition(camera, currentPosition.world, currentPosition.local);
+	fovTransitionState.running = false;
+
+	UpdateInternalRotation(camera);
+	GetCameraGoalPosition(camera, currentPosition.world, currentPosition.local, forRef);
 	lastPosition = currentPosition;
 }
 
-void Camera::Thirdperson::UpdateInternalRotation(CorrectedPlayerCamera* camera) noexcept {
+void Camera::Thirdperson::UpdateInternalRotation(const CorrectedPlayerCamera* camera) noexcept {
 	const auto tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
 	if (!tps) return;
 

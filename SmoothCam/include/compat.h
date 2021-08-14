@@ -4,9 +4,7 @@ namespace Compat {
 	enum class Mod : uint8_t {
 		ImprovedCamera,
 		ImmersiveFirstPersonView,
-		AlternateConversationCamera,
-		ArcheryGameplayOverhaul,
-		TrueDirectionalMovement,
+		ArcheryGameplayOverhaul
 	};
 
 	enum class ICCheckResult : uint8_t {
@@ -25,10 +23,8 @@ namespace Compat {
 
 	struct ModDetectionFlags {
 		bool bImprovedCamera = false;
-		bool bACC = false;
 		bool bIFPV = false;
 		bool bAGO = false;
-		bool bTDM = false;
 	};
 
 	void Initialize() noexcept;

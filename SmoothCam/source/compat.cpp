@@ -12,8 +12,6 @@ static struct {
 
 	Compat::ICCheckResult icDetectResult = Compat::ICCheckResult::NOT_FOUND;
 	HMODULE hImprovedCamera = NULL;
-
-	HMODULE hAlternateConversationCamera = NULL;
 } detectedMods;
 
 Compat::ICCheckResult loadImprovedCameraHandle(HMODULE& mod) noexcept {
@@ -62,7 +60,6 @@ Compat::ICCheckResult loadImprovedCameraHandle(HMODULE& mod) noexcept {
 void Compat::Initialize() noexcept {
 	detectedMods.ago = DataHandler::GetSingleton()->LookupModByName("DSerArcheryGameplayOverhaul.esp");
 	detectedMods.icDetectResult = loadImprovedCameraHandle(detectedMods.hImprovedCamera);
-	detectedMods.hAlternateConversationCamera = GetModuleHandle(L"AlternateConversationCamera.dll");
 
 	detectedMods.ifpvDetector = DataHandler::GetSingleton()->LookupModByName("IFPVDetector.esl");
 	if (detectedMods.ifpvDetector) {
@@ -71,14 +68,6 @@ void Compat::Initialize() noexcept {
 		));
 	}
 
-	const auto& consumers = Messaging::SmoothCamAPIV1::GetInstance()->GetConsumers();
-	for (auto it = consumers.cbegin(); it != consumers.cend(); ++it) {
-		if (it->compare("TrueDirectionalMovement") == 0) {
-			modDetectionFlags.bTDM = true;
-			break;
-		}
-	}
-	
 	switch (detectedMods.icDetectResult) {
 		case ICCheckResult::OK: {
 			modDetectionFlags.bImprovedCamera = true;
@@ -103,24 +92,16 @@ void Compat::Initialize() noexcept {
 		modDetectionFlags.bAGO = true;
 		_MESSAGE("Detected Archery Gameplay Overhaul");
 	}
-	if (detectedMods.hAlternateConversationCamera) {
-		modDetectionFlags.bACC = true;
-		_MESSAGE("Detected Alternate Conversation Camera");
-	}
 }
 
 bool Compat::IsPresent(Compat::Mod mod) noexcept {
 	switch (mod) {
-		case Compat::Mod::AlternateConversationCamera:
-			return detectedMods.hAlternateConversationCamera != NULL;
 		case Compat::Mod::ImprovedCamera:
 			return detectedMods.hImprovedCamera != NULL && detectedMods.icDetectResult == ICCheckResult::OK;
 		case Compat::Mod::ImmersiveFirstPersonView:
 			return detectedMods.ifpvDetector != nullptr;
 		case Compat::Mod::ArcheryGameplayOverhaul:
 			return detectedMods.ago != nullptr;
-		case Compat::Mod::TrueDirectionalMovement:
-			return modDetectionFlags.bTDM;
 		default: return false;
 	}
 }

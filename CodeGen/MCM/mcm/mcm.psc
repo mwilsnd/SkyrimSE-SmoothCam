@@ -35,7 +35,7 @@ endFunction
 ]
 
 ScriptMeta scriptMetaInfo -> [
-	version: 14
+	version: 15
 ]
 
 int Function GetVersion()
@@ -94,8 +94,7 @@ event OnPageReset(string a_page)
 		])
 
 		AddHeaderOption("Compatibility")
-		AddTextOption("Alternate Conversation Camera", SmoothCam_IsModDetected(2), OPTION_FLAG_DISABLED)
-		AddTextOption("Archery Gameplay Overhaul", SmoothCam_IsModDetected(3), OPTION_FLAG_DISABLED)
+		AddTextOption("Archery Gameplay Overhaul", SmoothCam_IsModDetected(2), OPTION_FLAG_DISABLED)
 		AddTextOption("Immersive First-Person View", SmoothCam_IsModDetected(1), OPTION_FLAG_DISABLED)
 		AddTextOption("Improved Camera Beta4", SmoothCam_IsModDetected(0), OPTION_FLAG_DISABLED)
 

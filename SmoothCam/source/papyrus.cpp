@@ -133,7 +133,6 @@ constexpr auto boolGetters = mapbox::eternal::hash_map<mapbox::eternal::string, 
 	IMPL_GETTER("ModEnabled",						modDisabled),
 	IMPL_GETTER("EnableCrashDumps",					enableCrashDumps),
 	// Comapt
-	IMPL_NCONF_GETTER("ACCCompat",					modDetectionFlags.bACC),
 	IMPL_NCONF_GETTER("ICCompat",					modDetectionFlags.bImprovedCamera),
 	IMPL_NCONF_GETTER("IFPVCompat",					modDetectionFlags.bIFPV),
 	IMPL_NCONF_GETTER("AGOCompat",					modDetectionFlags.bAGO),
@@ -615,7 +614,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_NumAPIConsumers",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput) {
-				return static_cast<SInt32>(Messaging::SmoothCamAPIV1::GetInstance()->GetConsumers().size());
+				return static_cast<SInt32>(Messaging::SmoothCamInterface::GetInstance()->GetConsumers().size());
 			},
 			registry
 		)
@@ -626,7 +625,7 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			"SmoothCam_GetAPIConsumerName",
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, SInt32 index) {
-				const auto& arr = Messaging::SmoothCamAPIV1::GetInstance()->GetConsumers();
+				const auto& arr = Messaging::SmoothCamInterface::GetInstance()->GetConsumers();
 				if (index >= arr.size()) return BSFixedString("");
 				return BSFixedString(arr.at(index).c_str());
 			},
@@ -640,10 +639,6 @@ void PapyrusBindings::Bind(VMClassRegistry* registry) {
 			ScriptClassName,
 			[](StaticFunctionTag* thisInput, SInt32 modID) {
 				switch (static_cast<Compat::Mod>(modID)) {
-					case Compat::Mod::AlternateConversationCamera:
-						return Compat::IsPresent(Compat::Mod::AlternateConversationCamera) ?
-							BSFixedString("Detected") : BSFixedString("Not Detected");
-
 					case Compat::Mod::ArcheryGameplayOverhaul:
 						return Compat::IsPresent(Compat::Mod::ArcheryGameplayOverhaul) ?
 							BSFixedString("Detected") : BSFixedString("Not Detected");

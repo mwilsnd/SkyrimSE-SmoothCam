@@ -289,6 +289,9 @@ bool Camera::State::BaseThird::IsLocalInterpAllowed() const noexcept {
 void Camera::State::BaseThird::ApplyLocalSpaceGameOffsets(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera)
 	noexcept
 {
+	// Don't apply these offset hacks if camera is API controlled
+	if (Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken()) return;
+
 	auto state = reinterpret_cast<CorrectedThirdPersonState*>(playerCamera->cameraState);
 	const auto& euler = camera->rotation.euler;
 

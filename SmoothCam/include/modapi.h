@@ -9,15 +9,16 @@ namespace Crosshair {
 namespace Messaging {
 	using APIResult = ::SmoothCamAPI::APIResult;
 	using InterfaceVersion1 = ::SmoothCamAPI::IVSmoothCam1;
+	using InterfaceVersion2 = ::SmoothCamAPI::IVSmoothCam2;
 
-	class SmoothCamAPIV1 : public InterfaceVersion1 {
+	class SmoothCamInterface : public InterfaceVersion2 {
 		private:
-			SmoothCamAPIV1() noexcept;
-			virtual ~SmoothCamAPIV1() noexcept;
+		SmoothCamInterface() noexcept;
+			virtual ~SmoothCamInterface() noexcept;
 
 		public:
-			static SmoothCamAPIV1* GetInstance() noexcept {
-				static SmoothCamAPIV1 instance;
+			static SmoothCamInterface* GetInstance() noexcept {
+				static SmoothCamInterface instance;
 				return &instance;
 			}
 
@@ -32,6 +33,14 @@ namespace Messaging {
 			virtual APIResult ReleaseCameraControl(PluginHandle modHandle) noexcept override;
 			virtual APIResult ReleaseCrosshairControl(PluginHandle modHandle) noexcept override;
 			virtual APIResult ReleaseStealthMeterControl(PluginHandle modHandle) noexcept override;
+
+			// InterfaceVersion2
+			virtual NiPoint3 GetLastCameraPosition() const noexcept override;
+			virtual APIResult RequestInterpolatorUpdates(PluginHandle modHandle, bool allowUpdates) noexcept override;
+			virtual APIResult SendToGoalPosition(PluginHandle modHandle, bool shouldMoveToGoal, bool moveNow,
+				const TESObjectREFR* ref, NiCamera* niCamera) noexcept override;
+			virtual void GetGoalPosition(TESObjectREFR* ref, NiPoint3& world, NiPoint3& local) const noexcept override;
+			virtual bool IsCameraEnabled() const noexcept override;
 
 			// Internal
 			// Provide the crosshair manager for API reset control
@@ -61,6 +70,17 @@ namespace Messaging {
 			// Clear the dirty flag on the stealth meter
 			void ClearStealthMeterDirtyFlag() noexcept;
 
+			// The current camera owner has requested that we continue updating interpolators
+			// in the background
+			bool WantsInterpolatorUpdates() const noexcept;
+			// The current camera owner has requested that we move to our goal position once
+			// they return control to us
+			bool WantsMoveToGoal() const noexcept;
+			// Clear the moveToGoal flag after processing
+			void ClearMoveToGoalFlag() noexcept;
+
+
+
 		public:
 			using Consumers = eastl::vector<eastl::string>;
 
@@ -82,6 +102,9 @@ namespace Messaging {
 			bool needsStealthMeterControl = false;
 			bool wantStealthMeterReset = false;
 			std::atomic<PluginHandle> stealthMeterOwner = kPluginHandle_Invalid;
+
+			bool wantsInterpolatorUpdates = false;
+			bool wantsMoveToGoal = false;
 	};
 
 	void HandleInterfaceRequest(SKSEMessagingInterface::Message* msg) noexcept;

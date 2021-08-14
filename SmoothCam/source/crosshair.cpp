@@ -27,7 +27,7 @@ static eastl::unique_ptr<TypedDetour<GFxInvoke>> detGFxInvoke;
 bool __fastcall mGFxInvoke(void* pThis, void* obj, GFxValue* result, const char* name, GFxValue* args, UInt32 numArgs, bool isDisplayObj) {
 	const auto ret = detGFxInvoke->GetBase()(pThis, obj, result, name, args, numArgs, isDisplayObj);
 
-	if (!Messaging::SmoothCamAPIV1::GetInstance()->IsCrosshairTaken() && name && strcmp(name, "ValidateCrosshair") == 0) {
+	if (!Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken() && name && strcmp(name, "ValidateCrosshair") == 0) {
 		// Getting spammed on by conjuration magic mode - (ノಠ益ಠ)ノ彡┻━┻
 		// @Note: I really don't like these more invasive detours - finding a way around this should be a priority
 		// We need this currently because ValidateCrosshair will desync our crosshair state and mess things up
@@ -105,7 +105,7 @@ Crosshair::Manager::Manager() noexcept {
 	// Create our line drawer for the crosshair tail
 	renderables.tailDrawer = eastl::make_unique<Render::LineDrawer>(ctx);
 
-	Messaging::SmoothCamAPIV1::GetInstance()->SetCrosshairManager(this);
+	Messaging::SmoothCamInterface::GetInstance()->SetCrosshairManager(this);
 }
 
 Crosshair::Manager::~Manager() {
@@ -327,7 +327,7 @@ NiAVObject* Crosshair::Manager::FindArrowNode(const PlayerCharacter* player) con
 void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
 	const glm::vec2& aimRotation, mmath::NiMatrix44& worldToScaleform) noexcept
 {
-	if (Messaging::SmoothCamAPIV1::GetInstance()->IsCrosshairTaken()) return;
+	if (Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken()) return;
 	if (!player->loadedState || !player->loadedState->node) return;
 
 	const auto config = Config::GetCurrentConfig();
@@ -658,16 +658,16 @@ void Crosshair::Manager::InvalidateEnablementCache() noexcept {
 void Crosshair::Manager::Update(PlayerCharacter* player, CorrectedPlayerCamera* camera) noexcept {
 	if (!IsCrosshairDataValid()) return;
 
-	if (!Messaging::SmoothCamAPIV1::GetInstance()->IsCrosshairTaken())
-		if (Messaging::SmoothCamAPIV1::GetInstance()->CrosshairDirty()) {
+	if (!Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken())
+		if (Messaging::SmoothCamInterface::GetInstance()->CrosshairDirty()) {
 			ResetCrosshair();
-			Messaging::SmoothCamAPIV1::GetInstance()->ClearCrosshairDirtyFlag();
+			Messaging::SmoothCamInterface::GetInstance()->ClearCrosshairDirtyFlag();
 		}
 
-	if (Messaging::SmoothCamAPIV1::GetInstance()->IsStealthMeterTaken()) return;
-	if (Messaging::SmoothCamAPIV1::GetInstance()->StealthMeterDirty()) {
+	if (Messaging::SmoothCamInterface::GetInstance()->IsStealthMeterTaken()) return;
+	if (Messaging::SmoothCamInterface::GetInstance()->StealthMeterDirty()) {
 		ResetStealthMeter();
-		Messaging::SmoothCamAPIV1::GetInstance()->ClearStealthMeterDirtyFlag();
+		Messaging::SmoothCamInterface::GetInstance()->ClearStealthMeterDirtyFlag();
 	}
 
 	// Stealth meter offset
