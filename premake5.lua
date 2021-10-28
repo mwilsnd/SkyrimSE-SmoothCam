@@ -8,26 +8,8 @@ newoption {
 	}
 }
 
-newoption {
-	trigger = "INTRIN",
-	value = "ON",
-	description = "Enable use of hardware SIMD intrinsics.",
-	allowed = {
-		{ "ON", "Use SIMD instructions" },
-		{ "OFF", "Disable SIMD instructions" },
-	}
-}
-
 if not _OPTIONS["VS_PLATFORM"] then
 	return error( "No visual studio platform selected, please set --VS_PLATFORM to vs2017 or vs2019" )
-end
-
-if _OPTIONS["INTRIN"] == "ON" then
-	_SIMD_MODE = "AVX"
-	print "Using AVX instructions"
-else
-	_SIMD_MODE = "SSE"
-	print "Building for old CPUs"
 end
 
 local function rewriteFile(strPath, strData)
@@ -200,7 +182,7 @@ project "SmoothCam"
 	filter "system:windows"
 		systemversion "latest"
 		debugdir( "../bin/".. outputDir.. "/%{prj.name}" )
-		vectorextensions( _SIMD_MODE )
+		vectorextensions "AVX"
 		characterset "Unicode"
 		intrinsics "On"
 		fpu "Hardware"
