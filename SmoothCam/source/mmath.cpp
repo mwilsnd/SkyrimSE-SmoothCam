@@ -98,32 +98,32 @@ NiMatrix33 mmath::ToddHowardTransform(const float pitch, const float yaw) noexce
 void mmath::DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 	glm::vec3& forward, glm::vec3& right, glm::vec3& up, glm::vec3& coef) noexcept
 {
-	__m128 cosValues, sineValues;
+	__m256 cosValues, sineValues;
 	if constexpr (alignof(decltype(rotation)) == 16) {
-		__m128 rot = _mm_load_ps(rotation.data.data);
-		sineValues = _mm_sincos_ps(&cosValues, rot);
+		__m256 rot = _mm256_load_ps(rotation.data.data);
+		sineValues = _mm256_sincos_ps(&cosValues, rot);
 	} else {
-		__m128 rot = _mm_loadu_ps(rotation.data.data);
-		sineValues = _mm_sincos_ps(&cosValues, rot);
+		__m256 rot = _mm256_loadu_ps(rotation.data.data);
+		sineValues = _mm256_sincos_ps(&cosValues, rot);
 	}
-
-	const auto cZsX = cosValues.m128_f32[2] * sineValues.m128_f32[0];
-	const auto sXsZ = sineValues.m128_f32[0] * sineValues.m128_f32[2];
+	
+	const auto cZsX = cosValues.m256_f32[2] * sineValues.m256_f32[0];
+	const auto sXsZ = sineValues.m256_f32[0] * sineValues.m256_f32[2];
 	
 	forward = {
-		cosValues.m128_f32[1] * cosValues.m128_f32[2],
-		-cosValues.m128_f32[1] * sineValues.m128_f32[2],
-		sineValues.m128_f32[1]
+		cosValues.m256_f32[1] * cosValues.m256_f32[2],
+		-cosValues.m256_f32[1] * sineValues.m256_f32[2],
+		sineValues.m256_f32[1]
 	};
 	right = {
-		cZsX * sineValues.m128_f32[1] + cosValues.m128_f32[0] * sineValues.m128_f32[2],
-		cosValues.m128_f32[0] * cosValues.m128_f32[2] - sXsZ * sineValues.m128_f32[1],
-		-cosValues.m128_f32[1] * sineValues.m128_f32[0]
+		cZsX * sineValues.m256_f32[1] + cosValues.m256_f32[0] * sineValues.m256_f32[2],
+		cosValues.m256_f32[0] * cosValues.m256_f32[2] - sXsZ * sineValues.m256_f32[1],
+		-cosValues.m256_f32[1] * sineValues.m256_f32[0]
 	};
 	up = {
-		-cosValues.m128_f32[0] * cosValues.m128_f32[2] * sineValues.m128_f32[1] + sXsZ,
-		cZsX + cosValues.m128_f32[0] * sineValues.m128_f32[1] * sineValues.m128_f32[2],
-		cosValues.m128_f32[0] * cosValues.m128_f32[1]
+		-cosValues.m256_f32[0] * cosValues.m256_f32[2] * sineValues.m256_f32[1] + sXsZ,
+		cZsX + cosValues.m256_f32[0] * sineValues.m256_f32[1] * sineValues.m256_f32[2],
+		cosValues.m256_f32[0] * cosValues.m256_f32[1]
 	};
 
 	coef = {
