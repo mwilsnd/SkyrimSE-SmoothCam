@@ -6,7 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <thread>
-#include <xmmintrin.h>
+#include <immintrin.h>
 
 #include <new>
 void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line);
