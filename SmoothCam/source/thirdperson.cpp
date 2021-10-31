@@ -671,13 +671,22 @@ void Camera::Thirdperson::MoveToGoalPosition(const PlayerCharacter* player, cons
 }
 
 void Camera::Thirdperson::UpdateInternalRotation(const CorrectedPlayerCamera* camera) noexcept {
-	const auto tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
+	CorrectedThirdPersonState* tps;
+
+	// this is true when dismounting a horse, the camera is transitioning between the horseback and 3rd person camera
+	// see OnPreGameUpdate for setting the transition states
+	if (camera->cameraState == camera->cameraStates[CorrectedPlayerCamera::kCameraState_Transition]) {
+		auto cstate = reinterpret_cast<CorrectedPlayerCameraTransitionState*>(camera->cameraState);
+		tps = reinterpret_cast<CorrectedThirdPersonState*>(cstate->toState);
+	} else {
+		tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
+	}
+	
 	if (!tps) return;
 
 	// Alright, just lie and force the game to compute yaw for us
 	// We get some jitter when things like magic change our character, not sure why yet @TODO
 	auto last = tps->freeRotationEnabled;
-	auto pl = *g_thePlayer;
 	tps->freeRotationEnabled = true;
 	tps->UpdateRotation();
 		rotation.SetQuaternion(tps->rotation);
