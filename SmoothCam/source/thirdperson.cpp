@@ -678,10 +678,12 @@ void Camera::Thirdperson::UpdateInternalRotation(const CorrectedPlayerCamera* ca
 	if (camera->cameraState == camera->cameraStates[CorrectedPlayerCamera::kCameraState_Transition]) {
 		auto cstate = reinterpret_cast<CorrectedPlayerCameraTransitionState*>(camera->cameraState);
 		tps = reinterpret_cast<CorrectedThirdPersonState*>(cstate->toState);
-	} else {
+	} else if (camera->cameraState == camera->cameraStates[CorrectedPlayerCamera::kCameraState_ThirdPerson2]) {
 		tps = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
+	} else {
+		return;
 	}
-	
+
 	if (!tps) return;
 
 	// Alright, just lie and force the game to compute yaw for us
