@@ -31,26 +31,9 @@ KeyBindSetting modEnabledKey -> [
 	desc: "Toggles SmoothCam on and off, see 'Disable SmoothCam' setting."
 	page: " General"
 ]
-KeyBindSetting toggleCustomZOffset -> [
-	settingName: "ToggleCustomZKeyCode"
-	displayName: "Toggle Z Offset Key"
-	desc: "When pressed, applies/removes an offset to the camera height, the amount being set by the 'Z Offset Amount' slider."
-	page: " General"
-]
-SliderSetting customZOffsetAmount -> [
-	settingName: "CustomZOffsetAmount"
-	displayName: "Z Offset Amount"
-	desc: "Amount to offset the Z axis (camera height) by when using pressing the key bound to 'Toggle Z Offset'."
-	defaultValue: 0
-	interval: 1
-	min: -256
-	max: 256
-	displayFormat: "{0}"
-	page: " General"
-]
-KeyBindSetting toggleUserDefinedOffset -> [
-	settingName: "ToggleUserDefinedOffsetKeyCode"
-	displayName: "Toggle Custom Offset Group"
-	desc: "When pressed, enables/disable the 'Custom' offset group, overloading the normal camera state."
+KeyBindSetting nextPresetKey -> [
+	settingName: "NextPresetKeyCode"
+	displayName: "Load Next Preset Key"
+	desc: "Loads the next found valid preset. Note that SmoothCam doesn't save what preset you are currently using between games - When starting skyrim preset 1 will be assumed to be the active preset."
 	page: " General"
 ]

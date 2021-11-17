@@ -79,7 +79,7 @@ private struct OffsetGroupDecl {
 
         TokenStream output;
         // SliderSetting <name> -> [
-        output ~= Token(Tok.OtherValue, "SliderSetting");
+        output ~= Token(Tok.OtherValue, "TPSOffsetSliderSetting");
         output ~= Token(Tok.Space, " ");
         output ~= Token(Tok.OtherValue, varName);
         output ~= Token(Tok.Arrow, "->");
@@ -195,7 +195,7 @@ private struct OffsetGroupDecl {
         TokenStream output;
 
         // ToggleSetting <name> -> [
-        output ~= Token(Tok.OtherValue, "ToggleSetting");
+        output ~= Token(Tok.OtherValue, "TPSOffsetToggleSetting");
         output ~= Token(Tok.Space, " ");
         output ~= Token(Tok.OtherValue, varName);
         output ~= Token(Tok.Arrow, "->");
@@ -275,7 +275,7 @@ private struct OffsetGroupDecl {
 
         TokenStream output;
         // ListSetting <name> -> [
-        output ~= Token(Tok.OtherValue, "ListSetting");
+        output ~= Token(Tok.OtherValue, "TPSOffsetListSetting");
         output ~= Token(Tok.Space, " ");
         output ~= Token(Tok.OtherValue, varName);
         output ~= Token(Tok.Arrow, "->");

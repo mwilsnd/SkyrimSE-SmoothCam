@@ -34,7 +34,7 @@ void Crosshair::Dot::Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render:
 	SetScale(ourSize);
 }
 
-void Crosshair::Dot::Render(Render::D3DContext& ctx, float curTime, float deltaTime, bool allowDepthTesting) noexcept {
+void Crosshair::Dot::Render(Render::D3DContext& ctx, bool allowDepthTesting) noexcept {
 	// Compute our transform
 	UpdateTransform();
 

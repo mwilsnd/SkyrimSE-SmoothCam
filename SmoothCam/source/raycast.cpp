@@ -1,13 +1,8 @@
 #include "raycast.h"
 
-namespace {
-	typedef bool(__fastcall* RayCastFunType)(
-		UnkPhysicsHolder* physics, bhkWorld* world, glm::vec4& rayStart,
-		glm::vec4& rayEnd, uint32_t* rayResultInfo, Character** hitCharacter, float traceHullSize
-	);
-}
+extern Offsets* g_Offsets;
 
-Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize, bool intersectCharacters)
+Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize)
 	noexcept
 {
 	RayResult res;
@@ -20,23 +15,23 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	}
 #endif
 
-	auto playerCamera = CorrectedPlayerCamera::GetSingleton();
-	auto ply = (*g_thePlayer);
-	if (!ply || !ply->parentCell || !playerCamera || !playerCamera->physics) return res;
+	const auto ply = RE::PlayerCharacter::GetSingleton();
+	const auto cam = RE::PlayerCamera::GetSingleton();
+	if (!ply->parentCell || !cam->unk120) return res;
 
-	ply->handleRefObject.IncRef();
-	{
-		auto physicsWorld = Physics::GetWorld(ply->parentCell);
-		if (physicsWorld) {
-			static auto cameraCaster = Offsets::Get<RayCastFunType>(32270);
-			res.hit = cameraCaster( // 0x4f45f0
-				playerCamera->physics, physicsWorld,
-				start, end, static_cast<uint32_t*>(res.data), &res.hitCharacter,
-				traceHullSize
-			);
-		}
+	auto physicsWorld = ply->parentCell->GetbhkWorld();
+	if (physicsWorld) {
+		typedef bool(__fastcall* RayCastFunType)(
+			decltype(RE::PlayerCamera::unk120) physics, RE::bhkWorld* world, glm::vec4& rayStart,
+			glm::vec4& rayEnd, uint32_t* rayResultInfo, RE::Character** hitCharacter, float traceHullSize
+		);
+		static auto cameraCaster = REL::Relocation<RayCastFunType>(g_Offsets->CameraCaster);
+		res.hit = cameraCaster(
+			cam->unk120, physicsWorld,
+			start, end, static_cast<uint32_t*>(res.data), &res.hitCharacter,
+			traceHullSize
+		);
 	}
-	ply->handleRefObject.DecRef();
 
 	if (res.hit) {
 		res.hitPos = end;
@@ -46,12 +41,12 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	return res;
 }
 
-hkpCastCollector* getCastCollector() noexcept {
-	static hkpCastCollector collector = hkpCastCollector();
+SkyrimSE::bhkLinearCastCollector* getCastCollector() noexcept {
+	static SkyrimSE::bhkLinearCastCollector collector = SkyrimSE::bhkLinearCastCollector();
 	return &collector;
 }
 
-Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) noexcept {
+Raycast::RayResult Raycast::hkpCastRay(const glm::vec4& start, const glm::vec4& end) noexcept {
 #ifdef _DEBUG
 	if (!mmath::IsValid(start) || !mmath::IsValid(end)) {
 		__debugbreak();
@@ -62,23 +57,25 @@ Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) noexcept 
 	constexpr auto hkpScale = 0.0142875f;
 	const auto dif = end - start;
 
-	hkpRayCastInfo info;
+	SkyrimSE::bhkRayCastInfo info;
 	info.start = start * hkpScale;
 	info.end = dif * hkpScale;
 	info.collector = getCastCollector();
 	info.collector->reset();
 
-	auto ply = *g_thePlayer;
-	ply->handleRefObject.IncRef();
-	{
-		auto physicsWorld = Physics::GetWorld(ply->parentCell);
-		if (physicsWorld) {
-			physicsWorld->CastRay(&info);
-		}
-	}
-	ply->handleRefObject.DecRef();
+	const auto ply = RE::PlayerCharacter::GetSingleton();
+	if (!ply->parentCell) return {};
 
-	hkpRayHitResult best = {};
+	if (ply->loadedData && ply->loadedData->data3D)
+		info.collector->addFilter(ply->loadedData->data3D.get());
+
+	auto physicsWorld = ply->parentCell->GetbhkWorld();
+	if (physicsWorld) {
+		typedef void(__thiscall RE::bhkWorld::*CastRay)(SkyrimSE::hkpRayCastInfo*) const;
+		(physicsWorld->*reinterpret_cast<CastRay>(&RE::bhkWorld::Unk_33))(&info);
+	}
+	
+	SkyrimSE::bhkRayHitResult best = {};
 	best.hitFraction = 1.0f;
 	glm::vec4 bestPos = {};
 
@@ -100,33 +97,16 @@ Raycast::RayResult Raycast::hkpCastRay(glm::vec4 start, glm::vec4 end) noexcept 
 	result.hitPos = bestPos;
 	result.rayLength = glm::length(bestPos - start);
 
-	// FUN_1404f45f0 <32270>
-	//		140dad060:GetAVObjectFromHavok <76160>
-	//		1402945e0:ExtractCharacterFromTraceRes <19323>
-
-	/*
-	MOV        EDI,dword ptr [TheCamera->unk120 + 0x2c]
-	AND        EDI,0x7f
-	CALL       140dad060:GetAVObjectFromHavok <76160>
-
-	lVar1 = (**(code **)(*(longlong *)param_1 + 0x28))(param_1);
-		mov rax, rcx
-		ret
-	*/
-
 	if (!best.hit) return result;
-	typedef NiAVObject*(__fastcall* _GetUserData)(bhkShapeList*);
-	static auto getAVObject = Offsets::Get<_GetUserData>(76160);
+	typedef RE::NiAVObject*(*_GetUserData)(SkyrimSE::bhkShapeList*);
+	auto getAVObject = REL::Relocation<_GetUserData>(g_Offsets->GetNiAVObject);
 	auto av = getAVObject(best.hit);
 	result.hit = av != nullptr;
 
 	if (result.hit) {
-		auto ref = av->m_owner;
-		if (ref && ref->formType == kFormType_Character) {
-			// This might not *always* be a valid cast, but I've only ever seen valid data
-			// and the dynamic cast _always_ fails. For now, we just check that this isn't null -
-			// if we ever want to read from it we have to be sure this is always legal.
-			result.hitCharacter = reinterpret_cast<Character*>(ref);
+		auto ref = av->userData;
+		if (ref && ref->formType == RE::FormType::ActorCharacter) {
+			result.hitCharacter = reinterpret_cast<RE::Character*>(ref);
 		}
 	}
 

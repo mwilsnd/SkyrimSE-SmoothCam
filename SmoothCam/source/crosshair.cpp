@@ -1,87 +1,17 @@
 ﻿#include "crosshair.h"
 #include "crosshair/skyrim.h"
 #include "crosshair/dot.h"
+#ifdef DEBUG
+#include "arrow_fixes.h"
+#endif
+
+extern Offsets* g_Offsets;
 
 static Crosshair::Manager::CurrentCrosshairData g_crosshairData;
 
-// 80230 : gotoAndStop
-typedef uintptr_t(__fastcall* CrosshairInvoke)(GFxMovieView** param1, uint64_t* param2, const char* name, uint64_t param4);
-static eastl::unique_ptr<TypedDetour<CrosshairInvoke>> detCrosshairInvoke;
-uintptr_t __fastcall mCrosshairInvoke(GFxMovieView** param1, uint64_t* param2, const char* name, uint64_t param4) {
-	const auto ret = detCrosshairInvoke->GetBase()(param1, param2, name, param4);
-	if (!name) return ret;
-
-	// @Note: This method is called right before "GFxInvoke" below
-	if (strcmp(name, "Alert") == 0) {
-		g_crosshairData.alertMode = true;
-	} else if (strcmp(name, "Normal") == 0) {
-		g_crosshairData.alertMode = false;
-	}
-
-	return ret;
-}
-
-//{ 0x00ECA860, 80233 },
-typedef bool(__thiscall *GFxInvoke)(void* pThis, void* obj, GFxValue* result, const char* name, GFxValue* args, UInt32 numArgs, bool isDisplayObj);
-static eastl::unique_ptr<TypedDetour<GFxInvoke>> detGFxInvoke;
-bool __fastcall mGFxInvoke(void* pThis, void* obj, GFxValue* result, const char* name, GFxValue* args, UInt32 numArgs, bool isDisplayObj) {
-	const auto ret = detGFxInvoke->GetBase()(pThis, obj, result, name, args, numArgs, isDisplayObj);
-
-	if (!Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken() && name && strcmp(name, "ValidateCrosshair") == 0) {
-		// Getting spammed on by conjuration magic mode - (ノಠ益ಠ)ノ彡┻━┻
-		// @Note: I really don't like these more invasive detours - finding a way around this should be a priority
-		// We need this currently because ValidateCrosshair will desync our crosshair state and mess things up
-		auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-		GFxValue instance;
-		if (menu && menu->view && menu->view->GetVariable(&instance, "_root.HUDMovieBaseInstance.Crosshair")) {
-			GFxValue result;
-			GFxValue args[2];
-			args[0].SetString("SetCrosshairEnabled");
-			args[1].SetBool(g_crosshairData.enabled);
-			menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 2);
-
-			GFxValue member;
-			if (instance.GetMember("_x", &member)) {
-				member.SetNumber(g_crosshairData.ofs.x);
-				instance.SetMember("_x", &member);
-			}
-
-			if (instance.GetMember("_y", &member)) {
-				member.SetNumber(g_crosshairData.ofs.y);
-				instance.SetMember("_y", &member);
-			}
-
-			if (instance.GetMember("_width", &member)) {
-				member.SetNumber(g_crosshairData.scale.x);
-				instance.SetMember("_width", &member);
-			}
-
-			if (instance.GetMember("_height", &member)) {
-				member.SetNumber(g_crosshairData.scale.y);
-				instance.SetMember("_height", &member);
-			}
-
-			menu->view->SetVariable("_root.HUDMovieBaseInstance.Crosshair", &instance, 2);
-		}
-	}
-
-	return ret;
-}
-
 Crosshair::Manager::Manager() noexcept {
-	detGFxInvoke = eastl::make_unique<TypedDetour<GFxInvoke>>(80233, mGFxInvoke);
-	if (!detGFxInvoke->Attach()) {
-		_ERROR("Failed to place detour on target function(80,233), this error is fatal.");
-		FatalError(L"Failed to place detour on target function(80,233), this error is fatal.");
-	}
-
-	detCrosshairInvoke = eastl::make_unique<TypedDetour<CrosshairInvoke>>(80230, mCrosshairInvoke);
-	if (!detCrosshairInvoke->Attach()) {
-		_ERROR("Failed to place detour on target function(80,230), this error is fatal.");
-		FatalError(L"Failed to place detour on target function(80,230), this error is fatal.");
-	}
-
 	ReadInitialCrosshairInfo();
+	Messaging::SmoothCamInterface::GetInstance()->SetCrosshairManager(this);
 
 	if (!Render::HasContext()) return;
 	auto& ctx = Render::GetContext();
@@ -104,8 +34,6 @@ Crosshair::Manager::Manager() noexcept {
 
 	// Create our line drawer for the crosshair tail
 	renderables.tailDrawer = eastl::make_unique<Render::LineDrawer>(ctx);
-
-	Messaging::SmoothCamInterface::GetInstance()->SetCrosshairManager(this);
 }
 
 Crosshair::Manager::~Manager() {
@@ -121,32 +49,29 @@ glm::vec3 Crosshair::Manager::GetCrosshairTargetNormal(const glm::vec2& aimRotat
 }
 
 void Crosshair::Manager::TickProjectilePath(glm::vec3& position, glm::vec3& vel, const glm::vec3& gravity,
-	float mass, float dt) noexcept
+	float gravityScale, float dt) noexcept
 {
-	// @Note: what i"m calling mass is called "gravity" in the CK - appears to be a scalar on gravity
-	// There is ALSO a gravityFactor in the nif file for the arrow
-
 	// From the iron arrow nif file
 	// Until I can figure out a way to read these values at runtime, assume they don't change
 	constexpr auto linDamp = 0.099609f;
 	constexpr auto gravityFactor = 1.0f;
 
-	const auto magic = glm::vec3{ 0.0f, 0.0f, 59.0f };
-	const glm::vec3 gravityVector = gravity * gravityFactor * mass * magic;
+	const auto magic = glm::vec3{ 0.0f, 0.0f, 59.0f }; // just roll with it, i don't know either
+	const glm::vec3 gravityVector = gravity * gravityFactor * gravityScale * magic;
 	const auto step = gravityVector -(vel * linDamp);
 
 	vel += step * dt;
 	position += vel * dt;
 }
 
-glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-	const TESAmmo* ammo, const glm::vec2& aimRotation) noexcept
+glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(const RE::Actor* player,
+	const RE::TESAmmo* ammo, const glm::vec2& aimRotation) noexcept
 {
 	// Read the tilt angle
 	float tilt = 0.0f;
 	if (GameState::IsUsingBow(player) || GameState::IsUsingCrossbow(player)) {
-		static auto arrowTilt = (*g_iniSettingCollection)->Get("f3PArrowTiltUpAngle:Combat");
-		tilt = glm::radians(arrowTilt->data.f32);
+		static auto arrowTilt = RE::INISettingCollection::GetSingleton()->GetSetting("f3PArrowTiltUpAngle:Combat");
+		tilt = glm::radians(arrowTilt->GetFloat());
 	}
 
 	// Get the rotation for the arrow
@@ -158,14 +83,13 @@ glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(const PlayerCharac
 	// Read required metrics for the shot
 
 	// Replicates the function at 42537
-	//const auto s2 = Offsets::Get<GetAFloat>(42537)(arrow);
-	const auto s2 = [](const TESObjectWEAP* wep) {
+	const auto s2 = [](const RE::TESObjectWEAP* wep) {
 		if (!wep) return 1.0f;
-
-		auto speed = wep->gameData.speed;
-		const auto DAT_141de0da8 = *Offsets::Get<float*>(505064);
-		const auto DAT_141de0dc0 = *Offsets::Get<float*>(505066);
-		const auto DAT_142f01438 = *Offsets::Get<float*>(515530);
+		
+		auto speed = wep->weaponData.speed;
+		const auto DAT_141de0da8 = *REL::Relocation<float*>(g_Offsets->DAT_141de0da8);
+		const auto DAT_141de0dc0 = *REL::Relocation<float*>(g_Offsets->DAT_141de0dc0);
+		const auto DAT_142f01438 = *REL::Relocation<float*>(g_Offsets->DAT_142f01438);
 
 		if (DAT_141de0da8 <= speed)
 			speed = DAT_141de0da8;
@@ -177,18 +101,17 @@ glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(const PlayerCharac
 	}(GameState::GetEquippedWeapon(player));
 
 	// Replicates the function at 42536
-	// const auto power = Offsets::Get<GetAFloat>(42536)(arrow);
 	const auto power = [](float unk188_ArrowDrawTimer) {
 		// @Note: The parameter is projectile->unk188
 		const float fVar1 = unk188_ArrowDrawTimer; // FUN_14074dc80(arrowProjectile);
 
-		const auto DAT_141de0df0 = *Offsets::Get<float*>(505070);
-		const auto DAT_141de0e08 = *Offsets::Get<float*>(505072);
+		const auto DAT_141de0df0 = *REL::Relocation<float*>(g_Offsets->DAT_141de0df0);
+		const auto DAT_141de0e08 = *REL::Relocation<float*>(g_Offsets->DAT_141de0e08);
 
 		return ((fVar1 - DAT_141de0df0) / (1.0f - DAT_141de0df0)) * (1.0f - DAT_141de0e08) + DAT_141de0e08;
-	}(GameState::GetCurrentBowDrawTimer(player));
+	}(GameState::GetCurrentBowDrawTimer(RE::PlayerCharacter::GetSingleton()));
 
-	const auto speed = ammo->settings.projectile->data.speed;
+	const auto speed = ammo->data.projectile->data.speed;
 	// arrowProjectile->arrowUnk18C
 	// Appears to always be one
 	constexpr auto arrowUnk18C = 1.0f;
@@ -209,19 +132,21 @@ glm::vec3 Crosshair::Manager::ComputeProjectileVelocityVector(const PlayerCharac
 	};
 }
 
-bool Crosshair::Manager::ProjectilePredictionCurve(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-	const glm::vec2& aimRotation, const glm::vec3& startPos, glm::vec3& hitPos, bool& hitCharacter) noexcept
+bool Crosshair::Manager::ProjectilePredictionCurve(const RE::Actor* player, const glm::vec2& aimRotation,
+	const glm::vec3& startPos, glm::vec3& hitPos, bool& hitCharacter) noexcept
 {
 	// Get the ammo we are using
-	const auto ammo = GameState::GetCurrentAmmo(player);
-	if (ammo == nullptr) return false;
+	const auto ammo = player->GetCurrentAmmo();
+	if (!ammo) return false;
 
 	const auto config = Config::GetCurrentConfig();
-	const auto gravity = Physics::GetGravityVector(player);
-	const auto mass = *reinterpret_cast<float*>(&ammo->settings.projectile->data.unk04);
+	const auto gravityScale = ammo->data.projectile->data.gravity;
+	auto gravity = glm::vec4{ 0.0f, 0.0f, -9.8f, 0.0f };
+	if (player->parentCell && player->parentCell->GetbhkWorld() && player->parentCell->GetbhkWorld()->GetWorld())
+		gravity = *reinterpret_cast<glm::vec4*>(&player->parentCell->GetbhkWorld()->GetWorld()->gravity);
 
 	// Compute impulse
-	glm::vec3 velocityVector = ComputeProjectileVelocityVector(player, camera, ammo, aimRotation);
+	glm::vec3 velocityVector = ComputeProjectileVelocityVector(player, ammo, aimRotation);
 
 	// Max number of segments we want to simulate
 	constexpr auto segCount = 128;
@@ -234,13 +159,10 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const PlayerCharacter* player
 
 	bool hit = false;
 	for (auto i = 0; i < segCount; i++) {
-		TickProjectilePath(curPos, velocityVector, gravity, mass, timeStep);
+		TickProjectilePath(curPos, velocityVector, gravity, gravityScale, timeStep);
 		const auto origin = glm::vec4(lastPos.x, lastPos.y, lastPos.z, 0.0f);
 		const auto endPoint = glm::vec4(curPos.x, curPos.y, curPos.z, 0.0f);
-		const auto rayLength = glm::length(endPoint - origin);
-		const auto rayNormal = glm::normalize(endPoint - origin);
-		const auto ray = rayNormal * rayLength;
-		const auto result = Raycast::hkpCastRay(origin, origin + ray);
+		const auto result = Raycast::hkpCastRay(origin, origin + (endPoint - origin));
 
 		if (result.hit) {
 			hitPos = static_cast<glm::vec3>(result.hitPos);
@@ -302,33 +224,64 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const PlayerCharacter* player
 	return hit;
 }
 
-NiAVObject* Crosshair::Manager::FindArrowNode(const PlayerCharacter* player) const noexcept {
-	auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.weapon.data), NiAVObject, NiNode);
-	if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
-		auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
+RE::NiAVObject* Crosshair::Manager::FindArrowNode(const RE::Actor* player) const noexcept {
+	if (GameState::IsUsingCrossbow(player)) {
+		auto rmag = player->loadedData->data3D->GetObjectByName(Strings.rmag);
+		if (rmag) {
+			// So on horseback, Arrow:0 doesn't appear for whatever reason
+			auto arrow = rmag->GetObjectByName(Strings.arrowName);
+			if (arrow)
+				return arrow;
+
+			// Se we need to pick the next best location, which seems to be rmag
+			return rmag;
+		}
+	}
+
+	auto handNode = skyrim_cast<RE::NiNode*>(player->loadedData->data3D->GetObjectByName(Strings.weapon));
+	if (handNode && handNode->children.size() > 0) {
+		auto arrow = handNode->GetObjectByName(Strings.arrowName);
 		if (arrow) return arrow;
 	}
 
-	handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.rmag.data), NiAVObject, NiNode);
-	if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
-		auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
+	handNode = skyrim_cast<RE::NiNode*>(player->loadedData->data3D->GetObjectByName(Strings.rmag));
+	if (handNode && handNode->children.size() > 0) {
+		auto arrow = handNode->GetObjectByName(Strings.arrowName);
 		if (arrow) return arrow;
 	}
 
-	handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.lmag.data), NiAVObject, NiNode);
-	if (handNode && handNode->m_children.m_size > 0 && handNode->m_children.m_data) {
-		auto arrow = handNode->GetObjectByName(&Strings.arrowName.data);
+	handNode = skyrim_cast<RE::NiNode*>(player->loadedData->data3D->GetObjectByName(Strings.lmag));
+	if (handNode && handNode->children.size() > 0) {
+		auto arrow = handNode->GetObjectByName(Strings.arrowName);
 		if (arrow) return arrow;
 	}
 
 	return nullptr;
 }
 
-void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-	const glm::vec2& aimRotation, mmath::NiMatrix44& worldToScaleform) noexcept
+glm::vec3 Crosshair::Manager::TranslateFirePostion(const RE::Actor* player, const glm::vec2& cameraRotation,
+	const glm::vec3& firePos) const noexcept
+{
+	if (GameState::IsInHorseCamera(RE::PlayerCamera::GetSingleton()))
+		return firePos;
+
+	const auto& playerRef = player->loadedData->data3D->world;
+	const auto playerPos = glm::vec3{ playerRef.translate.x, playerRef.translate.y, playerRef.translate.z };
+	const auto localSpace = firePos - playerPos;
+	const auto yawDelta = player->data.angle.z - cameraRotation.y;
+
+	auto inv = glm::rotate(glm::identity<glm::mat4>(), yawDelta, { 0.0f, 0.0f, 1.0f });
+	auto local = inv * glm::vec4{ localSpace.x, localSpace.y, 0.0f, 1.0f };
+	local.z += localSpace.z;
+
+	return playerPos + static_cast<glm::vec3>(local);
+}
+
+void Crosshair::Manager::UpdateCrosshairPosition(const RE::Actor* player, const glm::vec2& aimRotation,
+	const glm::vec2& cameraRotation, mmath::NiMatrix44& worldToScaleform) noexcept
 {
 	if (Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken()) return;
-	if (!player->loadedState || !player->loadedState->node) return;
+	if (!player->loadedData || !player->loadedData->data3D) return;
 
 	const auto config = Config::GetCurrentConfig();
 	auto maxRayLength = 8000.0f;
@@ -337,19 +290,19 @@ void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, 
 	bool hit = false;
 	bool hitCharacter = false;
 
-	if (GameState::IsBowDrawn(player) && Strings.weapon.data && Strings.arrowName.data) {
+	if (GameState::IsBowDrawn(player)) {
 		const auto arrow = FindArrowNode(player);
 		if (arrow) {
-			const auto pos = glm::vec3{
-				arrow->m_worldTransform.pos.x,
-				arrow->m_worldTransform.pos.y,
-				arrow->m_worldTransform.pos.z
-			};
+			const auto pos = TranslateFirePostion(player, cameraRotation, glm::vec3{
+				arrow->world.translate.x,
+				arrow->world.translate.y,
+				arrow->world.translate.z
+			});
 
 			// Now select the method to use
 			if (config->useArrowPrediction) {
 				maxRayLength = config->maxArrowPredictionRange;
-				if (ProjectilePredictionCurve(player, camera, aimRotation, pos, hitPos, hitCharacter)) {
+				if (ProjectilePredictionCurve(player, aimRotation, pos, hitPos, hitCharacter)) {
 					hit = true;
 					rayLength = glm::length(hitPos - pos);
 				}
@@ -357,11 +310,11 @@ void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, 
 				// Classic method
 				float fac = 0.0f;
 				if (GameState::IsUsingBow(player) || GameState::IsUsingCrossbow(player)) {
-					static auto arrowTilt = (*g_iniSettingCollection)->Get("f3PArrowTiltUpAngle:Combat");
-					fac = glm::radians(arrowTilt->data.f32) * 0.5f;
+					static auto arrowTilt = RE::INISettingCollection::GetSingleton()->GetSetting("f3PArrowTiltUpAngle:Combat");
+					fac = glm::radians(arrowTilt->GetFloat()) * 0.5f;
 				}
-				const auto n = GetCrosshairTargetNormal(aimRotation, fac);
 
+				const auto n = GetCrosshairTargetNormal(aimRotation, fac);
 				const auto origin = glm::vec4(pos.x, pos.y, pos.z, 0.0f);
 				const auto ray = glm::vec4(n.x, n.y, n.z, 0.0f) * maxRayLength;
 				const auto result = Raycast::hkpCastRay(origin, origin + ray);
@@ -371,17 +324,26 @@ void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, 
 				hitCharacter = result.hitCharacter != nullptr;
 			}
 		}
-	} else if (GameState::IsMagicDrawn(player) && Strings.magic.data) {
-		NiPoint3 niOrigin = { 0.01f, 0.01f, 0.01f };
+	} else if (GameState::IsMagicDrawn(player)) {
+		RE::NiPoint3 niOrigin = { 0.01f, 0.01f, 0.01f };
 		glm::vec3 normal = { 0.0f, 1.00f, 0.0f };
 
-		const auto handNode = DYNAMIC_CAST(player->loadedState->node->GetObjectByName(&Strings.magic.data), NiAVObject, NiNode);
+		const auto handNode = skyrim_cast<RE::NiNode*>(player->loadedData->data3D->GetObjectByName(Strings.magic));
 		if (handNode)
-			niOrigin = { handNode->m_worldTransform.pos.x, handNode->m_worldTransform.pos.y, handNode->m_worldTransform.pos.z };
-		normal = GetCrosshairTargetNormal(aimRotation);
+			niOrigin = { handNode->world.translate.x, handNode->world.translate.y, handNode->world.translate.z };
+
+		normal = mmath::GetViewVector(
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			aimRotation.x,
+			cameraRotation.y
+		);
+
+		const auto pos = TranslateFirePostion(player, cameraRotation, {
+			niOrigin.x, niOrigin.y, niOrigin.z
+		});
 
 		// Cast the aim ray
-		const auto origin = glm::vec4(niOrigin.x, niOrigin.y, niOrigin.z, 0.0f);
+		const auto origin = glm::vec4(pos, 0.0f);
 		const auto ray = glm::vec4(normal.x, normal.y, normal.z, 0.0f) * maxRayLength;
 		const auto result = Raycast::hkpCastRay(origin, origin + ray);
 		hit = result.hit;
@@ -391,19 +353,7 @@ void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, 
 	}
 
 	// Now set the crosshair
-	glm::vec2 crosshairSize(baseCrosshairData.xScale, baseCrosshairData.yScale);
-	glm::vec2 crosshairPos(baseCrosshairData.xCenter, baseCrosshairData.yCenter);
 	if (hit) {
-		auto port = NiRect<float>();
-		auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-		if (menu && menu->view) {
-			const auto rect = menu->view->GetVisibleFrameRect();
-			port.m_left = rect.left;
-			port.m_right = rect.right;
-			port.m_top = rect.bottom;
-			port.m_bottom = rect.top;
-		}
-
 		// Flag our crosshair for drawing, if we have one
 		if (config->useWorldCrosshair && renderables.curCrosshair) {
 			SetCrosshairEnabled(false);
@@ -417,36 +367,38 @@ void Crosshair::Manager::UpdateCrosshairPosition(const PlayerCharacter* player, 
 			renderables.curCrosshair->SetPosition(hitPos);
 			// We want the crosshair to face the player
 			renderables.curCrosshair->SetRotation({
-				mmath::half_pi - aimRotation.x,
-				aimRotation.y * -1.0f,
+				mmath::half_pi - cameraRotation.x,
+				cameraRotation.y * -1.0f,
 				0.0f
 			});
 
 			return;
 		}
 		
-		auto pt = NiPoint3(
-			hitPos.x,
-			hitPos.y,
-			hitPos.z
-		);
-
-		auto rangeScalar = glm::clamp((maxRayLength - rayLength) / maxRayLength, 0.0f, 1.0f);
-		auto sz = mmath::Remap(rangeScalar, 0.0f, 1.0f, config->crosshairMinDistSize, config->crosshairMaxDistSize);
-		crosshairSize = { sz, sz };
+		const auto pt = RE::NiPoint3(hitPos.x, hitPos.y, hitPos.z);
+		const auto rangeScalar = glm::clamp((maxRayLength - rayLength) / maxRayLength, 0.0f, 1.0f);
+		const auto sz = mmath::Remap(rangeScalar, 0.0f, 1.0f, config->crosshairMinDistSize, config->crosshairMaxDistSize);
+		glm::vec2 crosshairSize = { sz, sz };
 
 		// Use the HUD crosshair
+		auto port = RE::NiRect<float>();
+		auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+		if (menu && menu->uiMovie) {
+			const auto rect = menu->uiMovie->GetVisibleFrameRect();
+			port = RE::NiRect<float>(rect.left, rect.right, rect.top, rect.bottom);
+		}
+
 		glm::vec3 screen = {};
-		(*WorldPtToScreenPt3_Internal)(
-			reinterpret_cast<float*>(&worldToScaleform),
-			&port, &pt,
-			&screen.x, &screen.y, &screen.z, 9.99999975e-06
+		RE::NiCamera::WorldPtToScreenPt3(
+			worldToScaleform.data,
+			port, pt,
+			screen.x, screen.y, screen.z, 9.99999975e-06f
 		);
 
 		if (hitCharacter)
 			crosshairSize += config->crosshairNPCHitGrowSize * rangeScalar;
 
-		crosshairPos = {
+		glm::vec2 crosshairPos = {
 			screen.x,
 			screen.y
 		};
@@ -466,30 +418,30 @@ bool Crosshair::Manager::IsCrosshairDataValid() const noexcept {
 }
 
 void Crosshair::Manager::ReadInitialCrosshairInfo() noexcept {
-	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-	if (!menu || !menu->view) return;
+	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+	if (!menu || !menu->uiMovie) return;
 
-	GFxValue va;
-	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._x");
+	RE::GFxValue va;
+	menu->uiMovie->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._x");
 	baseCrosshairData.xOff = va.GetNumber();
 
-	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._y");
+	menu->uiMovie->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._y");
 	baseCrosshairData.yOff = va.GetNumber();
 
-	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._width");
+	menu->uiMovie->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._width");
 	baseCrosshairData.xScale = va.GetNumber();
 
-	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._height");
+	menu->uiMovie->GetVariable(&va, "_root.HUDMovieBaseInstance.CrosshairInstance._height");
 	baseCrosshairData.yScale = va.GetNumber();
 
-	const auto rect = menu->view->GetVisibleFrameRect();
+	const auto rect = menu->uiMovie->GetVisibleFrameRect();
 	baseCrosshairData.xCenter = mmath::Remap(0.5f, 0.0f, 1.0f, rect.left, rect.right);
 	baseCrosshairData.yCenter = mmath::Remap(0.5f, 0.0f, 1.0f, rect.top, rect.bottom);
 
-	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.StealthMeterInstance._x");
+	menu->uiMovie->GetVariable(&va, "_root.HUDMovieBaseInstance.StealthMeterInstance._x");
 	baseCrosshairData.stealthXOff = va.GetNumber();
 
-	menu->view->GetVariable(&va, "_root.HUDMovieBaseInstance.StealthMeterInstance._y");
+	menu->uiMovie->GetVariable(&va, "_root.HUDMovieBaseInstance.StealthMeterInstance._y");
 	baseCrosshairData.stealthYOff = va.GetNumber();
 
 	baseCrosshairData.captured = true;
@@ -513,10 +465,9 @@ void Crosshair::Manager::SetCrosshairPosition(const glm::dvec2& pos) noexcept {
 	if (!IsCrosshairDataValid()) return;
 	if (currentCrosshairData.position == pos) return;
 
-	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-	GFxValue instance;
-	if (menu && menu->view && menu->view->GetVariable(&instance, "_root.HUDMovieBaseInstance.Crosshair")) {
-		const auto rect = menu->view->GetVisibleFrameRect();
+	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+	if (menu && menu->uiMovie) {
+		const auto rect = menu->uiMovie->GetVisibleFrameRect();
 		const auto half_x = pos.x -
 			((static_cast<double>(rect.right) + static_cast<double>(rect.left)) * 0.5);
 		const auto half_y = pos.y -
@@ -524,19 +475,14 @@ void Crosshair::Manager::SetCrosshairPosition(const glm::dvec2& pos) noexcept {
 
 		const auto x = half_x + baseCrosshairData.xOff;
 		const auto y = half_y + baseCrosshairData.yOff;
-
-		GFxValue member;
-		if (instance.GetMember("_x", &member)) {
-			member.SetNumber(x);
-			instance.SetMember("_x", &member);
-		}
-
-		if (instance.GetMember("_y", &member)) {
-			member.SetNumber(y);
-			instance.SetMember("_y", &member);
-		}
-
-		menu->view->SetVariable("_root.HUDMovieBaseInstance.Crosshair", &instance, 2);
+		RE::GFxValue::DisplayInfo loc;
+		loc.SetPosition(x, y);
+		
+		RE::GFxValue var;
+		menu->uiMovie->GetVariable(&var, "_root.HUDMovieBaseInstance.Crosshair");
+		if (var.IsDisplayObject())
+			var.SetDisplayInfo(loc);
+		
 		currentCrosshairData.position = pos;
 		g_crosshairData.position = pos;
 		g_crosshairData.ofs = { x, y };
@@ -545,21 +491,19 @@ void Crosshair::Manager::SetCrosshairPosition(const glm::dvec2& pos) noexcept {
 
 void Crosshair::Manager::SetStealthMeterPosition(const glm::vec2& pos) noexcept {
 	if (!IsCrosshairDataValid()) return;
-	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-	GFxValue instance;
-	if (menu && menu->view && menu->view->GetVariable(&instance, "_root.HUDMovieBaseInstance.StealthMeterInstance")) {
-		GFxValue member;
-		if (instance.GetMember("_x", &member)) {
-			member.SetNumber(baseCrosshairData.stealthXOff + static_cast<double>(pos.x));
-			instance.SetMember("_x", &member);
-		}
+	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+	if (menu && menu->uiMovie) {
+		RE::GFxValue::DisplayInfo loc;
+		loc.SetPosition(
+			baseCrosshairData.stealthXOff + static_cast<double>(pos.x),
+			baseCrosshairData.stealthYOff + static_cast<double>(pos.y)
+		);
 
-		if (instance.GetMember("_y", &member)) {
-			member.SetNumber(baseCrosshairData.stealthYOff + static_cast<double>(pos.y));
-			instance.SetMember("_y", &member);
-		}
+		RE::GFxValue var;
+		menu->uiMovie->GetVariable(&var, "_root.HUDMovieBaseInstance.StealthMeterInstance");
+		if (var.IsDisplayObject())
+			var.SetDisplayInfo(loc);
 
-		menu->view->SetVariable("_root.HUDMovieBaseInstance.StealthMeterInstance", &instance, 2);
 		currentCrosshairData.stealthMeterPosition = pos;
 		g_crosshairData.stealthMeterPosition = pos;
 		currentCrosshairData.stealthMeterMutated = true;
@@ -577,6 +521,7 @@ void Crosshair::Manager::CenterCrosshair() noexcept {
 void Crosshair::Manager::CenterStealthMeter() noexcept {
 	if (!IsCrosshairDataValid()) return;
 	SetStealthMeterPosition({0.0, 0.0});
+	currentCrosshairData.stealthMeterMutated = false;
 }
 
 void Crosshair::Manager::SetCrosshairSize(const glm::dvec2& size) noexcept {
@@ -584,21 +529,16 @@ void Crosshair::Manager::SetCrosshairSize(const glm::dvec2& size) noexcept {
 	if (currentCrosshairData.scale == size) return;
 	if (!Config::GetCurrentConfig()->enableCrosshairSizeManip) return;
 
-	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-	GFxValue instance;
-	if (menu && menu->view && menu->view->GetVariable(&instance, "_root.HUDMovieBaseInstance.Crosshair")) {
-		GFxValue member;
-		if (instance.GetMember("_width", &member)) {
-			member.SetNumber(size.x);
-			instance.SetMember("_width", &member);
-		}
+	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+	if (menu && menu->uiMovie) {
+		RE::GFxValue::DisplayInfo loc;
+		loc.SetScale(size.x, size.y);
 
-		if (instance.GetMember("_height", &member)) {
-			member.SetNumber(size.y);
-			instance.SetMember("_height", &member);
-		}
+		RE::GFxValue var;
+		menu->uiMovie->GetVariable(&var, "_root.HUDMovieBaseInstance.Crosshair");
+		if (var.IsDisplayObject())
+			var.SetDisplayInfo(loc);
 
-		menu->view->SetVariable("_root.HUDMovieBaseInstance.Crosshair", &instance, 2);
 		currentCrosshairData.scale = size;
 		g_crosshairData.scale = size;
 	}
@@ -616,14 +556,12 @@ void Crosshair::Manager::SetCrosshairEnabled(bool enabled) noexcept {
 	if (!IsCrosshairDataValid()) return;
 	if (currentCrosshairData.enabled == enabled && !currentCrosshairData.invalidated) return;
 
-	auto menu = MenuManager::GetSingleton()->GetMenu(&UIStringHolder::GetSingleton()->hudMenu);
-	if (menu && menu->view) {
-		GFxValue result;
-		GFxValue args[2];
-		args[0].SetString("SetCrosshairEnabled");
-		args[1].SetBool(enabled);
-		menu->view->Invoke("call", &result, static_cast<GFxValue*>(args), 2);
-		
+	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+	if (menu && menu->uiMovie && menu->fxDelegate) {
+		RE::FxResponseArgsEx<1> args;
+		args[0].SetBoolean(enabled);
+		menu->fxDelegate->Invoke(menu->uiMovie.get(), "SetCrosshairEnabled", args);
+
 		currentCrosshairData.enabled = enabled;
 		currentCrosshairData.invalidated = false;
 		g_crosshairData.enabled = enabled;
@@ -655,7 +593,7 @@ void Crosshair::Manager::InvalidateEnablementCache() noexcept {
 	currentCrosshairData.invalidated = true;
 }
 
-void Crosshair::Manager::Update(PlayerCharacter* player, CorrectedPlayerCamera* camera) noexcept {
+void Crosshair::Manager::Update(RE::Actor* player) noexcept {
 	if (!IsCrosshairDataValid()) return;
 
 	if (!Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken())
@@ -682,7 +620,6 @@ void Crosshair::Manager::Update(PlayerCharacter* player, CorrectedPlayerCamera* 
 	if (!GameState::IsSneaking(player)) {
 		if (currentCrosshairData.stealthMeterMutated) {
 			CenterStealthMeter();
-			currentCrosshairData.stealthMeterMutated = false;
 		}
 		return;
 	}
@@ -697,12 +634,11 @@ void Crosshair::Manager::Update(PlayerCharacter* player, CorrectedPlayerCamera* 
 
 	} else if (currentCrosshairData.stealthMeterMutated) {
 		CenterStealthMeter();
-		currentCrosshairData.stealthMeterMutated = false;
 	}
 }
 
 void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& cameraPosition, const glm::vec2& cameraRotation,
-	const NiFrustum& frustum) noexcept
+	const RE::NiFrustum& frustum) noexcept
 {
 	if (!IsCrosshairDataValid()) {
 		// Try and capture now
@@ -780,9 +716,7 @@ void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& camera
 			1.0f
 		});
 
-		renderables.curCrosshair->Render(
-			ctx, renderables.cbufPerFrameStaging.curTime, GameTime::GetFrameDelta(), config->worldCrosshairDepthTest
-		);
+		renderables.curCrosshair->Render(ctx, config->worldCrosshairDepthTest);
 		renderables.drawCrosshair = false;
 		renderables.hitCharacter = false;
 	}
@@ -819,4 +753,32 @@ void Crosshair::Manager::ResetStealthMeter(bool hard) noexcept {
 
 Crosshair::Manager::CurrentCrosshairData& Crosshair::Manager::GetCurrentCrosshairData() noexcept {
 	return currentCrosshairData;
+}
+
+void Crosshair::Manager::SetAlertMode(bool alert) noexcept {
+	g_crosshairData.alertMode = alert;
+}
+
+void Crosshair::Manager::ValidateCrosshair() noexcept {
+	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
+	if (menu && menu->uiMovie && menu->fxDelegate) {
+		RE::FxResponseArgsEx<1> arg;
+		arg[0].SetBoolean(g_crosshairData.enabled);
+		menu->fxDelegate->Invoke(menu->uiMovie.get(), "SetCrosshairEnabled", arg);
+
+		RE::GFxValue::DisplayInfo loc;
+		loc.SetPosition(
+			g_crosshairData.ofs.x,
+			g_crosshairData.ofs.y
+		);
+		loc.SetScale(
+			g_crosshairData.scale.x,
+			g_crosshairData.scale.y
+		);
+
+		RE::GFxValue var;
+		menu->uiMovie->GetVariable(&var, "_root.HUDMovieBaseInstance.Crosshair");
+		if (var.IsDisplayObject())
+			var.SetDisplayInfo(loc);
+	}
 }

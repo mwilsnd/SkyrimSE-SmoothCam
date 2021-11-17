@@ -3,5 +3,5 @@
 namespace PapyrusBindings {
 	constexpr auto ScriptClassName = "SmoothCamMCM";
 
-	void Bind(VMClassRegistry* registry);
+	bool Bind(RE::BSScript::IVirtualMachine* vm);
 }

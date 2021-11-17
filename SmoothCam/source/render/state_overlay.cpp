@@ -27,6 +27,7 @@ static const wchar_t* ActionStateEnumNames[] = {
 	L"FirstPersonDragon",
 	L"VampireLord",
 	L"Werewolf",
+	L"Vanity",
 	L"Unknown",
 };
 constexpr auto actionNameLen = sizeof(ActionStateEnumNames) / sizeof(ActionStateEnumNames[0]);
@@ -36,6 +37,7 @@ static const wchar_t* CameraStateEnumNames[] = {
 	L"FirstPerson",
 	L"ThirdPerson",
 	L"ThirdPersonCombat",
+	L"ThirdPersonDialogue",
 	L"KillMove",
 	L"Tweening",
 	L"Transitioning",
@@ -66,6 +68,7 @@ static const wchar_t* OffsetGroupNames[]{
 	L"VampireLord",
 	L"Werewolf",
 	L"Custom",
+	L"Vanity",
 	L"Unknown",
 };
 constexpr auto ofsNameLen = sizeof(OffsetGroupNames) / sizeof(OffsetGroupNames[0]);
@@ -93,10 +96,10 @@ void Render::StateOverlay::SetThirdPersonState(Camera::State::BaseThird* third) 
 	thirdState = third;
 }
 
-void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept {
+void Render::StateOverlay::Draw(const RE::Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept {
 	DrawBackground(ctx);
 
-	constexpr auto lineHeight = 14.0f;
+	constexpr auto lineHeight = 10.0f;
 	glm::vec2 curPos = { 5.0f + xPos, 0.0f + yPos };
 	
 	g_D2D->GetDWrite()->Write(
@@ -139,9 +142,9 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 	curPos.y += lineHeight;
 	DrawBool(L"Using Right Magic Item",	GameState::IsUsingMagicItem(focus), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Left Combat Magic",		GameState::IsCombatMagic(focus->leftHandSpell), curPos, ctx);
+	DrawBool(L"Left Combat Magic",		GameState::IsCombatMagic(focus->selectedSpells[RE::Actor::SlotTypes::kLeftHand]), curPos, ctx);
 	curPos.y += lineHeight;
-	DrawBool(L"Right Combat Magic",		GameState::IsCombatMagic(focus->rightHandSpell), curPos, ctx);
+	DrawBool(L"Right Combat Magic",		GameState::IsCombatMagic(focus->selectedSpells[RE::Actor::SlotTypes::kRightHand]), curPos, ctx);
 	curPos.y += lineHeight;
 	DrawBool(L"Melee Drawn",			GameState::IsMeleeWeaponDrawn(focus), curPos, ctx);
 	curPos.y += lineHeight;
@@ -172,10 +175,10 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 	DrawBool(L"IsWerewolf",				GameState::IsWerewolf(focus), curPos, ctx);
 	curPos.y += lineHeight;
 
-	curPos.x = xPos + 270;
-	curPos.y = yPos + lineHeight * 4;
+	curPos.x = static_cast<float>(xPos + 270);
+	curPos.y = static_cast<float>(yPos + lineHeight * 4);
 
-	const auto cam = CorrectedPlayerCamera::GetSingleton();
+	const auto cam = RE::PlayerCamera::GetSingleton();
 	if (focus) {
 		DrawBool(L"IsFirstPerson", GameState::IsFirstPerson(cam), curPos, ctx);
 		curPos.y += lineHeight;
@@ -199,7 +202,7 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 		curPos.y += lineHeight;
 		DrawBool(L"IsInFurnitureCamera", GameState::IsInFurnitureCamera(cam), curPos, ctx);
 		curPos.y += lineHeight;
-		DrawBool(L"IsInHorseCamera", GameState::IsInHorseCamera(focus, cam), curPos, ctx);
+		DrawBool(L"IsInHorseCamera", GameState::IsInHorseCamera(cam), curPos, ctx);
 		curPos.y += lineHeight;
 		DrawBool(L"IsInBleedoutCamera", GameState::IsInBleedoutCamera(cam), curPos, ctx);
 		curPos.y += lineHeight;
@@ -209,8 +212,8 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 	DrawBool(L"ShoulderSwapped", camera->shoulderSwap <= 0, curPos, ctx);
 	curPos.y += lineHeight;
 
-	curPos.x = xPos + 160;
-	curPos.y = yPos;
+	curPos.x = static_cast<float>(xPos + 160);
+	curPos.y = static_cast<float>(yPos);
 
 	if (!curGroup) {
 		g_D2D->GetDWrite()->Write(
@@ -231,7 +234,7 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 	}
 
 	if (!thirdState) {
-		curPos.x = xPos + 100;
+		curPos.x = static_cast<float>(xPos + 100);
 		g_D2D->GetDWrite()->Write(
 			L"No third state!",
 			ctx.windowSize.x, ctx.windowSize.y,
@@ -241,25 +244,8 @@ void Render::StateOverlay::Draw(const Actor* focus, const Config::OffsetGroup* c
 		return;
 	}
 
-	curPos.x = xPos + 200;
-	curPos.y += 350;
-
-	/*auto scalar = L"Global scalar progress: " + std::to_wstring(thirdState->globalSmoother.progress);
-	g_D2D->GetDWrite()->Write(
-		scalar.c_str(),
-		ctx.windowSize.x, ctx.windowSize.y,
-		curPos,
-		{ 1.0f, 0.33f, 0.33f, 1.0f }
-	);
-
-	curPos.y += lineHeight;
-	scalar = L"Local scalar progress: " + std::to_wstring(thirdState->localSmoother.progress);
-	g_D2D->GetDWrite()->Write(
-		scalar.c_str(),
-		ctx.windowSize.x, ctx.windowSize.y,
-		curPos,
-		{ 1.0f, 0.33f, 0.33f, 1.0f }
-	);*/
+	curPos.x = static_cast<float>(xPos + 200);
+	curPos.y += 350.0f;
 }
 
 void Render::StateOverlay::DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,

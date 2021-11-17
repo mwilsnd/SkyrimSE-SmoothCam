@@ -1,10 +1,14 @@
 #include "arrow_fixes.h"
-#include "game_state.h"
 #include "camera.h"
 #include "thirdperson.h"
+#include "detours.h"
+#ifdef DEBUG
+#include "render/line_drawer.h"
+#endif
 #include "debug/eh.h"
 
 extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern Offsets* g_Offsets;
 
 #ifdef DEBUG
 // Draw the flight path of the last fired projectile for debug help
@@ -17,11 +21,11 @@ static Render::LineList segments;
 static bool drawOverlay = false;
 
 
-typedef uintptr_t(*UpdateTraceArrowProjectile)(SkyrimSE::ArrowProjectile*, NiPoint3*, NiPoint3*);
+typedef uintptr_t(*UpdateTraceArrowProjectile)(RE::Projectile*, RE::NiPoint3*, RE::NiPoint3*);
 using TickArrowFlightPath = TypedDetour<UpdateTraceArrowProjectile>;
 static eastl::unique_ptr<TickArrowFlightPath> detUpdateTraceArrowProjectile;
-static uintptr_t mUpdateTraceArrowProjectile(SkyrimSE::ArrowProjectile* arrow, NiPoint3* to, NiPoint3* from) {
-	if (arrow->shooter == 0x00100000) {
+static uintptr_t mUpdateTraceArrowProjectile(RE::Projectile* arrow, RE::NiPoint3* to, RE::NiPoint3* from) {
+	if (arrow->shooter.native_handle() == 0x00100000) {
 		std::lock_guard<std::mutex> lock(segmentLock);
 		points.push_back(eastl::make_tuple(glm::vec3{ from->x, from->y, from->z }, glm::vec3{ to->x, to->y, to->z }));
 	}
@@ -29,20 +33,19 @@ static uintptr_t mUpdateTraceArrowProjectile(SkyrimSE::ArrowProjectile* arrow, N
 }
 
 
-typedef UInt32(*MaybeSpawnArrow)(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
+typedef uint32_t(*MaybeSpawnArrow)(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
 	uintptr_t param_3, uintptr_t** param_4);
 using ArrowSpawnFunc = TypedDetour<MaybeSpawnArrow>;
 static eastl::unique_ptr<ArrowSpawnFunc> detArrowSpawn;
-static UInt32 mArrowSpawn(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
+static uint32_t mArrowSpawn(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
 	uintptr_t param_3, uintptr_t** param_4)
 {
 	const auto ret = detArrowSpawn->GetBase()(arrowHandle, launchData, param_3, param_4);
-	NiPointer<TESObjectREFR> ref;
-	UInt32 rc = *arrowHandle;
-	(*LookupREFRByHandle)(rc, ref);
-	auto asArrow = reinterpret_cast<const SkyrimSE::ArrowProjectile*>(ref.get());
+	RE::NiPointer<RE::TESObjectREFR> ref;
+	RE::LookupReferenceByHandle(*arrowHandle, ref);
 
-	if (asArrow->shooter == 0x00100000) {
+	auto asArrow = reinterpret_cast<RE::ArrowProjectile*>(ref.get());
+	if (asArrow->shooter.native_handle() == 0x00100000) {
 		std::lock_guard<std::mutex> lock(segmentLock);
 		points.clear();
 	}
@@ -51,7 +54,7 @@ static UInt32 mArrowSpawn(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchD
 }
 
 static bool insertWasDown = false;
-void ArrowFixes::Draw(Render::D3DContext& ctx) {
+void ArrowFixes::Draw(Render::D3DContext&) {
 	if (GetAsyncKeyState(VK_INSERT) && !insertWasDown) {
 		insertWasDown = true;
 		drawOverlay = !drawOverlay;
@@ -80,64 +83,24 @@ void ArrowFixes::Draw(Render::D3DContext& ctx) {
 }
 #endif
 
-
-//FUN_14084b430:49866
-typedef void(*FactorCameraOffset)(CorrectedPlayerCamera* camera, NiPoint3& pos, bool fac);
-using FactorCameraOffsetDetour = TypedDetour<FactorCameraOffset>;
-static eastl::unique_ptr<FactorCameraOffsetDetour> detFactorCameraOffset;
-static void mFactorCameraOffset(CorrectedPlayerCamera* camera, NiPoint3& pos, bool fac) {
-	const auto mdmp = Debug::MiniDumpScope();
-	
-	// SSE Engine Fixes will call GetEyeVector with factorCameraOffset = true
-	// We appear to screw this computation up as a side effect of correcting the interaction crosshair
-	// So, yeah. Just fix it here.
-
-	if (fac || Config::GetCurrentConfig()->modDisabled) {
-		detFactorCameraOffset->GetBase()(camera, pos, fac);
-		return;
-	}
-
-	// Only run in states we care about
-	const auto ply = *g_thePlayer;
-	if (!ply) {
-		detFactorCameraOffset->GetBase()(camera, pos, fac);
-		return;
-	}
-
-	if (!GameState::IsThirdPerson(camera) && !GameState::IsInHorseCamera(ply, camera) && !GameState::IsInDragonCamera(camera)) {
-		detFactorCameraOffset->GetBase()(camera, pos, fac);
-		return;
-	}
-
-	// Just return an offset of zero
-	pos = { 0, 0, 0 };
-}
-
-typedef void(*UpdateArrowFlightPath)(SkyrimSE::ArrowProjectile* arrow);
+typedef void(*UpdateArrowFlightPath)(RE::Projectile* arrow);
 using UpdateArrowFlightPathDetour = TypedDetour<UpdateArrowFlightPath>;
 static eastl::unique_ptr<UpdateArrowFlightPathDetour> detArrowFlightPath;
-static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
+static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	const auto mdmp = Debug::MiniDumpScope();
+	const auto ply = RE::PlayerCharacter::GetSingleton();
 
-	if (!g_theCamera || Config::GetCurrentConfig()->modDisabled)
+	if (!g_theCamera || Config::GetCurrentConfig()->modDisabled ||
+		Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken())
 		return detArrowFlightPath->GetBase()(arrow);
-
-	const CorrectedPlayerCamera* camera = CorrectedPlayerCamera::GetSingleton();
-	const auto ply = *g_thePlayer;
 
 	// Only correct our own arrows
-	UInt32 ref = arrow->shooter;
-	if (ref == *g_invalidRefHandle)
-		return detArrowFlightPath->GetBase()(arrow);
-
-	NiPointer<TESObjectREFR> out;
-	(*LookupREFRByHandle)(ref, out);
-
-	if (reinterpret_cast<const intptr_t>(out.get()) != reinterpret_cast<const intptr_t>(ply))
+	if (!arrow->shooter || arrow->shooter.get().get() != ply)
 		return detArrowFlightPath->GetBase()(arrow);
 
 	// Check for a valid weapon and ammo source - easy way to check for arrows
-	if (!arrow->weaponSource || !arrow->ammoSource) return detArrowFlightPath->GetBase()(arrow);
+	if (!arrow->weaponSource || !arrow->ammoSource)
+		return detArrowFlightPath->GetBase()(arrow);
 	
 	// On horseback, our camera actually follows the horse and not the player
 	// Compare with the player directly
@@ -151,32 +114,32 @@ static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 	}
 
 	// Get camera aim rotation
-	auto rot = g_theCamera->GetThirdpersonCamera()->GetAimRotation(ply, camera);
+	auto rot = g_theCamera->GetThirdpersonCamera()->GetAimRotation(ply, RE::PlayerCamera::GetSingleton());
 
 	// Compute arrow velocity vector
-	typedef float(*GetAFloat)(SkyrimSE::ArrowProjectile*);
-	const auto s2 = Offsets::Get<GetAFloat>(42537)(arrow); // Does the same thing as equippedWeapon->gameData.speed
-	const auto power = Offsets::Get<GetAFloat>(42536)(arrow); // Scalar, 0-1 how long you held back the arrow (arrow->unk188)
-
+	typedef float(__thiscall *GetAFloat)(RE::Projectile*);
+	const auto s2 = REL::Relocation<GetAFloat>(g_Offsets->S2)(arrow); // Does the same thing as equippedWeapon->gameData.speed
+	const auto power = REL::Relocation<GetAFloat>(g_Offsets->Power)(arrow); // Scalar, 0-1 how long you held back the arrow (arrow->unk188)
+	
 	// Not sure what this is looking for, but do it anyways
 	if ((~(byte)(arrow->flags >> 0x1f) & 1) != 0) {
-	// Assume otherwise is a magic projectile
-		if (s2 != 1.0f) {
-			static auto arrowTilt = (*g_iniSettingCollection)->Get("f3PArrowTiltUpAngle:Combat");
+		// @Note: s2 being 1 does NOT mean this is magic
+		if (skyrim_cast<RE::ArrowProjectile*>(arrow)) {
+			static auto arrowTilt = RE::INISettingCollection::GetSingleton()->GetSetting("f3PArrowTiltUpAngle:Combat");
 			// Add tilt angle
 			if (GameState::IsUsingBow(ply) || GameState::IsUsingCrossbow(ply)) {
 				float tilt = 2.5f;
 				if (arrowTilt)
-					tilt = arrowTilt->data.f32;
+					tilt = arrowTilt->GetFloat();
 				rot.x -= glm::radians(tilt);
 			}
 		}
 	} else {
-		rot.x = arrow->rot.x;
-		rot.y = arrow->rot.z;
+		rot.x = arrow->GetAngleX();
+		rot.y = arrow->GetAngleZ();
 	}
 
-	const auto projectileForm = reinterpret_cast<const BGSProjectile*>(arrow->baseForm);
+	const auto projectileForm = reinterpret_cast<const RE::BGSProjectile*>(arrow->GetBaseObject());
 	const auto speed = projectileForm->data.speed;
 	const auto arrowFireSpeed = speed * power;
 	const auto alwaysOne = arrow->unk18C; // At least, as far as I've seen
@@ -190,29 +153,31 @@ static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 
 	const auto pitchCosVel = pitchCos * velScalar;
 	const auto pitchSinVel = pitchSin * velScalar;
-	arrow->velocityVector = {
+
+	// projectile->velocityVector
+	*reinterpret_cast<RE::NiPoint3*>(&arrow->unk0FC) = {
 		pitchCosVel * yawSin,
 		pitchCosVel * yawCos,
 		pitchSinVel
 	};
 
 	// Appears to look for the shooter, then add the shooter's velocity to the arrow
-	typedef void(*LookupFun)(uint32_t*, TESObjectREFR**);
-	static auto lookupFunc = Offsets::Get<LookupFun>(12204);
+	typedef void(*LookupFun)(uint32_t*, RE::TESObjectREFR**);
+	static auto lookupFunc = REL::Relocation<LookupFun>(g_Offsets->RWLocker);
 
-	uint32_t shooterID = arrow->shooter;
-	TESObjectREFR* shooterRef = nullptr;
+	uint32_t shooterID = arrow->shooter.native_handle();
+	RE::TESObjectREFR* shooterRef = nullptr;
 	lookupFunc(&shooterID, &shooterRef);
 
-	const TESObjectREFR* DAT_142eff7d8 = *Offsets::Get<TESObjectREFR**>(514905);
-	const auto unkData = Offsets::Get<ArrowFixes::UnkData*>(514725);
-	if (((shooterRef != nullptr) && (shooterRef == DAT_142eff7d8)) && (unkData->unk4 != 4))
+	RE::TESObjectREFR** DAT_142eff7d8 = REL::Relocation<RE::TESObjectREFR**>(g_Offsets->DAT_142eff7d8).get();
+	const auto unkData = REL::Relocation<ArrowFixes::UnkData*>(g_Offsets->UnkData);
+	if (DAT_142eff7d8 && ((shooterRef != nullptr) && (shooterRef == *DAT_142eff7d8)) && (unkData->unk4 != 4))
 	{
-		NiPoint3 shooterVelocity;
-		typedef void(__thiscall TESObjectREFR::* GetLinearVelocity)(NiPoint3&); // GetLinearVelocity, So says CommonLib
-		(ply->*reinterpret_cast<GetLinearVelocity>(&TESObjectREFR::Unk_86))(shooterVelocity);
-		arrow->velocityVector.x = shooterVelocity.x + arrow->velocityVector.x;
-		arrow->velocityVector.y = shooterVelocity.y + arrow->velocityVector.y;
+		RE::NiPoint3 shooterVelocity;
+		ply->GetLinearVelocity(shooterVelocity);
+		// projectile->velocityVector
+		arrow->unk0FC = shooterVelocity.x + arrow->unk0FC;
+		arrow->unk100 = shooterVelocity.y + arrow->unk100;
 	}
 
 	// Like other handle refcounters, arg1 = 0, release rc if arg2 != nullptr
@@ -221,42 +186,27 @@ static void mUpdateArrowFlightPath(SkyrimSE::ArrowProjectile* arrow) {
 }
 
 bool ArrowFixes::Attach() {
-	detFactorCameraOffset = eastl::make_unique<FactorCameraOffsetDetour>(49866, mFactorCameraOffset);
-	if (!detFactorCameraOffset->Attach()) {
-		_ERROR("Failed to place detour on target function(49,866), this error is fatal.");
-		FatalError(L"Failed to place detour on target function(49,866), this error is fatal.");
-	}
-
-	detArrowFlightPath = eastl::make_unique<UpdateArrowFlightPathDetour>(42998, mUpdateArrowFlightPath);
-	if (!detArrowFlightPath->Attach()) {
-		_ERROR("Failed to place detour on target function(42,998), this error is fatal.");
-		FatalError(L"Failed to place detour on target function(42,998), this error is fatal.");
-	}
+	detArrowFlightPath = eastl::make_unique<UpdateArrowFlightPathDetour>(g_Offsets->UpdateFlightPath, mUpdateArrowFlightPath);
+	if (!detArrowFlightPath->Attach())
+		FatalError(L"Failed to place detour on target function(ArrowFixes::UpdateFlightPath), this error is fatal.");
 
 #ifdef DEBUG
-	detUpdateTraceArrowProjectile = eastl::make_unique<TickArrowFlightPath>(43008, mUpdateTraceArrowProjectile);
-	if (!detUpdateTraceArrowProjectile->Attach()) {
-		_ERROR("Failed to place detour on target function(43,008), this error is fatal.");
-		FatalError(L"Failed to place detour on target function(43,008), this error is fatal.");
-	}
+	detUpdateTraceArrowProjectile = eastl::make_unique<TickArrowFlightPath>(g_Offsets->DebugTraceProjectile, mUpdateTraceArrowProjectile);
+	if (!detUpdateTraceArrowProjectile->Attach())
+		FatalError(L"Failed to place detour on target function(ArrowFixes::DebugTraceProjectile), this error is fatal.");
 
-	detArrowSpawn = eastl::make_unique<ArrowSpawnFunc>(42928, mArrowSpawn);
-	if (!detArrowSpawn->Attach()) {
-		_ERROR("Failed to place detour on target function(42,928), this error is fatal.");
-		FatalError(L"Failed to place detour on target function(42,928), this error is fatal.");
-	}
+	detArrowSpawn = eastl::make_unique<ArrowSpawnFunc>(g_Offsets->DebugSpawnProjectile, mArrowSpawn);
+	if (!detArrowSpawn->Attach())
+		FatalError(L"Failed to place detour on target function(ArrowFixes::DebugSpawnProjectile), this error is fatal.");
 
-	if (Render::HasContext()) {
+	if (Render::HasContext())
 		segmentDrawer = eastl::make_unique<Render::LineDrawer>(Render::GetContext());
-	}
+
+	Detours::RegisterGameShutdownEvent([] {
+		std::lock_guard<std::mutex> lock(segmentLock);
+		segmentDrawer.reset();
+	});
 #endif
 
 	return true;
 }
-
-#ifdef DEBUG
-void ArrowFixes::Shutdown() {
-	std::lock_guard<std::mutex> lock(segmentLock);
-	segmentDrawer.reset();
-}
-#endif

@@ -14,7 +14,7 @@ namespace Render {
 
 	class SRV {
 		public:
-			explicit SRV(Render::D3DContext& ctx, const SRVCreateInfo& info);
+			SRV(Render::D3DContext& ctx, const SRVCreateInfo& info);
 			~SRV();
 			SRV(const SRV&) = delete;
 			SRV(SRV&&) noexcept = delete;

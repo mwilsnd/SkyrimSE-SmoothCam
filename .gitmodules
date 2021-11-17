@@ -19,3 +19,9 @@
 [submodule "Deps/EABase"]
 	path = Deps/EABase
 	url = https://github.com/electronicarts/EABase.git
+[submodule "Deps/CommonLibSSE"]
+	path = Deps/CommonLibSSE
+	url = https://github.com/Ryan-rsm-McKenzie/CommonLibSSE.git
+[submodule "Deps/CommonLibAE"]
+	path = Deps/CommonLibAE
+	url = https://github.com/Ryan-rsm-McKenzie/CommonLibSSE.git

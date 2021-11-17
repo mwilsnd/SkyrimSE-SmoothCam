@@ -1,5 +1,5 @@
 #pragma once
-#define SMOOTHCAM_API_SKSE
+#define SMOOTHCAM_API_COMMONLIB
 #include "SmoothCamAPI.h"
 
 namespace Crosshair {
@@ -10,8 +10,9 @@ namespace Messaging {
 	using APIResult = ::SmoothCamAPI::APIResult;
 	using InterfaceVersion1 = ::SmoothCamAPI::IVSmoothCam1;
 	using InterfaceVersion2 = ::SmoothCamAPI::IVSmoothCam2;
+	using InterfaceVersion3 = ::SmoothCamAPI::IVSmoothCam3;
 
-	class SmoothCamInterface : public InterfaceVersion2 {
+	class SmoothCamInterface : public InterfaceVersion3 {
 		private:
 		SmoothCamInterface() noexcept;
 			virtual ~SmoothCamInterface() noexcept;
@@ -24,23 +25,26 @@ namespace Messaging {
 
 			// InterfaceVersion1
 			virtual DWORD GetSmoothCamThreadId() const noexcept override;
-			virtual APIResult RequestCameraControl(PluginHandle modHandle) noexcept override;
-			virtual APIResult RequestCrosshairControl(PluginHandle modHandle, bool restoreDefaults = true) noexcept override;
-			virtual APIResult RequestStealthMeterControl(PluginHandle modHandle, bool restoreDefaults = true) noexcept override;
-			virtual PluginHandle GetCameraOwner() const noexcept override;
-			virtual PluginHandle GetCrosshairOwner() const noexcept override;
-			virtual PluginHandle GetStealthMeterOwner() const noexcept override;
-			virtual APIResult ReleaseCameraControl(PluginHandle modHandle) noexcept override;
-			virtual APIResult ReleaseCrosshairControl(PluginHandle modHandle) noexcept override;
-			virtual APIResult ReleaseStealthMeterControl(PluginHandle modHandle) noexcept override;
+			virtual APIResult RequestCameraControl(SKSE::PluginHandle modHandle) noexcept override;
+			virtual APIResult RequestCrosshairControl(SKSE::PluginHandle modHandle, bool restoreDefaults = true) noexcept override;
+			virtual APIResult RequestStealthMeterControl(SKSE::PluginHandle modHandle, bool restoreDefaults = true) noexcept override;
+			virtual SKSE::PluginHandle GetCameraOwner() const noexcept override;
+			virtual SKSE::PluginHandle GetCrosshairOwner() const noexcept override;
+			virtual SKSE::PluginHandle GetStealthMeterOwner() const noexcept override;
+			virtual APIResult ReleaseCameraControl(SKSE::PluginHandle modHandle) noexcept override;
+			virtual APIResult ReleaseCrosshairControl(SKSE::PluginHandle modHandle) noexcept override;
+			virtual APIResult ReleaseStealthMeterControl(SKSE::PluginHandle modHandle) noexcept override;
 
 			// InterfaceVersion2
-			virtual NiPoint3 GetLastCameraPosition() const noexcept override;
-			virtual APIResult RequestInterpolatorUpdates(PluginHandle modHandle, bool allowUpdates) noexcept override;
-			virtual APIResult SendToGoalPosition(PluginHandle modHandle, bool shouldMoveToGoal, bool moveNow,
-				const TESObjectREFR* ref, NiCamera* niCamera) noexcept override;
-			virtual void GetGoalPosition(TESObjectREFR* ref, NiPoint3& world, NiPoint3& local) const noexcept override;
+			virtual RE::NiPoint3 GetLastCameraPosition() const noexcept override;
+			virtual APIResult RequestInterpolatorUpdates(SKSE::PluginHandle modHandle, bool allowUpdates) noexcept override;
+			virtual APIResult SendToGoalPosition(SKSE::PluginHandle modHandle, bool shouldMoveToGoal, bool moveNow,
+				const RE::Actor* ref) noexcept override;
+			virtual void GetGoalPosition(RE::TESObjectREFR* ref, RE::NiPoint3& world, RE::NiPoint3& local) const noexcept override;
 			virtual bool IsCameraEnabled() const noexcept override;
+
+			// InterfaceVersion3
+			virtual void EnableUnlockedHorseAim(bool enable) noexcept override;
 
 			// Internal
 			// Provide the crosshair manager for API reset control
@@ -79,7 +83,8 @@ namespace Messaging {
 			// Clear the moveToGoal flag after processing
 			void ClearMoveToGoalFlag() noexcept;
 
-
+			// Return the current horse aim unlock state
+			bool IsHorseAimUnlocked() const noexcept;
 
 		public:
 			using Consumers = eastl::vector<eastl::string>;
@@ -93,19 +98,21 @@ namespace Messaging {
 			DWORD apiTID = 0;
 
 			bool needsCameraControl = false;
-			std::atomic<PluginHandle> cameraOwner = kPluginHandle_Invalid;
+			std::atomic<SKSE::PluginHandle> cameraOwner = SKSE::kInvalidPluginHandle;
 
 			bool needsCrosshairControl = false;
 			bool wantCrosshairReset = false;
-			std::atomic<PluginHandle> crosshairOwner = kPluginHandle_Invalid;
+			std::atomic<SKSE::PluginHandle> crosshairOwner = SKSE::kInvalidPluginHandle;
 
 			bool needsStealthMeterControl = false;
 			bool wantStealthMeterReset = false;
-			std::atomic<PluginHandle> stealthMeterOwner = kPluginHandle_Invalid;
+			std::atomic<SKSE::PluginHandle> stealthMeterOwner = SKSE::kInvalidPluginHandle;
 
 			bool wantsInterpolatorUpdates = false;
 			bool wantsMoveToGoal = false;
+
+			bool unlockedHorseAim = false;
 	};
 
-	void HandleInterfaceRequest(SKSEMessagingInterface::Message* msg) noexcept;
+	void HandleInterfaceRequest(SKSE::MessagingInterface::Message* msg) noexcept;
 }

@@ -1,9 +1,6 @@
 #pragma once
 
 namespace GameTime {
-	// Initialize the interal timer
-	void Initialize() noexcept;
-
 	// Get the exact current time
 	double GetTime() noexcept;
 	// Get the exact current QPC time

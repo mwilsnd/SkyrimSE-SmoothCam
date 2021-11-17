@@ -25,7 +25,7 @@ constexpr auto dmpFailMsg = LR"(If this issue persist and SmoothCam is unable to
 4). Deactivate other SKSE or .NET mods.)";
 
 static bool dumpRunning = false;
-static std::atomic<size_t> vehRC = { 0 };
+static volatile std::atomic<size_t> vehRC = { 0 };
 Debug::MiniDumpScope::MiniDumpScope() noexcept {
 	++vehRC;
 }
@@ -81,9 +81,10 @@ HMODULE GetCurrentModule() {
 }
 
 LONG WINAPI VectorHandler(struct _EXCEPTION_POINTERS* pointers) {
-	if (vehRC == 0 || dumpRunning || IS_UNWINDING(pointers->ExceptionRecord->ExceptionFlags))
+	if (!IS_ERROR(pointers->ExceptionRecord->ExceptionCode) || vehRC == 0 || dumpRunning ||
+		IS_UNWINDING(pointers->ExceptionRecord->ExceptionFlags))
 		return EXCEPTION_CONTINUE_SEARCH;
-	
+
 	// Figure out if we are in the stack
 	// If so, run the mini dump and fastfail
 	STACKFRAME64 stack;

@@ -1,15 +1,14 @@
 #include "camera_states/base_third.h"
 #include "camera.h"
 #include "thirdperson.h"
-#include "raycast.h"
 #include "crosshair.h"
 
 Camera::State::BaseThird::BaseThird(Thirdperson* camera) noexcept : camera(camera) {}
 
 Camera::State::BaseThird::~BaseThird() {}
 
-void Camera::State::BaseThird::Update(PlayerCharacter* player, const Actor* cameraRef,
-	const CorrectedPlayerCamera* cameraState) noexcept
+void Camera::State::BaseThird::Update(RE::PlayerCharacter*, RE::Actor*,
+	RE::PlayerCamera*) noexcept
 {}
 
 void Camera::State::BaseThird::StateHandOff(BaseThird* nextState) const noexcept {
@@ -38,16 +37,26 @@ mmath::Position& Camera::State::BaseThird::GetCameraPosition() const noexcept {
 	return camera->currentPosition;
 }
 
-const NiFrustum& Camera::State::BaseThird::GetFrustum() const noexcept {
+const RE::NiFrustum& Camera::State::BaseThird::GetFrustum() const noexcept {
 	return camera->m_camera->GetFrustum();
 }
 
 // Sets the camera position
-void Camera::State::BaseThird::SetCameraPosition(const glm::vec3& pos, const PlayerCharacter* player,
-	const CorrectedPlayerCamera* playerCamera) noexcept
+void Camera::State::BaseThird::SetCameraPosition(const glm::vec3& pos, const RE::Actor* player,
+	const RE::PlayerCamera* playerCamera) noexcept
 {
 	camera->SetPosition(pos, playerCamera);
 	ApplyLocalSpaceGameOffsets(player, playerCamera);
+}
+
+void Camera::State::BaseThird::MoveToGoalPosition(const RE::PlayerCharacter* player, const RE::Actor* forRef,
+	const RE::PlayerCamera* playerCamera) noexcept
+{
+	camera->MoveToGoalPosition(player, forRef, playerCamera);
+}
+
+bool Camera::State::BaseThird::IsShoulderSwapped() const noexcept {
+	return camera->IsShoulderSwapped();
 }
 
 // Performs a ray cast and returns a new position based on the result
@@ -62,7 +71,7 @@ glm::vec3 Camera::State::BaseThird::ComputeRaycast(const glm::vec3& rayStart, co
 }
 
 // Clamps the camera position based on offset clamp settings
-glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const TESObjectREFR* ref,
+glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const RE::TESObjectREFR* ref,
 	const glm::vec3& cameraLocalOffset, const glm::vec3& cameraWorldTarget, const glm::vec3& cameraPosition) const
 {
 	// This is the position we ideally want to be in, before interpolation
@@ -74,11 +83,11 @@ glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const TESObjectREFR* r
 	glm::vec3 forward, right, up, coef;
 	mmath::DecomposeToBasis(
 		interpVector,
-		{ camera->GetCameraRotation().euler.x, ref->rot.y, camera->GetCameraRotation().euler.y },
+		{ camera->GetCameraRotation().euler.x, ref->GetAngleY(), camera->GetCameraRotation().euler.y },
 		forward, right, up, coef
 	);
 
-	auto& [mins, maxs] = camera->GetDistanceClamping();
+	auto [mins, maxs] = camera->GetDistanceClamping();
 
 	// Now we can do whatever we want to the interp vector in axis aligned space
 	if (camera->config->cameraDistanceClampXEnable)
@@ -92,13 +101,13 @@ glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const TESObjectREFR* r
 	return (forward * coef.x) + (right * coef.y) + (up * coef.z) + expectedPosition;
 }
 
-glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const TESObjectREFR* ref, const glm::vec3& cameraWorldTarget,
+glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const RE::TESObjectREFR* ref, const glm::vec3& cameraWorldTarget,
 	const glm::vec3& cameraPosition) const
 {
 	glm::vec3 forward, right, up, coef;
 	mmath::DecomposeToBasis(
 		cameraPosition - cameraWorldTarget,
-		{ camera->GetCameraRotation().euler.x, ref->rot.y, camera->GetCameraRotation().euler.y },
+		{ camera->GetCameraRotation().euler.x, ref->GetAngleY(), camera->GetCameraRotation().euler.y },
 		forward, right, up, coef
 	);
 
@@ -114,11 +123,10 @@ glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const TESObjectREFR* r
 
 	// Now recompose with the new coefficients and add back the world position
 	auto mod = (forward * coef.x) + (right * coef.y) + (up * coef.z) + cameraWorldTarget;
-	auto d = glm::distance(mod, cameraPosition);
 	return mod;
 }
 
-void Camera::State::BaseThird::UpdateCrosshair(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
+void Camera::State::BaseThird::UpdateCrosshair(const RE::Actor* player, const RE::PlayerCamera* playerCamera) const {
 	if (camera->m_camera->InLoadingScreen()) return;
 
 	auto use3D = false;
@@ -152,13 +160,25 @@ void Camera::State::BaseThird::UpdateCrosshair(const PlayerCharacter* player, co
 }
 
 // Updates the 3D crosshair position, performing all logic internally
-void Camera::State::BaseThird::UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera) const {
+void Camera::State::BaseThird::UpdateCrosshairPosition(const RE::Actor* player, const RE::PlayerCamera* playerCamera) const {
 	if (camera->m_camera->InLoadingScreen()) return;
 	camera->crosshair->UpdateCrosshairPosition(
-		player, playerCamera,
+		player,
 		camera->GetAimRotation(camera->currentFocusObject, playerCamera),
+		camera->GetCameraRotation().euler,
 		camera->m_camera->worldToScaleform
 	);
+}
+
+
+// Get the camera rotation as defined by the base game logic
+mmath::Rotation Camera::State::BaseThird::GetBaseGameRotation(const RE::PlayerCamera* playerCamera) const noexcept {
+	const auto tps = reinterpret_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
+	mmath::Rotation r;
+	r.SetQuaternion(tps->rotation);
+	r.SetEuler(r.euler.x - mmath::half_pi, r.euler.y);
+	r.UpdateQuaternion();
+	return r;
 }
 
 // Returns the euler rotation of the camera
@@ -166,18 +186,45 @@ mmath::Rotation& Camera::State::BaseThird::GetCameraRotation() const noexcept {
 	return camera->rotation;
 }
 
+void Camera::State::BaseThird::SetCameraRotation(mmath::Rotation& rot, RE::PlayerCamera* playerCamera) noexcept {
+	camera->SetCameraRotation(rot, playerCamera);
+}
+
+RE::NiAVObject* Camera::State::BaseThird::FindFollowBone(const RE::TESObjectREFR* ref, const eastl::string_view& filterBone) const noexcept {
+	return camera->FindFollowBone(ref, filterBone);
+}
+
+void Camera::State::BaseThird::SetFOVOffset(float fov, bool force) noexcept {
+	camera->SetFOVOffset(fov, force);
+}
+
+mmath::OffsetTransition& Camera::State::BaseThird::GetOffsetTransitionState() noexcept {
+	return camera->GetOffsetTransitionState();
+}
+
+mmath::FloatTransition& Camera::State::BaseThird::GetFOVTransitionState() noexcept {
+	return camera->GetFOVTransitionState();
+}
+
 // Returns the local offsets to apply to the camera
 glm::vec3 Camera::State::BaseThird::GetCameraOffsetStatePosition() const noexcept {
-	return camera->offsetState.position;
+	if (!GetConfig()->pitchZoomAfterInterp)
+		return camera->offsetState.position + glm::vec3{
+			0.0f,
+			0.0f - camera->GetPitchZoom(),
+			0.0f
+		};
+	else
+		return camera->offsetState.position;
 }
 
 // Returns the world position to apply local offsets to
-glm::vec3 Camera::State::BaseThird::GetCameraWorldPosition(const TESObjectREFR* ref, const CorrectedPlayerCamera* playerCamera) const {
-	return camera->GetCurrentCameraTargetWorldPosition(ref, playerCamera);
+glm::vec3 Camera::State::BaseThird::GetCameraWorldPosition(const RE::TESObjectREFR* ref) const {
+	return camera->GetCurrentCameraTargetWorldPosition(ref);
 }
 
 // Performs all camera offset math using the view rotation matrix and local offsets, returns a local position
-glm::vec3 Camera::State::BaseThird::GetTransformedCameraLocalPosition(const CorrectedPlayerCamera* playerCamera) const {
+glm::vec3 Camera::State::BaseThird::GetTransformedCameraLocalPosition() const {
 	const auto cameraLocal = GetCameraOffsetStatePosition();
 	auto translated = camera->rotation.ToRotationMatrix() * glm::vec4(
 		cameraLocal.x,
@@ -190,7 +237,7 @@ glm::vec3 Camera::State::BaseThird::GetTransformedCameraLocalPosition(const Corr
 }
 
 // Interpolates the given position
-glm::vec3 Camera::State::BaseThird::UpdateInterpolatedLocalPosition(const PlayerCharacter* player, const glm::vec3& rot) {
+glm::vec3 Camera::State::BaseThird::UpdateInterpolatedLocalPosition(const glm::vec3& rot) {
 	const auto pos = mmath::Interpolate<glm::dvec3, double>(
 		camera->lastPosition.local, rot,
 		static_cast<double>(camera->localSmoother.BlendResult<float, mmath::Local::Yes>(
@@ -203,7 +250,7 @@ glm::vec3 Camera::State::BaseThird::UpdateInterpolatedLocalPosition(const Player
 }
 
 // Interpolates the given position, stores last interpolated position
-glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const PlayerCharacter* player, const glm::vec3& fromPos,
+glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const RE::Actor* player, const glm::vec3& fromPos,
 	const glm::vec3& pos, const float distance)
 {
 	if (!GetConfig()->enableInterp) {
@@ -240,7 +287,7 @@ glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const Player
 				GameTime::CurTime(), GetConfig()->globalInterpDisableSmoothing,
 				GetConfig()->globalInterpDisableMehtod, interpSmoother, pos
 			);
-			
+
 			glm::dvec3 fromLerped = {};
 			if (GetConfig()->separateZInterp) {
 				const auto xy = mmath::Interpolate<glm::dvec3, double>(fromPos, pos, itp);
@@ -259,7 +306,7 @@ glm::vec3 Camera::State::BaseThird::UpdateInterpolatedWorldPosition(const Player
 				0.0f, 1.0f
 			);
 
-			return static_cast<glm::vec3>(mmath::Interpolate<glm::dvec3, double>(fromLerped, pos, scalar));
+			return static_cast<glm::vec3>(mmath::Interpolate<glm::dvec3, double>(fromLerped, blend, scalar));
 		} else {
 			return pos;
 		}
@@ -286,47 +333,54 @@ bool Camera::State::BaseThird::IsLocalInterpAllowed() const noexcept {
 	return GetConfig()->separateLocalInterp;
 }
 
-void Camera::State::BaseThird::ApplyLocalSpaceGameOffsets(const PlayerCharacter* player, const CorrectedPlayerCamera* playerCamera)
+void Camera::State::BaseThird::ApplyLocalSpaceGameOffsets(const RE::Actor* player, const RE::PlayerCamera* playerCamera)
 	noexcept
 {
 	// Don't apply these offset hacks if camera is API controlled
 	if (Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken()) return;
 
-	auto state = reinterpret_cast<CorrectedThirdPersonState*>(playerCamera->cameraState);
+	auto state = reinterpret_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
 	const auto& euler = camera->rotation.euler;
 
 	glm::vec3 f, s, u, coef;
 	mmath::DecomposeToBasis(
-		camera->currentPosition.world - GetCameraWorldPosition(camera->currentFocusObject, playerCamera),
+		camera->currentPosition.world - GetCameraWorldPosition(camera->currentFocusObject),
 		{ euler.x, 0.0f, euler.y },
 		f, s, u, coef
 	);
 
 	state->rotation = camera->rotation.ToNiQuat();
-	state->yaw1 = euler.y;
-	state->yaw2 = euler.y;
+	state->targetYaw = euler.y;
+	state->currentYaw = euler.y;
 
+	if (GameState::IsSitting(player))
+		coef.z = 0.0f;
+
+	// @Note: This is to correct the crosshair ray alignment with the center of the screen
 	if (GetCameraState() == GameState::CameraState::ThirdPersonCombat && GameState::IsBowDrawn(player)) {
-		state->fOverShoulderPosX = 0.0f;
-		state->fOverShoulderCombatAddY = 0.0f;
-		state->fOverShoulderPosZ = 0.0f;
+		state->posOffsetExpected.x = 0.0f;
+		state->posOffsetExpected.y = 0.0f;
+		state->posOffsetExpected.z = 0.0f;
 	} else {
-		state->fOverShoulderPosX = coef.x;
-		state->fOverShoulderCombatAddY = coef.y;
-		state->fOverShoulderPosZ = coef.z;
+		state->posOffsetExpected.x = coef.x;
+		state->posOffsetExpected.y = coef.y;
+		state->posOffsetExpected.z = coef.z;
 	}
 
-	state->offsetVector.x = state->fOverShoulderPosX;
-	state->offsetVector.y = state->fOverShoulderCombatAddY;
-	state->offsetVector.z = state->fOverShoulderPosZ;
+	state->posOffsetActual = state->posOffsetExpected;
 }
 
 // Returns true if the player is moving
-bool Camera::State::BaseThird::IsPlayerMoving(const PlayerCharacter* player) const noexcept {
+bool Camera::State::BaseThird::IsPlayerMoving(const RE::Actor* player) const noexcept {
 	return (GameState::IsWalking(player) || GameState::IsRunning(player) || GameState::IsSprinting(player));
 }
 
 // Returns the user config
 const Config::UserConfig* const Camera::State::BaseThird::GetConfig() const noexcept {
 	return camera->config;
+}
+
+// Flag input for the given camera state as locked or unlocked
+void Camera::State::BaseThird::LockInputState(uint8_t stateID, bool locked) noexcept {
+	camera->LockInputState(stateID, locked);
 }

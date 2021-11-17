@@ -13,7 +13,7 @@ namespace Render {
 
 	class MeshDrawer {
 		public:
-			explicit MeshDrawer(MeshCreateInfo& info, const eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx)
+			MeshDrawer(MeshCreateInfo& info, const eastl::shared_ptr<Render::CBuffer>& perObjectBuffer, D3DContext& ctx)
 				noexcept;
 			~MeshDrawer();
 			MeshDrawer(const MeshDrawer&) = delete;

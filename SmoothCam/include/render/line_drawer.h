@@ -7,7 +7,7 @@ namespace Render {
 		glm::vec4 pos;
 		glm::vec4 col;
 
-		explicit Point(glm::vec3 position, glm::vec4 color) : col(color) {
+		Point(glm::vec3 position, glm::vec4 color) : col(color) {
 			pos = { position.x, position.y, position.z, 1.0f };
 		}
 	} Point;
@@ -21,7 +21,7 @@ namespace Render {
 	using LineList = eastl::vector<Line>;
 
 	// Number of points we can submit in a single draw call
-	constexpr size_t LineDrawPointBatchSize = 64;
+	constexpr size_t LineDrawPointBatchSize = 256;
 	// Number of buffers to use
 	constexpr size_t NumBuffers = 2;
 

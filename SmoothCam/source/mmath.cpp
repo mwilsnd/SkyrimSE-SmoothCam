@@ -1,7 +1,4 @@
-﻿namespace {
-	typedef NiPoint3(__thiscall TESObjectREFR::* GetBoundMin)();
-	typedef NiPoint3(__thiscall TESObjectREFR::* GetBoundMax)();
-}
+﻿#include "mmath.h"
 
 bool mmath::IsInf(const float f) noexcept {
 	return glm::isinf(f);
@@ -57,41 +54,19 @@ glm::vec3 mmath::GetViewVector(const glm::vec3& forwardRefer, float pitch, float
 	return static_cast<glm::vec3>(aproxNormal);
 }
 
-glm::vec3 mmath::NiMatrixToEuler(const NiMatrix33& m) noexcept {
+glm::vec3 mmath::NiMatrixToEuler(const RE::NiMatrix3& m) noexcept {
 	glm::vec3 rot;
-	const auto a = glm::clamp(-m.data[2][0], -1.0f, 1.0f);
+	const auto a = glm::clamp(-m.entry[2][0], -1.0f, 1.0f);
 	rot.x = glm::clamp(glm::asin(a), -mmath::half_pi, mmath::half_pi) - mmath::half_pi;
 
-	if (m.data[0][0] <= 0.001f || m.data[2][2] <= 0.001f) {
-		auto ab = glm::atan(m.data[0][2], m.data[1][2]);
+	if (m.entry[0][0] <= 0.001f || m.entry[2][2] <= 0.001f) {
+		auto ab = glm::atan(m.entry[0][2], m.entry[1][2]);
 		rot.y = ab - mmath::half_pi;
 	} else
-		rot.y = glm::atan(m.data[0][0], m.data[1][0]);
+		rot.y = glm::atan(m.entry[0][0], m.entry[1][0]);
 
 	rot.z = 0.0f;
 	return rot;
-}
-
-NiMatrix33 mmath::ToddHowardTransform(const float pitch, const float yaw) noexcept {
-	// Create a matrix to flip coords from D3D NDC space to scaleform
-	// ¯\_(ツ)_/¯
-	auto m = glm::identity<glm::mat4>();
-	m = glm::rotate(m, -half_pi, { 1.0f, 0.0f, 0.0f });
-	m = glm::rotate(m, -pitch, { 0.0f, 1.0f, 0.0f });
-	m = glm::rotate(m, yaw - half_pi, { 0.0f, 0.0f, 1.0f });
-
-	NiMatrix33 mat;
-	mat.data[0][0] = m[0][0] * -1.0f;
-	mat.data[0][1] = m[0][1] * -1.0f;
-	mat.data[0][2] = m[0][2];
-	mat.data[1][0] = m[1][0] * -1.0f;
-	mat.data[1][1] = m[1][1] * -1.0f;
-	mat.data[1][2] = m[1][2];
-	mat.data[2][0] = m[2][0] * -1.0f;
-	mat.data[2][1] = m[2][1] * -1.0f;
-	mat.data[2][2] = m[2][2];
-
-	return mat;
 }
 
 // Decompose a position to 3 basis vectors and the coefficients, given an euler rotation
@@ -133,22 +108,8 @@ void mmath::DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 	};
 }
 
-glm::vec3 mmath::PointToScreen(const glm::vec3& point) noexcept {
-	static NiRect<float> port = { -1.0f, 1.0f, 1.0f, -1.0f };
-
-	glm::vec3 screen = {};
-	auto niPt = NiPoint3(point.x, point.y, point.z);
-	(*WorldPtToScreenPt3_Internal)(
-		g_worldToCamMatrix,
-		&port, &niPt,
-		&screen.x, &screen.y, &screen.z, 9.99999975e-06
-	);
-
-	return { screen.x, screen.y, screen.z };
-};
-
-glm::mat4 mmath::Perspective(float fov, float aspect, const NiFrustum& frustum) noexcept {
-	const auto range = frustum.m_fFar / (frustum.m_fNear - frustum.m_fFar);
+glm::mat4 mmath::Perspective(float fov, float aspect, const RE::NiFrustum& frustum) noexcept {
+	const auto range = frustum.fFar / (frustum.fNear - frustum.fFar);
 	const auto height = 1.0f / glm::tan(fov * 0.5f);
 
 	glm::mat4 proj;
@@ -169,7 +130,7 @@ glm::mat4 mmath::Perspective(float fov, float aspect, const NiFrustum& frustum) 
 
 	proj[3][0] = 0.0f;
 	proj[3][1] = 0.0f;
-	proj[3][2] = range * frustum.m_fNear;
+	proj[3][2] = range * frustum.fNear;
 	proj[3][3] = 0.0f;
 	
 	// exact match, save for 2,0 2,1 - looks like XMMatrixPerspectiveOffCenterLH with a slightly
@@ -225,12 +186,12 @@ void mmath::Rotation::SetQuaternion(const glm::quat& q) noexcept {
 	dirty = true;
 }
 
-void mmath::Rotation::SetQuaternion(const NiQuaternion& q) noexcept {
-	SetQuaternion(glm::quat{ q.m_fW, q.m_fX, q.m_fY, q.m_fZ });
+void mmath::Rotation::SetQuaternion(const RE::NiQuaternion& q) noexcept {
+	SetQuaternion(glm::quat{ q.w, q.x, q.y, q.z });
 }
 
-void mmath::Rotation::CopyFrom(const TESObjectREFR* ref) noexcept {
-	SetEuler(ref->rot.x, ref->rot.z);
+void mmath::Rotation::CopyFrom(const RE::TESObjectREFR* ref) noexcept {
+	SetEuler(ref->data.angle.x, ref->data.angle.z);
 }
 
 void mmath::Rotation::UpdateQuaternion() noexcept {
@@ -241,20 +202,20 @@ glm::quat mmath::Rotation::InverseQuat() const noexcept {
 	return glm::quat(glm::vec3{ euler.x, 0.0f, euler.y });
 }
 
-NiQuaternion mmath::Rotation::InverseNiQuat() const noexcept {
+RE::NiQuaternion mmath::Rotation::InverseNiQuat() const noexcept {
 	const auto q = InverseQuat();
 	return { q.w, q.x, q.y, q.z };
 }
 
-NiQuaternion mmath::Rotation::ToNiQuat() const noexcept {
+RE::NiQuaternion mmath::Rotation::ToNiQuat() const noexcept {
 	return { quat.w, quat.x, quat.y, quat.z };
 }
 
-NiPoint2 mmath::Rotation::ToNiPoint2() const noexcept {
+RE::NiPoint2 mmath::Rotation::ToNiPoint2() const noexcept {
 	return { euler.x, euler.y };
 }
 
-NiPoint3 mmath::Rotation::ToNiPoint3() const noexcept {
+RE::NiPoint3 mmath::Rotation::ToNiPoint3() const noexcept {
 	return { euler.x, 0.0f, euler.y };
 }
 
@@ -266,8 +227,4 @@ glm::mat4 mmath::Rotation::ToRotationMatrix() noexcept {
 		dirty = false;
 	}
 	return mat;
-}
-
-NiMatrix33 mmath::Rotation::THT() const noexcept {
-	return mmath::ToddHowardTransform(euler.x, euler.y);
 }

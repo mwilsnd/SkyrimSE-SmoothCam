@@ -7,7 +7,7 @@ struct StringBuilder {
 
 	void append(T&& v) noexcept {
 		size_ += v.length();
-		items.push_back(std::move(v));
+		items.push_back(eastl::move(v));
 	}
 
 	void clear() noexcept {

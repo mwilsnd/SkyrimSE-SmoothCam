@@ -10,7 +10,7 @@ bool Render::Model::Load(const uint8_t* location, Model& output) {
 	constexpr auto vertexSize = sizeof(Vertex);
 
 	size_t offset = headerSize;
-	for (auto i = 0; i < output.header.numMeshes; i++) {
+	for (uint32_t i = 0; i < output.header.numMeshes; i++) {
 		const auto base = reinterpret_cast<intptr_t>(location);
 		const auto h = reinterpret_cast<const MeshHeader*>(base + offset);
 		offset += meshHeaderSize;
@@ -19,7 +19,7 @@ bool Render::Model::Load(const uint8_t* location, Model& output) {
 		memcpy(&mesh.header, h, meshHeaderSize);
 		mesh.vertices.reserve(mesh.header.numVertices);
 
-		for (auto j = 0; j < mesh.header.numVertices; j++) {
+		for (uint32_t j = 0; j < mesh.header.numVertices; j++) {
 			mesh.vertices.push_back(*reinterpret_cast<const Vertex*>(base + offset));
 			offset += vertexSize;
 		}

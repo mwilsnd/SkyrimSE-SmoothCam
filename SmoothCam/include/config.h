@@ -46,9 +46,42 @@ namespace Config {
 		VampireLord,
 		Werewolf,
 		UserDefined,
+		Vanity,
 		Unknown,
 		MAX_OFS
 	};
+
+	enum class DialogueMode : uint8_t {
+		Disabled,
+		Skyrim,
+		Oblivion,
+		FaceToFace,
+		MAX
+	};
+
+	typedef struct dialogueOblivion {
+		float fovOffset = -30.0f;
+		float zoomInDuration = 1.0f;
+		float zoomOutDuration = 1.0f;
+		bool runInFirstPerson = true;
+	} DialogueOblivion;
+	void to_json(json& j, const DialogueOblivion& obj);
+	void from_json(const json& j, DialogueOblivion& obj);
+
+	typedef struct dialogueFaceToFace {
+		float sideOffset = 30.0f;
+		float upOffset = 0.0f;
+		float zoomOffset = 0.0f;
+
+		float rotationDuration = 0.25f;
+		float zoomInDuration = 1.0f;
+		float zoomOutDuration = 1.0f;
+
+		bool faceToFaceNoSwitch = false;
+		bool forceThirdPerson = false;
+	} DialogueFaceToFace;
+	void to_json(json& j, const DialogueFaceToFace& obj);
+	void from_json(const json& j, DialogueFaceToFace& obj);
 
 	constexpr auto scalarMethods = mapbox::eternal::hash_map<mapbox::eternal::string, ScalarMethods>({
 		{ "LINEAR",					ScalarMethods::LINEAR },
@@ -108,6 +141,20 @@ namespace Config {
 	constexpr auto crosshairTypeRevLookup = mapbox::eternal::map<CrosshairType, mapbox::eternal::string>({
 		{ CrosshairType::Skyrim, "SKYRIM" },
 		{ CrosshairType::Dot, "DOT" }
+	});
+
+	constexpr auto dialogueTypeLookup = mapbox::eternal::hash_map<mapbox::eternal::string, DialogueMode>({
+		{ "DISABLED", DialogueMode::Disabled },
+		{ "SKYRIM", DialogueMode::Skyrim },
+		{ "OBLIVION", DialogueMode::Oblivion },
+		{ "FACE TO FACE", DialogueMode::FaceToFace }
+	});
+
+	constexpr auto dialogueTypeRevLookup = mapbox::eternal::map<DialogueMode, mapbox::eternal::string>({
+		{ DialogueMode::Disabled, "DISABLED" },
+		{ DialogueMode::Skyrim, "SKYRIM" },
+		{ DialogueMode::Oblivion, "OBLIVION" },
+		{ DialogueMode::FaceToFace, "FACE TO FACE" }
 	});
 
 	typedef struct OffsetGroupScalar {
@@ -196,8 +243,8 @@ namespace Config {
 		CrosshairType worldCrosshairType = CrosshairType::Skyrim;
 		float stealthMeterXOffset = 0.0f;
 		float stealthMeterYOffset = 250.0f;
-		bool offsetStealthMeter = true;
-		bool alwaysOffsetStealthMeter = true;
+		bool offsetStealthMeter = false;
+		bool alwaysOffsetStealthMeter = false;
 
 		// Arrow prediction
 		bool useArrowPrediction = true;
@@ -219,6 +266,13 @@ namespace Config {
 		int toggleUserDefinedOffsetGroupKey = -1;
 		bool userDefinedOffsetActive = false; // @NOSAVE
 
+		// Pitch zoom
+		bool enablePitchZoom = false;
+		bool pitchZoomAfterInterp = false;
+		float pitchZoomMaxAngle = 90.0f;
+		float pitchZoomMax = 100.0f;
+		ScalarMethods pitchZoomMethod = ScalarMethods::SINE_OUT;
+
 		// Primary interpolation
 		bool enableInterp = true;
 		ScalarMethods currentScalar = ScalarMethods::SINE_IN;
@@ -231,7 +285,7 @@ namespace Config {
 		// Separate local space interpolation
 		bool separateLocalInterp = true;
 		ScalarMethods separateLocalScalar = ScalarMethods::EXP_IN;
-		float localMinFollowRate = 0.7;
+		float localMinFollowRate = 0.7f;
 		float localMaxFollowRate = 0.98f;
 		float localMaxSmoothingDistance = 60.0f;
 
@@ -276,6 +330,11 @@ namespace Config {
 		float cameraDistanceClampZMin = -60.0f;
 		float cameraDistanceClampZMax = 60.0f;
 
+		// Dialogue
+		DialogueMode dialogueMode = DialogueMode::Skyrim;
+		DialogueOblivion oblivionDialogue;
+		DialogueFaceToFace faceToFaceDialogue;
+
 		// Per state positions
 		OffsetGroup standing;
 		OffsetGroup walking;
@@ -289,6 +348,7 @@ namespace Config {
 		OffsetGroup dragon; // @TODO
 		OffsetGroup vampireLord;
 		OffsetGroup werewolf;
+		OffsetGroup vanity;
 		OffsetGroup userDefined;
 	} UserConfig;
 	void to_json(json& j, const UserConfig& obj);
@@ -309,21 +369,26 @@ namespace Config {
 	void ResetConfig();
 
 	// Returns "" if ok, otherwise has an error message
-	BSFixedString SaveConfigAsPreset(int slot, const BSFixedString& name);
+	RE::BSFixedString SaveConfigAsPreset(int slot, const RE::BSFixedString& name);
 	// Returns true if ok, otherwise does nothing
 	bool LoadPreset(int slot);
 	// Returns true if ok, otherwise does nothing
 	LoadStatus LoadPresetName(int slot, eastl::string& name);
 	// Returns the name of the saved preset or "Slot <N>" if no preset is found
-	BSFixedString GetPresetSlotName(int slot);
+	RE::BSFixedString GetPresetSlotName(int slot);
 	// Get the file path for the given preset slot
 	eastl::wstring GetPresetPath(int slot);
 
 	// Load the list of bones for the camera to follow
+	using BoneList = eastl::vector<RE::BSFixedString>;
+	bool LoadBoneList(const std::wstring_view&& searchName, BoneList& outBones);
+	
 	void LoadBonePriorities();
-	using BoneList = eastl::vector<BSFixedString>;
 	// Get the follow bone list
 	BoneList& GetBonePriorities() noexcept;
+
+	void LoadFocusBonePriorities();
+	BoneList& GetFocusBonePriorities() noexcept;
 
 #ifdef DEVELOPER
 	void LoadEyeBonePriorities();

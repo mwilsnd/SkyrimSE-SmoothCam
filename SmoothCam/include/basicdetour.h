@@ -1,31 +1,20 @@
 #pragma once
 
-// A simple wrapper around Microsoft Detours for basic function detouring
-class BasicDetour {
-	public:
-		BasicDetour(void** orig, void* detour) noexcept;
-		~BasicDetour() noexcept;
-		BasicDetour(const BasicDetour&) = delete;
-		BasicDetour(BasicDetour&&) noexcept = delete;
-		BasicDetour& operator=(const BasicDetour&) = delete;
-		BasicDetour& operator=(BasicDetour&&) noexcept = delete;
-
-		bool Attach() noexcept;
-		void Detach() noexcept;
-
-	private:
-		void** fnOrig = nullptr;
-		void* fnDetour = nullptr;
-		bool attached = false;
-};
-
-// Some more sugar
-template<typename T>
+enum AutoResolveREL { Yes, No };
+template<typename T, AutoResolveREL Res = AutoResolveREL::No>
 class TypedDetour {
 	public:
-		explicit TypedDetour(T orig, T detour) noexcept : fnOrig(orig), fnDetour(detour) {}
-		explicit TypedDetour(uintptr_t offsetID, T detour) noexcept : fnDetour(detour) {
-			fnOrig = Offsets::Get<T>(offsetID);
+		TypedDetour(T orig, T detour) noexcept : fnOrig(orig), fnDetour(detour) {}
+		TypedDetour(uintptr_t offsetID, T detour) noexcept : fnDetour(detour) {
+			if constexpr (Res == AutoResolveREL::Yes) {
+				const auto rel = REL::ID(offsetID);
+				fnOrig = REL::Relocation<T>(rel).get();
+				baseAddr = rel.address();
+			} else {
+				fnOrig = REL::Relocation<T>(offsetID).get();
+				baseAddr = offsetID;
+			}
+
 			assert(fnOrig);
 		}
 
@@ -39,6 +28,7 @@ class TypedDetour {
 		TypedDetour& operator=(TypedDetour&&) noexcept = delete;
 
 		bool Attach() noexcept {
+			// @Note: I tried using polyhook (with Capstone and Zydis), some methods it just fails to hook, so we are stuck with this for now
 			assert(!attached);
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
@@ -66,9 +56,14 @@ class TypedDetour {
 			return fnOrig;
 		}
 
+		uintptr_t BaseAddr() const noexcept {
+			return baseAddr;
+		}
+
 	private:
 		T fnOrig = nullptr;
 		T fnDetour = nullptr;
+		uintptr_t baseAddr = 0;
 		bool attached = false;
 };
 

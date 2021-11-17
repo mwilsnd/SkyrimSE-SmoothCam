@@ -1,4 +1,5 @@
 #pragma once
+
 #ifdef _DEBUG
 namespace Debug {
 	class ICommand;
@@ -13,7 +14,7 @@ namespace Debug {
 			const CommandTable& GetCommands() const noexcept;
 
 		private:
-			CommandRegistry() noexcept = default;
+			explicit CommandRegistry() noexcept = default;
 			~CommandRegistry() = default;
 			CommandRegistry(const CommandRegistry&) = delete;
 			CommandRegistry(CommandRegistry&&) noexcept = delete;

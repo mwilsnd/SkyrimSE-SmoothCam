@@ -1,21 +1,12 @@
 #include "timer.h"
-#include "code_analysis.h"
-SILENCE_CODE_ANALYSIS;
-#   include <common/ITimer.h>
-RESTORE_CODE_ANALYSIS;
 
-static ITimer timer;
 static double curFrame = 0.0;
 static double lastFrame = 0.0;
 static double curQPC = 0.0;
 static double lastQPC = 0.0;
 
-void GameTime::Initialize() noexcept {
-	timer.Start();
-}
-
 double GameTime::GetTime() noexcept {
-	return timer.GetElapsedTime();
+	return GetQPC();
 }
 
 double GameTime::GetQPC() noexcept {

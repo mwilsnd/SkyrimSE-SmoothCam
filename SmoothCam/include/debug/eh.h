@@ -1,4 +1,6 @@
-﻿#ifdef EMIT_MINIDUMPS
+﻿#pragma once
+
+#ifdef EMIT_MINIDUMPS
 #pragma comment(lib, "Dbghelp.lib")
 
 namespace Debug {
@@ -6,7 +8,7 @@ namespace Debug {
 	// fatal crashes - a mdmp will be written if a crash does happen.
 	class MiniDumpScope {
 		public:
-			MiniDumpScope() noexcept;
+			explicit MiniDumpScope() noexcept;
 			~MiniDumpScope() noexcept;
 			MiniDumpScope(const MiniDumpScope&) = delete;
 			MiniDumpScope(MiniDumpScope&&) noexcept = delete;

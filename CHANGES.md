@@ -1,3 +1,48 @@
+# Beta 1.6
+* Bumped module and MCM version number to 15
+
+## AE Migration:
+* AE is supported, select the correct option for your game version (SSE or AE) in the FOMOD installer.
+* Address library is not required in this initial AE version. If using the SSE version, Address library IS still required.
+
+**Fixes:**
+* Fixed "Enable Interpolation" state options not functioning correctly.
+* Fixed delta time being incorrectly factored in lerp smoother computation.
+* Fixed FOV snapping when sprinting with weapons out.
+* Fixed wrong FOV offsets being applied to the vanity camera.
+* Fixed trajectory prediction not working for crossbows when on horseback.
+* Somewhat improved crosshair activation when sitting.
+* Added some compensation math to allow for normal 3D crosshair positioning when True Directional Movement is installed.
+* Improved third->first POV change, 1 frame camera jump should be gone now (Firstperson camera mods may still cause this however).
+* Improved compat with mods which alter the focal actor of the camera.
+* Github issue #40: Fixed arrows fired by some bows not aligning with the predicted trajectory line.
+* Github issue #37: Fixed camera attaching to random player input observers.
+* Github issue #54: Fixed crash when dismounting horse.
+* Github issue #52: Fixed the minidump handler assuming all exception codes were crashes.
+* Github issue #52: Don't debug scope the base function of the IDXGISwapChain->Present hook.
+* Github issue #58: Don't process key events while in menu mode.
+* Github issue #55: Position offsets during vanity are now their own offset group.
+* Github issue #57: Possible fix.
+
+**New Stuff:**
+* Added initial groundwork for dialogue cameras. Currently you may select from a vanilla Skyrim style or to disable SmoothCam when in dialogue.
+* Added pitch zoom options.
+* Added an offset group for the idle/vanity camera.
+* Added interface version 2/3 modder API.
+
+**Changes:**
+* Removed AVX variant - minimal performance different and causes too much user confusion.
+* Renamed the 'Following' tab to 'Thirdperson'.
+* Moved all offset group tabs into one 'Thirdperson Offsets' tab. Select which group you'd like to edit from the offset group drop-down. Massive reduction in menu clutter.
+* Moved some options around in the menu. Load Next Preset is now in 'General', Z offset and custom offset group settings are now in 'Thirdperson', 'Min Follow Distance' moved to the 'Misc' section.
+* Added confirmation messages when saving and loading presets, and when resetting the crosshair.
+* Ported from SKSE to CommonLibSSE.
+* Now using cmake build system, premake5 build scripts removed.
+* Code clean-up.
+* Changes to paper/MCM source to support paginated offset groups.
+* Removed code made redundant by CommonLibSSE, removed gen_addrmap tool (no longer required).
+* Updated acknowledgements, now also including it in the FOMOD package (it is not actually installed by the FOMOD).
+
 # Beta 1.5
 * Bumped module and MCM version number to 14
 

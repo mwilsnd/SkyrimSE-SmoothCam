@@ -1,236 +1,139 @@
 #include "main.h"
-#include "trackir/trackir.h"
-#include "render/shader_cache.h"
-#include "compat.h"
-#include "debug/eh.h"
 
-#ifdef DEBUG
-#include "arrow_fixes.h"
-#endif
-
-PluginHandle g_pluginHandle = kPluginHandle_Invalid;
-const SKSEInterface* g_skse = nullptr;
-const SKSEMessagingInterface* g_messaging = nullptr;
-const SKSEPapyrusInterface* g_papyrus = nullptr;
-static bool hooked = false;
-static bool d3dHooked = false;
-
+const SKSE::MessagingInterface* g_messaging = nullptr;
+SKSE::PluginHandle g_pluginHandle = SKSE::kInvalidPluginHandle;
+Offsets* g_Offsets = nullptr;
 eastl::unique_ptr<Camera::Camera> g_theCamera = nullptr;
-#ifdef WITH_D2D
-eastl::unique_ptr<Render::D2D> g_D2D = nullptr;
-#endif
 
-// Let's be nice and (try to) cleanly release our resources
-// Do this here before the game nukes com
-typedef uintptr_t(*CalledDuringRenderShutdown)();
-static eastl::unique_ptr<TypedDetour<CalledDuringRenderShutdown>> detCalledDuringRenderShutdown;
-static uintptr_t mCalledDuringRenderShutdown() {
-	DebugPrint("Shutting down...\n");
-
-#ifdef EMIT_MINIDUMPS
-	DebugPrint("Removing minidump handler\n");
-	Debug::RemoveMiniDumpHandler();
-#endif
-
-	if (hooked) {
-		DebugPrint("Freeing the camera\n");
-		g_theCamera.reset();
-	}
-
-#ifdef WITH_D2D
-	DebugPrint("Freeing Direct2D\n");
-	g_D2D.reset();
-#endif
-
-#ifdef DEVELOPER
-	if (TrackIR::IsRunning()) {
-		DebugPrint("Shutting down TrackIR\n");
-		TrackIR::Shutdown();
-	}
-#endif
-
-#ifdef DEBUG
-	ArrowFixes::Shutdown();
-#endif
-
-	DebugPrint("Shutting down the rendering subsystem\n");
-	Render::ShaderCache::Get().Release();
-	Render::Shutdown();
-
-	DebugPrint("SmoothCam shutdown, continue with game shutdown...\n");
-	return detCalledDuringRenderShutdown->GetBase()();
-}
-
-void attachD3DHooks() {
-	if (!d3dHooked) {
-		// Hook the shutdown function first
-		{
-			const auto mdmp = Debug::MiniDumpScope();
-			_MESSAGE("Hooking render shutdown method\n");
-			detCalledDuringRenderShutdown = eastl::make_unique<TypedDetour<CalledDuringRenderShutdown>>(
-				75446,
-				mCalledDuringRenderShutdown
-			);
-			if (!detCalledDuringRenderShutdown->Attach()) {
-				_ERROR("Failed to place detour on target function(Render Shutdown), this error is fatal.");
-				FatalError(L"Failed to place detour on target function(Render Shutdown), this error is fatal.");
-			}
-		}
-
-		// Wait until now to ensure D3D is loaded and we aren't racing it
-		_MESSAGE("Hooking D3D11\n");
-		Render::InstallHooks();
-		if (!Render::HasContext()) {
-			WarningPopup(L"SmoothCam: Failed to hook DirectX, Rendering features will be disabled. Try running with overlay software disabled if this warning keeps occurring.");
-		}
-		d3dHooked = true;
-
-#ifdef WITH_D2D
-		if (Render::HasContext()) {
-			const auto mdmp = Debug::MiniDumpScope();
-			_MESSAGE("Initializing Direct2D\n");
-			g_D2D = eastl::make_unique<Render::D2D>(Render::GetContext());
-		}
-#endif
-
-#ifdef DEVELOPER
-		if (Render::HasContext()) {
-			const auto mdmp = Debug::MiniDumpScope();
-			const auto result = TrackIR::Initialize(Render::GetContext().hWnd);
-			if (result != TrackIR::NPResult::OK) {
-				_MESSAGE("Failed to load TrackIR interface");
-			} else {
-				_MESSAGE("TrackIR is running.");
-			}
-		}
-#endif
-	}
-}
-
-#pragma warning( push )
-#pragma warning( disable : 26461 ) // skse function pointer is not const
-void SKSEMessageHandler(SKSEMessagingInterface::Message* message) {
+static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 	switch (message->type) {
-		case SKSEMessagingInterface::kMessage_NewGame:
-		case SKSEMessagingInterface::kMessage_PostLoadGame: {
+		case SKSE::MessagingInterface::kNewGame:
+		case SKSE::MessagingInterface::kPostLoadGame: {
 			// @Note: coc from the main menu does not fire post load game
-
-			// @Note: New game does not fire preloadgame
-			if (message->type == SKSEMessagingInterface::kMessage_NewGame)
-				attachD3DHooks();
-
 			// The game has loaded, go ahead and hook the camera now
-			if (!hooked) {
+			if (!g_theCamera) {
 				const auto mdmp = Debug::MiniDumpScope();
-				_MESSAGE("Looking for compatible mods\n");
+				logger::info("Looking for compatible mods");
 				Compat::Initialize();
-				_MESSAGE("Creating the camera\n");
+				logger::info("Creating the camera");
 				g_theCamera = eastl::make_unique<Camera::Camera>();
-				_MESSAGE("Attaching detours\n");
-				hooked = Detours::Attach();
+				logger::info("Attaching deferred detours");
+				if (!Detours::DeferredAttach())
+					logger::critical("Failed to attach deferred detours.");
 			}
 
 			break;
 		}
-		case SKSEMessagingInterface::kMessage_PreLoadGame: {
-			attachD3DHooks();
-			break;
-		}
-		case SKSEMessagingInterface::kMessage_PostLoad: {
-			g_messaging->RegisterListener(g_pluginHandle, nullptr, Messaging::HandleInterfaceRequest);
+		case SKSE::MessagingInterface::kPostLoad: {
+			g_messaging->RegisterListener(nullptr, Messaging::HandleInterfaceRequest);
 			break;
 		}
 		default:
 			break;
 	}
 }
-#pragma warning( pop )
 
-extern "C" {
-	__declspec(dllexport) bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info) {
-		g_skse = skse;
+#ifdef IS_SKYRIM_AE
+extern "C" __declspec(dllexport) constexpr auto SKSEPlugin_Version = []() {
+	SKSE::PluginVersionData v{};
+	v.pluginVersion = 15;
+	v.PluginName("SmoothCam"sv);
+	v.AuthorName("mwilsnd"sv);
+	v.CompatibleVersions({ SKSE::RUNTIME_1_6_318 });
+	return v;
+}();
+#endif
 
-		gLog.OpenRelative(CSIDL_MYDOCUMENTS, "\\My Games\\Skyrim Special Edition\\SKSE\\SmoothCam.log");
-		gLog.SetPrintLevel(IDebugLog::kLevel_DebugMessage);
-		gLog.SetLogLevel(IDebugLog::kLevel_DebugMessage);
+extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
+{
+#ifdef DEBUG
+	Debug::StartREPL();
+#endif
 
-		_MESSAGE("SKSEPlugin_Query begin");
-
-		if (!Offsets::Initialize()) {
-			_ERROR("Failed to load game offset database. Visit https://www.nexusmods.com/skyrimspecialedition/mods/32444 to aquire the correct database file.");
-			FatalError(L"Failed to load game offset database. Visit https://www.nexusmods.com/skyrimspecialedition/mods/32444 to aquire the correct database file.");
-			return false;
-		}
-
-		info->infoVersion = PluginInfo::kInfoVersion;
-		info->name = "SmoothCam";
-		info->version = 15;
-
-		g_pluginHandle = skse->GetPluginHandle();
-
-		if (skse->isEditor) {
-			return false;
-		}
-
-		if (skse->runtimeVersion != RUNTIME_VERSION_1_5_97) {
-			_WARNING("This module was compiled for skse 1.5.97, you are running an unsupported version. You may experience crashes or other strange issues.");
-		}
-
-		_MESSAGE("Allowing module to load");
-		return true;
+#ifndef NDEBUG
+	auto sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
+#else
+	auto path = logger::log_directory();
+	if (!path) {
+		return false;
 	}
 
-	__declspec(dllexport) bool SKSEPlugin_Load(const SKSEInterface* skse) {
-		_MESSAGE("SKSEPlugin_Load begin");
+	*path /= "SmoothCam";
+	*path += ".log"sv;
+	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
+#endif
 
-		_MESSAGE("Reading config file");
-		Config::ReadConfigFile();
+	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
+
+#ifndef NDEBUG
+	log->set_level(spdlog::level::trace);
+#else
+	log->set_level(spdlog::level::info);
+	log->flush_on(spdlog::level::info);
+#endif
+
+	spdlog::set_default_logger(std::move(log));
+	spdlog::set_pattern("%g(%#): [%^%l%$] %v"s);
+
+	a_info->infoVersion = SKSE::PluginInfo::kVersion;
+	a_info->name = "SmoothCam";
+	a_info->version = 15;
+
+	if (a_skse->IsEditor()) {
+		logger::critical("Loaded in editor, marking as incompatible"sv);
+		return false;
+	}
+
+	const auto ver = a_skse->RuntimeVersion();
+	if (ver < SKSE::RUNTIME_1_5_39 || ver > SKSE::RUNTIME_1_5_97) {
+		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
+		return false;
+	}
+
+	return true;
+}
+
+extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) {
+	SKSE::Init(a_skse);
+	g_Offsets = &Offsets::Get();
+
+	logger::info("Reading config file");
+	Config::ReadConfigFile();
 
 #ifdef EMIT_MINIDUMPS
-		if (Config::GetCurrentConfig()->enableCrashDumps) {
-			_MESSAGE("Installing vectored minidump exception handler");
-			Debug::InstallMiniDumpHandler();
-		}
-#endif
-		const auto mdmp = Debug::MiniDumpScope();
-
-#ifdef _DEBUG
-		Debug::StartREPL();
-#endif
-
-		_MESSAGE("Caching offset IDs");
-		for (const auto id : idsToCache)
-			Offsets::CacheID(id);
-
-#ifndef DEBUG
-		_MESSAGE("Releasing the address library database from memory, desired IDs are cached");
-		Offsets::ReleaseDB();
-#endif
-
-		_MESSAGE("Registering plugin interfaces");
-		g_messaging = reinterpret_cast<SKSEMessagingInterface*>(skse->QueryInterface(kInterface_Messaging));
-		if (!g_messaging) {
-			_ERROR("Failed to load messaging interface! This error is fatal, will not load.");
-			FatalError(L"Failed to load messaging interface! This error is fatal, will not load.");
-			return false;
-		}
-
-		g_papyrus = reinterpret_cast<SKSEPapyrusInterface*>(skse->QueryInterface(kInterface_Papyrus));
-		if (!g_papyrus) {
-			_ERROR("Failed to load scripting interface! This error is fatal, will not load.");
-			FatalError(L"Failed to load scripting interface! This error is fatal, will not load.");
-			return false;
-		}
-		
-		g_messaging->RegisterListener(g_pluginHandle, "SKSE", SKSEMessageHandler);
-		
-		g_papyrus->Register([](VMClassRegistry* registry) {
-			PapyrusBindings::Bind(registry);
-			_MESSAGE("Papyrus native function registration completed.");
-			return true;
-		});
-
-		_MESSAGE("SmoothCam loaded!");
-		return true;
+	if (Config::GetCurrentConfig()->enableCrashDumps) {
+		logger::info("Installing vectored minidump exception handler");
+		Debug::InstallMiniDumpHandler();
 	}
+#endif
+	const auto mdmp = Debug::MiniDumpScope();
+
+	logger::info("Registering plugin interfaces");
+	g_messaging = reinterpret_cast<SKSE::MessagingInterface*>(a_skse->QueryInterface(SKSE::LoadInterface::kMessaging));
+	if (!g_messaging) {
+		logger::critical("Failed to load messaging interface! This error is fatal, will not load.");
+		return false;
+	}
+
+	auto papyrus = reinterpret_cast<SKSE::PapyrusInterface*>(a_skse->QueryInterface(SKSE::LoadInterface::kPapyrus));
+	if (!papyrus) {
+		logger::critical("Failed to load scripting interface! This error is fatal, will not load.");
+		return false;
+	}
+
+	papyrus->Register(PapyrusBindings::Bind);
+	g_messaging->RegisterListener("SKSE", SKSEMessageHandler);
+
+	logger::info("Attaching render subsystem hooks");
+	if (!Detours::AttachD3D()) return false;
+
+	Detours::RegisterGameShutdownEvent([] {
+		if (g_theCamera) {
+			DebugPrint("Freeing the camera\n");
+			g_theCamera.reset();
+		}
+	});
+
+	logger::info("loaded");
+	return true;
 }

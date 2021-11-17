@@ -9,13 +9,13 @@ Render::Shader::Shader(const ShaderCreateInfo& createInfo, D3DContext& ctx) noex
 			nullptr, &program.vertex);
 		validProgram = SUCCEEDED(result);
 		if (!validProgram)
-			_ERROR("SmoothCam: A shader failed to compile.");
+			FatalError(L"SmoothCam: A shader failed to compile.");
 	} else {
 		const auto result = context.device->CreatePixelShader(binary->GetBufferPointer(), binary->GetBufferSize(),
 			nullptr, &program.fragment);
 		validProgram = SUCCEEDED(result);
 		if (!validProgram)
-			_ERROR("SmoothCam: A shader failed to compile.");
+			FatalError(L"SmoothCam: A shader failed to compile.");
 	}
 }
 
@@ -62,7 +62,7 @@ bool Render::Shader::Compile(const eastl::string& source, const eastl::string& e
 
 	if (!SUCCEEDED(result)) {
 		if (errorBlob)
-			_ERROR(static_cast<LPCSTR>(errorBlob->GetBufferPointer()));
+			logger::error(static_cast<LPCSTR>(errorBlob->GetBufferPointer()));
 		return false;
 	}
 

@@ -2,9 +2,6 @@
 #include "render/line_drawer.h"
 #include "render/mesh_drawer.h"
 #include "render/model.h"
-#include "render/shader.h"
-#include "render/vertex_buffer.h"
-
 #include "crosshair/base.h"
 
 namespace Crosshair {
@@ -34,8 +31,8 @@ namespace Crosshair {
 			glm::vec3 GetCrosshairTargetNormal(const glm::vec2& aimRotation, float pitchMod = 0.0f) const noexcept;
 
 			// Updates the screen position of the crosshair for correct aiming
-			void UpdateCrosshairPosition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-				const glm::vec2& aimRotation, mmath::NiMatrix44& worldToScaleform) noexcept;
+			void UpdateCrosshairPosition(const RE::Actor* player, const glm::vec2& aimRotation,
+				const glm::vec2& cameraRotation, mmath::NiMatrix44& worldToScaleform) noexcept;
 
 			// Set the 3D crosshair position
 			void SetCrosshairPosition(const glm::dvec2& pos) noexcept;
@@ -67,11 +64,11 @@ namespace Crosshair {
 			void InvalidateEnablementCache() noexcept;
 
 			// Update state each frame
-			void Update(PlayerCharacter* player, CorrectedPlayerCamera* camera) noexcept;
+			void Update(RE::Actor* player) noexcept;
 
 			// Render crosshair objects
 			void Render(Render::D3DContext& ctx, const glm::vec3& cameraPosition, const glm::vec2& cameraRotation,
-				const NiFrustum& frustum) noexcept;
+				const RE::NiFrustum& frustum) noexcept;
 
 			// Reset mutations, hard reset = true to clear crosshair related user settings
 			void Reset(bool hard = false) noexcept;
@@ -80,6 +77,11 @@ namespace Crosshair {
 
 			// Get the current state of the cached crosshair data
 			CurrentCrosshairData& GetCurrentCrosshairData() noexcept;
+
+			// Set the crosshair alert mode (Used by conjuration magic)
+			void SetAlertMode(bool alert) noexcept;
+			// Called by the game, we need to re-apply mutations here
+			void ValidateCrosshair() noexcept;
 
 		private:
 			// Returns true if the manager has captured the base crosshair data correctly
@@ -90,26 +92,33 @@ namespace Crosshair {
 			void ReadInitialCrosshairInfo() noexcept;
 
 			// Simulate a time slice of projectile physics
-			void TickProjectilePath(glm::vec3& position, glm::vec3& vel, const glm::vec3& gravity, float mass, float dt) noexcept;
+			void TickProjectilePath(glm::vec3& position, glm::vec3& vel, const glm::vec3& gravity,
+				float gravityScale, float dt) noexcept;
 
 			// Compute the initial impulse vector for the given projectile
-			glm::vec3 ComputeProjectileVelocityVector(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-				const TESAmmo* ammo, const glm::vec2& aimRotation) noexcept;
+			glm::vec3 ComputeProjectileVelocityVector(const RE::Actor* player,
+				const RE::TESAmmo* ammo, const glm::vec2& aimRotation) noexcept;
 
 			// Cast a curved ray for the currently equipped projectile
-			bool ProjectilePredictionCurve(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
-				const glm::vec2& aimRotation, const glm::vec3& startPos, glm::vec3& hitPos, bool& hitCharacter) noexcept;
+			bool ProjectilePredictionCurve(const RE::Actor* player, const glm::vec2& aimRotation,
+				const glm::vec3& startPos, glm::vec3& hitPos, bool& hitCharacter) noexcept;
 
 			// Try to find the arrow node on the player. It can either be attached to the weapon node or a magic node.
-			NiAVObject* FindArrowNode(const PlayerCharacter* player) const noexcept;
+			RE::NiAVObject* FindArrowNode(const RE::Actor* player) const noexcept;
+
+			// With True Directional Movement, player yaw is unlocked from camera yaw - meaning our crosshair, while still
+			// "correct", looks very strange when we are standing still. This method will correct any rotation delta from
+			// player to camera.
+			glm::vec3 TranslateFirePostion(const RE::Actor* player, const glm::vec2& cameraRotation,
+				const glm::vec3& firePosition) const noexcept;
 
 		private:
 			struct {
-				mutable BSFixedString weapon = "WEAPON";
-				mutable BSFixedString arrowName = "Arrow:0";
-				mutable BSFixedString magic = "NPC Head MagicNode [Hmag]";
-				mutable BSFixedString lmag = "NPC L MagicNode [LMag]";
-				mutable BSFixedString rmag = "NPC R MagicNode [RMag]";
+				mutable RE::BSFixedString weapon = "WEAPON";
+				mutable RE::BSFixedString arrowName = "Arrow:0";
+				mutable RE::BSFixedString magic = "NPC Head MagicNode [Hmag]";
+				mutable RE::BSFixedString lmag = "NPC L MagicNode [LMag]";
+				mutable RE::BSFixedString rmag = "NPC R MagicNode [RMag]";
 			} Strings;
 
 			// Crosshair metrics read at game start before we mess with them

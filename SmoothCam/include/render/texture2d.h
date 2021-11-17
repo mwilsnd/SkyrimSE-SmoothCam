@@ -31,9 +31,9 @@ namespace Render {
 	
 	class Texture2D {
 		public:
-			explicit Texture2D(Render::D3DContext& ctx, const Texture2DCreateInfo& info) noexcept;
-			explicit Texture2D(Render::D3DContext& ctx, winrt::com_ptr<ID3D11Texture2D> texture,
-				const Texture2DCreateInfo& info);
+			Texture2D(Render::D3DContext& ctx, const Texture2DCreateInfo& info) noexcept;
+			Texture2D(Render::D3DContext& ctx, winrt::com_ptr<ID3D11Texture2D> texture,
+				const Texture2DCreateInfo& info) noexcept;
 			~Texture2D() noexcept;
 			Texture2D(const Texture2D&) = delete;
 			Texture2D(Texture2D&&) noexcept = delete;

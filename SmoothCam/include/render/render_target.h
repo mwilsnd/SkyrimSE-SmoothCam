@@ -14,7 +14,7 @@ namespace Render {
 
 	class RenderTarget {
 		public:
-			explicit RenderTarget(Render::D3DContext& ctx, const RenderTargetCreateInfo& info);
+			RenderTarget(Render::D3DContext& ctx, const RenderTargetCreateInfo& info);
 			~RenderTarget();
 			RenderTarget(const RenderTarget&) = delete;
 			RenderTarget(RenderTarget&&) noexcept = delete;

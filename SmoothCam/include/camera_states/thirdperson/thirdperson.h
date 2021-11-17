@@ -7,18 +7,18 @@ namespace Camera {
 	namespace State {
 		class ThirdpersonState : public BaseThird {
 			public:
-				ThirdpersonState(Thirdperson* camera) noexcept;
+				explicit ThirdpersonState(Thirdperson* camera) noexcept;
 				ThirdpersonState(const ThirdpersonState&) = delete;
 				ThirdpersonState(ThirdpersonState&&) noexcept = delete;
 				ThirdpersonState& operator=(const ThirdpersonState&) = delete;
 				ThirdpersonState& operator=(ThirdpersonState&&) noexcept = delete;
 
 			public:
-				virtual void OnBegin(const PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera,
+				virtual void OnBegin(RE::PlayerCharacter* player, RE::Actor* cameraRef, RE::PlayerCamera* playerCamera,
 					BaseThird* fromState) noexcept override;
-				virtual void OnEnd(const PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera,
-					BaseThird* nextState) noexcept override;
-				virtual void Update(PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera)
+				virtual bool OnEnd(RE::PlayerCharacter* player, RE::Actor* cameraRef, RE::PlayerCamera* playerCamera,
+					BaseThird* nextState, bool forced) noexcept override;
+				virtual void Update(RE::PlayerCharacter* player, RE::Actor* cameraRef, RE::PlayerCamera* playerCamera)
 					noexcept override;
 		};
 	}

@@ -1,7 +1,4 @@
 #pragma once
-#include "render/d3d_context.h"
-#include "render/cbuffer.h"
-#include "skyrimSE/PlayerCamera.h"
 
 namespace Camera {
 	class SmoothCamera;
@@ -10,7 +7,7 @@ namespace Camera {
 namespace Crosshair {
 	class Base {
 		public:
-			Base() = default;
+			explicit Base() = default;
 			virtual ~Base() noexcept {};
 			Base(const Base&) = delete;
 			Base(Base&&) noexcept = delete;
@@ -21,7 +18,7 @@ namespace Crosshair {
 			virtual void Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept = 0;
 			
 			// Render the crosshair
-			virtual void Render(Render::D3DContext& ctx, float curTime, float deltaTime, bool allowDepthTesting) noexcept = 0;
+			virtual void Render(Render::D3DContext& ctx, bool allowDepthTesting) noexcept = 0;
 			
 			// Set the world position
 			virtual void SetPosition(const glm::vec3& pos) noexcept;

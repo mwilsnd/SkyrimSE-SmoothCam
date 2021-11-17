@@ -3,28 +3,19 @@ Import SKSE
 string[] interpMethods
 string[] presets
 string[] crosshairTypes
+string[] dialogueModes
+string[] offsetGroups
 string activePage
-#DeclArena<int, 128> pagePool;
+string activeOffsetGroup
+string activeDialogueMode
+#DeclArena<int, 128> pagePool
 
 #include "include/native_functions.psc"
-
-int Function GetCurrentArrayIndex(string setting, string[] array)
-	string value = SmoothCam_GetStringConfig(setting)
-	
-	Int i = array.Length
-	While i
-		i -= 1
-		if (array[i] == value)
-			return i
-		endIf
-	endWhile
-
-	return 0
-endFunction
-
+#include "include/util_functions.psc"
 #include "include/presets.psc"
 #include "include/general.psc"
-#include "include/following.psc"
+#include "include/dialogue.psc"
+#include "include/thirdperson.psc"
 #include "include/crosshair.psc"
 #include "include/offset_groups.psc"
 #include "include/controls.psc"
@@ -44,10 +35,8 @@ endFunction
 
 event OnConfigInit()
 	Pages = new string[] -> [
-		" General", " Following", " Crosshair", " Standing",
-		" Walking", " Running", " Sprinting", " Sneaking",
-		" Swimming", " Bow Aiming", " Sitting", " Horseback",
-		" Dragon", " Vampire Lord", " Werewolf", " Custom", " Group Edit", " Presets"
+		" General", " Thirdperson", " Thirdperson Offsets", " Crosshair",
+		" Dialogue", " Presets"
 	]
 	interpMethods = new string[] -> [
 		"linear", "quadraticEaseIn", "quadraticEaseOut",
@@ -61,6 +50,17 @@ event OnConfigInit()
 	]
 	crosshairTypes = new string[] -> [
 		"Skyrim", "Dot"
+	]
+	;dialogueModes = new string[] -> [
+	;	"Disabled", "Skyrim", "Oblivion", "Face To Face"
+	;]
+	dialogueModes = new string[] -> [
+		"Disabled", "Skyrim"
+	]
+	offsetGroups = new string[] -> [
+		" Standing", " Walking", " Running", " Sprinting", " Sneaking",
+		" Swimming", " Bow Aiming", " Sitting", " Horseback", " Dragon",
+		" Vampire Lord", " Werewolf", " Custom", " Vanity", " Group Edit"
 	]
 	#ImplArena(pagePool)
 endEvent
@@ -81,9 +81,7 @@ event OnPageReset(string a_page)
 
 		AddHeaderOption("General")
 		#StructInvokeOn(implControl, [
-			modEnabled, modEnabledKey,
-			toggleCustomZOffset, customZOffsetAmount,
-			toggleUserDefinedOffset
+			modEnabled, modEnabledKey, nextPresetKey
 		])
 
 		SetCursorPosition(1)
@@ -104,10 +102,10 @@ event OnPageReset(string a_page)
 			AddTextOption(SmoothCam_GetAPIConsumerName(count), "API Consumer", OPTION_FLAG_DISABLED)
 		endWhile
 
-	elseIf (a_page == " Following")
+	elseIf (a_page == " Thirdperson")
 		AddHeaderOption("Interpolation")
 		#StructInvokeOn(implControl, [
-			interpEnabled, interpMethod, minCameraFollowDistance, minCameraFollowRate, maxCameraFollowRate, maxSmoothingInterpDistance
+			interpEnabled, interpMethod, minCameraFollowRate, maxCameraFollowRate, maxSmoothingInterpDistance
 		])
 
 		AddHeaderOption("Separate Z Interpolation")
@@ -145,17 +143,26 @@ event OnPageReset(string a_page)
 		])
 
 		AddHeaderOption("Interpolator Blending")
-		globalInterpDisableSmoothing->!implControl
-		globalInterpDisableMethod->!implControl
-		globalInterpOverrideSmoothing->!implControl
-		globalInterpOverrideMethod->!implControl
-		localInterpOverrideSmoothing->!implControl
-		localInterpOverrideMethod->!implControl
+		#StructInvokeOn(implControl, [
+			globalInterpDisableSmoothing,
+			globalInterpDisableMethod,
+			globalInterpOverrideSmoothing,
+			globalInterpOverrideMethod,
+			localInterpOverrideSmoothing,
+			localInterpOverrideMethod
+		])
+
+		AddHeaderOption("Pitch Zoom")
+		#StructInvokeOn(implControl, [
+			pitchZoomEnable, pitchZoomAfterInterp,
+			pitchZoomMethod, pitchZoomMaxRange, pitchZoomMaxAngle
+		])
 
 		AddHeaderOption("Misc")
 		#StructInvokeOn(implControl, [
-			shoulderSwapKey, swapDistanceClampXAxis, nextPresetKey,
-			zoomMul, disableDeltaTime
+			minCameraFollowDistance, zoomMul, shoulderSwapKey, swapDistanceClampXAxis,
+			toggleCustomZOffset, customZOffsetAmount,
+			toggleUserDefinedOffset, disableDeltaTime
 		])
 
 	elseIf (a_page == " Crosshair")
@@ -185,103 +192,29 @@ event OnPageReset(string a_page)
 			offsetStealthMeter, alwaysOffsetStealthMeter, stealthMeterOffsetX, stealthMeterOffsetY
 		])
 
-	elseIf (a_page == " Standing")
-		#ImplOffsetGroupPage(Standing)
+	elseIf (a_page == " Dialogue")
+		dialogueMode->!implControl
+		activeDialogueMode = dialogueModes[GetCurrentArrayIndex(dialogueMode.settingName, dialogueModes)]
 
-	elseIf (a_page == " Walking")
-		#ImplOffsetGroupPage(Walking)
-
-	elseIf (a_page == " Running")
-		#ImplOffsetGroupPage(Running)
-
-	elseIf (a_page == " Sprinting")
-		#ImplOffsetGroupPage(Sprinting)
-
-	elseIf (a_page == " Sneaking")
-		#ImplOffsetGroupPage(Sneaking)
-
-	elseIf (a_page == " Swimming")
-		#ImplOffsetGroupPage(Swimming)
-
-	elseIf (a_page == " Bow Aiming")
-		#StructInvokeOn(implControl, [
-			bowaim_sideOffset,
-			bowaim_upOffset,
-			bowaim_zoomOffset,
-			bowaim_fovOffset,
-			bowaim_sideOffsetHorseback,
-			bowaim_upOffsetHorseback,
-			bowaim_zoomOffsetHorseback,
-			bowaim_fovOffsetHorseback,
-			bowaim_sideOffsetSneaking,
-			bowaim_upOffsetSneaking,
-			bowaim_zoomOffsetSneaking,
-			bowaim_fovOffsetSneaking
-		])
-
-		SetCursorPosition(1)
-		#StructInvokeOn(implControl, [
-			bowaim_interp,
-			bowaim_overrideInterp,
-			bowaim_interpMethod,
-			bowaim_minFollowRate,
-			bowaim_maxFollowRate,
-			bowaim_maxSmoothingInterpDistance,
-
-			bowaim_overrideLocalInterp,
-			bowaim_LocalnterpMethod,
-			bowaim_localMinFollowRate,
-			bowaim_localMaxFollowRate,
-			bowaim_localMaxSmoothingInterpDistance,
-			
-			bowaimHorseback_interp,
-			bowaimHorseback_overrideInterp,
-			bowaimHorseback_interpMethod,
-			bowaimHorseback_minFollowRate,
-			bowaimHorseback_maxFollowRate,
-			bowaimHorseback_maxSmoothingInterpDistance,
-
-			bowaimHorseback_overrideLocalInterp,
-			bowaimHorseback_LocalnterpMethod,
-			bowaimHorseback_localMinFollowRate,
-			bowaimHorseback_localMaxFollowRate,
-			bowaimHorseback_localMaxSmoothingInterpDistance,
-			
-			bowaimSneaking_interp,
-			bowaimSneaking_overrideInterp,
-			bowaimSneaking_interpMethod,
-			bowaimSneaking_minFollowRate,
-			bowaimSneaking_maxFollowRate,
-			bowaimSneaking_maxSmoothingInterpDistance,
-
-			bowaimSneaking_overrideLocalInterp,
-			bowaimSneaking_LocalnterpMethod,
-			bowaimSneaking_localMinFollowRate,
-			bowaimSneaking_localMaxFollowRate,
-			bowaimSneaking_localMaxSmoothingInterpDistance,
-		])
-
-	elseIf (a_page == " Sitting")
-		#ImplOffsetGroupPage(Sitting)
-
-	elseIf (a_page == " Horseback")
-		#ImplOffsetGroupPage(Horseback)
-
-	elseIf (a_page == " Dragon")
-		#ImplOffsetGroupPage(Dragon)
-
-	elseIf (a_page == " Vampire Lord")
-		#ImplOffsetGroupPage(VampireLord)
-
-	elseIf (a_page == " Werewolf")
-		#ImplOffsetGroupPage(Werewolf)
-
-	elseIf (a_page == " Custom")
-		#ImplOffsetGroupPage(Custom)
-
-	elseIf (a_page == " Group Edit")
-		AddHeaderOption("Edit All Offset Groups")
-		#ImplOffsetGroupPage(Group, NoSliderHeader, NoInterpToggles)
+		if (activeDialogueMode == "Oblivion")
+			AddHeaderOption("Oblivion Camera Settings")
+			oblivionDialogueMaxFOV->!implControl
+			oblivionDialogueFOVDurationIn->!implControl
+			oblivionDialogueFOVDurationOut->!implControl
+			oblivionDialogueRunFPV->!implControl
+		elseIf (activeDialogueMode == "Face To Face")
+			AddHeaderOption("Face To Face Camera Settings")
+			faceToFaceSideOffset->!implControl
+			faceToFaceUpOffset->!implControl
+			faceToFaceZoomOffset->!implControl
+			faceToFaceRotationDuration->!implControl
+			faceToFaceDurationIn->!implControl
+			faceToFaceDurationOut->!implControl
+			faceToFaceNoSwitch->!implControl
+			faceToFaceForceThirdperson->!implControl
+		else
+			AddTextOption("This mode has no options", "", OPTION_FLAG_DISABLED)
+		endIf
 
 	elseIf (a_page == " Presets")
 		AddHeaderOption("Save Preset")
@@ -304,6 +237,100 @@ event OnPageReset(string a_page)
 			loadPresetSlot5,
 			loadPresetSlot6
 		])
+	
+	elseIf (a_page == " Thirdperson Offsets")
+		if (activeOffsetGroup == "")
+			activeOffsetGroup = " Standing"
+		endIf
 
+		offsetGroupPicker->!implControl
+
+		if (activeOffsetGroup == " Standing")
+			#ImplOffsetGroupPage(Standing)
+		elseIf (activeOffsetGroup == " Walking")
+			#ImplOffsetGroupPage(Walking)
+		elseIf (activeOffsetGroup == " Running")
+			#ImplOffsetGroupPage(Running)
+		elseIf (activeOffsetGroup == " Sprinting")
+			#ImplOffsetGroupPage(Sprinting)
+		elseIf (activeOffsetGroup == " Sneaking")
+			#ImplOffsetGroupPage(Sneaking)
+		elseIf (activeOffsetGroup == " Swimming")
+			#ImplOffsetGroupPage(Swimming)
+		elseIf (activeOffsetGroup == " Bow Aiming")
+			#StructInvokeOn(implControl, [
+				bowaim_sideOffset,
+				bowaim_upOffset,
+				bowaim_zoomOffset,
+				bowaim_fovOffset,
+				bowaim_sideOffsetHorseback,
+				bowaim_upOffsetHorseback,
+				bowaim_zoomOffsetHorseback,
+				bowaim_fovOffsetHorseback,
+				bowaim_sideOffsetSneaking,
+				bowaim_upOffsetSneaking,
+				bowaim_zoomOffsetSneaking,
+				bowaim_fovOffsetSneaking
+			])
+
+			SetCursorPosition(1)
+			#StructInvokeOn(implControl, [
+				bowaim_interp,
+				bowaim_overrideInterp,
+				bowaim_interpMethod,
+				bowaim_minFollowRate,
+				bowaim_maxFollowRate,
+				bowaim_maxSmoothingInterpDistance,
+
+				bowaim_overrideLocalInterp,
+				bowaim_LocalnterpMethod,
+				bowaim_localMinFollowRate,
+				bowaim_localMaxFollowRate,
+				bowaim_localMaxSmoothingInterpDistance,
+				
+				bowaimHorseback_interp,
+				bowaimHorseback_overrideInterp,
+				bowaimHorseback_interpMethod,
+				bowaimHorseback_minFollowRate,
+				bowaimHorseback_maxFollowRate,
+				bowaimHorseback_maxSmoothingInterpDistance,
+
+				bowaimHorseback_overrideLocalInterp,
+				bowaimHorseback_LocalnterpMethod,
+				bowaimHorseback_localMinFollowRate,
+				bowaimHorseback_localMaxFollowRate,
+				bowaimHorseback_localMaxSmoothingInterpDistance,
+				
+				bowaimSneaking_interp,
+				bowaimSneaking_overrideInterp,
+				bowaimSneaking_interpMethod,
+				bowaimSneaking_minFollowRate,
+				bowaimSneaking_maxFollowRate,
+				bowaimSneaking_maxSmoothingInterpDistance,
+
+				bowaimSneaking_overrideLocalInterp,
+				bowaimSneaking_LocalnterpMethod,
+				bowaimSneaking_localMinFollowRate,
+				bowaimSneaking_localMaxFollowRate,
+				bowaimSneaking_localMaxSmoothingInterpDistance,
+			])
+		elseIf (activeOffsetGroup == " Sitting")
+			#ImplOffsetGroupPage(Sitting)
+		elseIf (activeOffsetGroup == " Horseback")
+			#ImplOffsetGroupPage(Horseback)
+		elseIf (activeOffsetGroup == " Dragon")
+			#ImplOffsetGroupPage(Dragon)
+		elseIf (activeOffsetGroup == " Vampire Lord")
+			#ImplOffsetGroupPage(VampireLord)
+		elseIf (activeOffsetGroup == " Werewolf")
+			#ImplOffsetGroupPage(Werewolf)
+		elseIf (activeOffsetGroup == " Vanity")
+			#ImplOffsetGroupPage(Vanity, NoInterpToggles)
+		elseIf (activeOffsetGroup == " Custom")
+			#ImplOffsetGroupPage(Custom)
+		elseIf (activeOffsetGroup == " Group Edit")
+			AddHeaderOption("Edit All Offset Groups")
+			#ImplOffsetGroupPage(Group, NoSliderHeader, NoInterpToggles)
+		endIf
 	endIf
 endEvent

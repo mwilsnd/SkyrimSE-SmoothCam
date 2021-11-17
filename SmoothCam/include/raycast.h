@@ -1,5 +1,4 @@
 #pragma once
-#include "havok/hkpCastCollector.h"
 
 namespace Raycast {
 	struct hkpGenericShapeData {
@@ -32,7 +31,7 @@ namespace Raycast {
 		// True if the trace hit something before reaching it's end position
 		bool hit;
 		// If the ray hit a character actor, this will point to it
-		Character* hitCharacter;
+		RE::Character* hitCharacter;
 		// The length of the ray from start to hitPos
 		float rayLength;
 		// The position the ray hit, in world space
@@ -56,8 +55,7 @@ namespace Raycast {
 	//	RayResult:
 	//		A structure holding the results of the ray cast.
 	//		If the ray hit something, result.hit will be true.
-	RayResult CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize, bool intersectCharacters = false)
-		noexcept;
+	RayResult CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize) noexcept;
 	
 	// Cast a ray from 'start' to 'end', returning the first thing it hits
 	// This variant collides with pretty much any solid geometry
@@ -69,5 +67,5 @@ namespace Raycast {
 	//	RayResult:
 	//		A structure holding the results of the ray cast.
 	//		If the ray hit something, result.hit will be true.
-	RayResult hkpCastRay(glm::vec4 start, glm::vec4 end) noexcept;
+	RayResult hkpCastRay(const glm::vec4& start, const glm::vec4& end) noexcept;
 }

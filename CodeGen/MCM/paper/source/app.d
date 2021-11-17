@@ -10,6 +10,7 @@ import constructs.auto_array;
 import constructs.decl_offset_group;
 import constructs.impl_offset_group;
 import constructs.arena;
+import constructs.struct_alias;
 
 import fs = std.file;
 import std.stdio;
@@ -85,6 +86,22 @@ void main(string[] args) {
 	auto constStruct = new ConstStructParser();
 	constStruct.setArena(arena);
 	err = constStruct.parse(tokens);
+	if (!err.isOk()) {
+		writeln(err.msg);
+		return;
+	}
+
+	{
+		scope auto structAlias = new StructAlias();
+		structAlias.setConstStructTool(constStruct);
+		err = structAlias.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return;
+		}
+	}
+
+	err = constStruct.parseImpls(tokens);
 	if (!err.isOk()) {
 		writeln(err.msg);
 		return;

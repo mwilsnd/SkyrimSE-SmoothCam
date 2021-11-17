@@ -3,6 +3,10 @@
 #include "thirdperson.h"
 #include "crosshair.h"
 #include "compat.h"
+#include "debug/eh.h"
+
+#pragma warning(push)
+#pragma warning(disable : 5103)
 
 extern Compat::ModDetectionFlags modDetectionFlags;
 extern Config::UserConfig currentConfig;
@@ -24,13 +28,13 @@ using namespace PapyrusBindings;
             Config::GetCurrentConfig()->Var                 \
         );                                                  \
         if (it != Config::scalarMethodRevLookup.end())      \
-            return BSFixedString(it->second.c_str());       \
+            return RE::BSFixedString(it->second.c_str());   \
         else                                                \
-            return BSFixedString("linear");                 \
+            return RE::BSFixedString("linear");             \
     } }
 
 #define IMPL_SCALAR_METHOD_SETTER(VarName, Var)                     \
-    { PAPYRUS_MANGLE(VarName), [](BSFixedString& str) {             \
+    { PAPYRUS_MANGLE(VarName), [](RE::BSFixedString& str) {         \
 		const auto upper = Util::UpperCase(str);					\
         const auto it = Config::scalarMethods.find(upper.c_str());  \
         if (it != Config::scalarMethods.end()) {                    \
@@ -130,42 +134,48 @@ using namespace PapyrusBindings;
 // Bool
 constexpr auto boolGetters = mapbox::eternal::hash_map<mapbox::eternal::string, bool*>({
 	// Misc
-	IMPL_GETTER("ModEnabled",						modDisabled),
-	IMPL_GETTER("EnableCrashDumps",					enableCrashDumps),
+	IMPL_GETTER("ModEnabled",						  modDisabled),
+	IMPL_GETTER("EnableCrashDumps",					  enableCrashDumps),
 	// Comapt
-	IMPL_NCONF_GETTER("ICCompat",					modDetectionFlags.bImprovedCamera),
-	IMPL_NCONF_GETTER("IFPVCompat",					modDetectionFlags.bIFPV),
-	IMPL_NCONF_GETTER("AGOCompat",					modDetectionFlags.bAGO),
+	IMPL_NCONF_GETTER("ICCompat",					  modDetectionFlags.bImprovedCamera),
+	IMPL_NCONF_GETTER("IFPVCompat",					  modDetectionFlags.bIFPV),
+	IMPL_NCONF_GETTER("AGOCompat",					  modDetectionFlags.bAGO),
 	// Crosshair
-	IMPL_GETTER("Enable3DBowCrosshair",				use3DBowAimCrosshair),
-	IMPL_GETTER("Enable3DMagicCrosshair",			use3DMagicCrosshair),
-	IMPL_GETTER("UseWorldCrosshair",				useWorldCrosshair),
-	IMPL_GETTER("WorldCrosshairDepthTest",			worldCrosshairDepthTest),
-	IMPL_GETTER("EnableArrowPrediction",			useArrowPrediction),
-	IMPL_GETTER("DrawArrowArc",						drawArrowArc),
-	IMPL_GETTER("EnableCrosshairSizeManip",			enableCrosshairSizeManip),
-	IMPL_GETTER("HideCrosshairOutOfCombat",			hideNonCombatCrosshair),
-	IMPL_GETTER("HideCrosshairMeleeCombat",			hideCrosshairMeleeCombat),
-	IMPL_GETTER("OffsetStealthMeter",				offsetStealthMeter),
-	IMPL_GETTER("AlwaysOffsetStealthMeter",			alwaysOffsetStealthMeter),
+	IMPL_GETTER("Enable3DBowCrosshair",				  use3DBowAimCrosshair),
+	IMPL_GETTER("Enable3DMagicCrosshair",			  use3DMagicCrosshair),
+	IMPL_GETTER("UseWorldCrosshair",				  useWorldCrosshair),
+	IMPL_GETTER("WorldCrosshairDepthTest",			  worldCrosshairDepthTest),
+	IMPL_GETTER("EnableArrowPrediction",			  useArrowPrediction),
+	IMPL_GETTER("DrawArrowArc",						  drawArrowArc),
+	IMPL_GETTER("EnableCrosshairSizeManip",			  enableCrosshairSizeManip),
+	IMPL_GETTER("HideCrosshairOutOfCombat",			  hideNonCombatCrosshair),
+	IMPL_GETTER("HideCrosshairMeleeCombat",			  hideCrosshairMeleeCombat),
+	IMPL_GETTER("OffsetStealthMeter",				  offsetStealthMeter),
+	IMPL_GETTER("AlwaysOffsetStealthMeter",			  alwaysOffsetStealthMeter),
 	// Primary interpolation
-	IMPL_GETTER("InterpolationEnabled",				enableInterp),
-	IMPL_GETTER("DisableDeltaTime",					disableDeltaTime),
+	IMPL_GETTER("InterpolationEnabled",				  enableInterp),
+	IMPL_GETTER("DisableDeltaTime",					  disableDeltaTime),
 	// Separate local interpolation
-	IMPL_GETTER("SeparateLocalInterpolation",		separateLocalInterp),
+	IMPL_GETTER("SeparateLocalInterpolation",		  separateLocalInterp),
 	// Separate Z interpolation
-	IMPL_GETTER("SeparateZInterpEnabled",			separateZInterp),
+	IMPL_GETTER("SeparateZInterpEnabled",			  separateZInterp),
 	// Offset interpolation
-	IMPL_GETTER("OffsetTransitionEnabled",			enableOffsetInterpolation),
+	IMPL_GETTER("OffsetTransitionEnabled",			  enableOffsetInterpolation),
 	// Zoom interpolation
-	IMPL_GETTER("ZoomTransitionEnabled",			enableZoomInterpolation),
+	IMPL_GETTER("ZoomTransitionEnabled",			  enableZoomInterpolation),
 	// FOV interpolation
-	IMPL_GETTER("FOVTransitionEnabled",				enableFOVInterpolation),
+	IMPL_GETTER("FOVTransitionEnabled",				  enableFOVInterpolation),
+	// Dialogue
+	IMPL_GETTER("OblivionDialogueRunFPV",             oblivionDialogue.runInFirstPerson),
+	IMPL_GETTER("FaceToFaceDialogueForceThirdperson", faceToFaceDialogue.forceThirdPerson),
 	// Distance clamping
-	IMPL_GETTER("CameraDistanceClampXEnable",		cameraDistanceClampXEnable),
-	IMPL_GETTER("CameraDistanceClampYEnable",		cameraDistanceClampYEnable),
-	IMPL_GETTER("CameraDistanceClampZEnable",		cameraDistanceClampZEnable),
-	IMPL_GETTER("ShoulderSwapXClamping",			swapXClamping),
+	IMPL_GETTER("CameraDistanceClampXEnable",		  cameraDistanceClampXEnable),
+	IMPL_GETTER("CameraDistanceClampYEnable",		  cameraDistanceClampYEnable),
+	IMPL_GETTER("CameraDistanceClampZEnable",		  cameraDistanceClampZEnable),
+	IMPL_GETTER("ShoulderSwapXClamping",			  swapXClamping),
+	// Pitch zoom
+	IMPL_GETTER("PitchZoomEnabled",			          enablePitchZoom),
+	IMPL_GETTER("PitchZoomAfterInterp",			      pitchZoomAfterInterp),
 	// Offset groups
 	IMPL_OFFSET_GROUP_BOOL_GETTERS(standing, "Standing"),
 	IMPL_OFFSET_GROUP_BOOL_GETTERS(walking, "Walking"),
@@ -178,6 +188,7 @@ constexpr auto boolGetters = mapbox::eternal::hash_map<mapbox::eternal::string, 
 	IMPL_OFFSET_GROUP_BOOL_GETTERS(dragon, "Dragon"),
 	IMPL_OFFSET_GROUP_BOOL_GETTERS(vampireLord, "VampireLord"),
 	IMPL_OFFSET_GROUP_BOOL_GETTERS(werewolf, "Werewolf"),
+	IMPL_OFFSET_GROUP_BOOL_GETTERS(vanity, "Vanity"),
 	IMPL_OFFSET_GROUP_BOOL_GETTERS(userDefined, "Custom"),
 	// BowAim
 	IMPL_GETTER("InterpBowAim",							bowAim.interpRangedCombat),
@@ -235,6 +246,19 @@ const auto floatGetters = eastl::unordered_map<eastl::string_view, float*>({
 	IMPL_GETTER("ZoomTransitionDuration",				zoomInterpDurationSecs),
 	// FOV interpolation
 	IMPL_GETTER("FOVTransitionDuration",				fovInterpDurationSecs),
+	// Dialogue
+	IMPL_GETTER("OblivionDialogueMaxFOV",               oblivionDialogue.fovOffset),
+	IMPL_GETTER("OblivionDialogueFOVDurationIn",        oblivionDialogue.zoomInDuration),
+	IMPL_GETTER("OblivionDialogueFOVDurationOut",       oblivionDialogue.zoomOutDuration),
+	IMPL_GETTER("FaceToFaceDialogueSideOffset",         faceToFaceDialogue.sideOffset),
+	IMPL_GETTER("FaceToFaceDialogueUpOffset",           faceToFaceDialogue.upOffset),
+	IMPL_GETTER("FaceToFaceDialogueZoomOffset",         faceToFaceDialogue.zoomOffset),
+	IMPL_GETTER("FaceToFaceDialogueRotationDuration",   faceToFaceDialogue.rotationDuration),
+	IMPL_GETTER("FaceToFaceDialogueDurationIn",         faceToFaceDialogue.zoomInDuration),
+	IMPL_GETTER("FaceToFaceDialogueDurationOut",        faceToFaceDialogue.zoomOutDuration),
+	// Pitch zoom
+	IMPL_GETTER("PitchZoomMaxRange",				    pitchZoomMax),
+	IMPL_GETTER("PitchZoomMaxAngle",				    pitchZoomMaxAngle),
 	// Distance clamping
 	IMPL_GETTER("CameraDistanceClampXMin",				cameraDistanceClampXMin),
 	IMPL_GETTER("CameraDistanceClampXMax",				cameraDistanceClampXMax),
@@ -258,6 +282,7 @@ const auto floatGetters = eastl::unordered_map<eastl::string_view, float*>({
 	IMPL_OFFSET_GROUP_FLOAT_GETTERS(dragon, "Dragon"),
 	IMPL_OFFSET_GROUP_FLOAT_GETTERS(vampireLord, "VampireLord"),
 	IMPL_OFFSET_GROUP_FLOAT_GETTERS(werewolf, "Werewolf"),
+	IMPL_OFFSET_GROUP_FLOAT_GETTERS(vanity, "Vanity"),
 	IMPL_OFFSET_GROUP_FLOAT_GETTERS(userDefined, "Custom"),
 	// BowAim
 	IMPL_GETTER("Bowaim:SideOffset",						bowAim.sideOffset),
@@ -328,7 +353,7 @@ constexpr auto intGetters = mapbox::eternal::hash_map<mapbox::eternal::string, i
 });
 
 // String
-const eastl::unordered_map<eastl::string_view, eastl::function<BSFixedString(void)>> stringGetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<RE::BSFixedString(void)>> stringGetters = {
 	IMPL_SCALAR_METHOD_GETTER("InterpolationMethod", currentScalar),
 	IMPL_SCALAR_METHOD_GETTER("SeparateZInterpMethod", separateZScalar),
 	IMPL_SCALAR_METHOD_GETTER("SepLocalInterpMethod", separateLocalScalar),
@@ -339,6 +364,8 @@ const eastl::unordered_map<eastl::string_view, eastl::function<BSFixedString(voi
 	IMPL_SCALAR_METHOD_GETTER("GlobalInterpDisableMethod", globalInterpDisableMehtod),
 	IMPL_SCALAR_METHOD_GETTER("GlobalInterpOverrideMethod", globalInterpOverrideMethod),
 	IMPL_SCALAR_METHOD_GETTER("LocalInterpOverrideMethod", localInterpOverrideMethod),
+
+	IMPL_SCALAR_METHOD_GETTER("PitchZoomMethod", pitchZoomMethod),
 
 	IMPL_OFFSET_GROUP_SCALAR_GETTERS(standing, "Standing"),
 	IMPL_OFFSET_GROUP_SCALAR_GETTERS(walking, "Walking"),
@@ -351,6 +378,7 @@ const eastl::unordered_map<eastl::string_view, eastl::function<BSFixedString(voi
 	IMPL_OFFSET_GROUP_SCALAR_GETTERS(dragon, "Dragon"),
 	IMPL_OFFSET_GROUP_SCALAR_GETTERS(vampireLord, "VampireLord"),
 	IMPL_OFFSET_GROUP_SCALAR_GETTERS(werewolf, "Werewolf"),
+	IMPL_OFFSET_GROUP_SCALAR_GETTERS(vanity, "Vanity"),
 	IMPL_OFFSET_GROUP_SCALAR_GETTERS(userDefined, "Custom"),
 
 	IMPL_SCALAR_METHOD_GETTER("SelectedScalarBowAim", bowAim.interpRangedConf.currentScalar),
@@ -361,15 +389,23 @@ const eastl::unordered_map<eastl::string_view, eastl::function<BSFixedString(voi
 	IMPL_SCALAR_METHOD_GETTER("SelectedLocalScalarBowAimSneak", bowAim.interpMeleeConf.separateLocalScalar),
 
 	{ PAPYRUS_MANGLE("WorldCrosshairType"), []() {
-			const auto it = Config::crosshairTypeRevLookup.find(Config::GetCurrentConfig()->worldCrosshairType);
-			if (it != Config::crosshairTypeRevLookup.end()) {
-				return BSFixedString(it->second.c_str());
-			}
-			return BSFixedString("");
+		const auto it = Config::crosshairTypeRevLookup.find(Config::GetCurrentConfig()->worldCrosshairType);
+		if (it != Config::crosshairTypeRevLookup.end()) {
+			return RE::BSFixedString(it->second.c_str());
+		}
+		return RE::BSFixedString("");
+	}},
+
+	{ PAPYRUS_MANGLE("DialogueMode"), [] {
+		const auto it = Config::dialogueTypeRevLookup.find(Config::GetCurrentConfig()->dialogueMode);
+		if (it != Config::dialogueTypeRevLookup.end()) {
+			return RE::BSFixedString(it->second.c_str());
+		}
+		return RE::BSFixedString("");
 	}},
 };
 
-const eastl::unordered_map<eastl::string_view, eastl::function<void(BSFixedString)>> stringSetters = {
+const eastl::unordered_map<eastl::string_view, eastl::function<void(RE::BSFixedString&)>> stringSetters = {
 	IMPL_SCALAR_METHOD_SETTER("InterpolationMethod", currentScalar),
 	IMPL_SCALAR_METHOD_SETTER("SeparateZInterpMethod", separateZScalar),
 	IMPL_SCALAR_METHOD_SETTER("SepLocalInterpMethod", separateLocalScalar),
@@ -380,6 +416,8 @@ const eastl::unordered_map<eastl::string_view, eastl::function<void(BSFixedStrin
 	IMPL_SCALAR_METHOD_SETTER("GlobalInterpDisableMethod", globalInterpDisableMehtod),
 	IMPL_SCALAR_METHOD_SETTER("GlobalInterpOverrideMethod", globalInterpOverrideMethod),
 	IMPL_SCALAR_METHOD_SETTER("LocalInterpOverrideMethod", localInterpOverrideMethod),
+
+	IMPL_SCALAR_METHOD_SETTER("PitchZoomMethod", pitchZoomMethod),
 
 	IMPL_OFFSET_GROUP_SCALAR_SETTERS(standing, "Standing"),
 	IMPL_OFFSET_GROUP_SCALAR_SETTERS(walking, "Walking"),
@@ -392,6 +430,7 @@ const eastl::unordered_map<eastl::string_view, eastl::function<void(BSFixedStrin
 	IMPL_OFFSET_GROUP_SCALAR_SETTERS(dragon, "Dragon"),
 	IMPL_OFFSET_GROUP_SCALAR_SETTERS(vampireLord, "VampireLord"),
 	IMPL_OFFSET_GROUP_SCALAR_SETTERS(werewolf, "Werewolf"),
+	IMPL_OFFSET_GROUP_SCALAR_SETTERS(vanity, "Vanity"),
 	IMPL_OFFSET_GROUP_SCALAR_SETTERS(userDefined, "Custom"),
 
 	IMPL_SCALAR_METHOD_SETTER("SelectedScalarBowAim", bowAim.interpRangedConf.currentScalar),
@@ -401,265 +440,191 @@ const eastl::unordered_map<eastl::string_view, eastl::function<void(BSFixedStrin
 	IMPL_SCALAR_METHOD_SETTER("SelectedScalarBowAimSneak", bowAim.interpMeleeConf.currentScalar),
 	IMPL_SCALAR_METHOD_SETTER("SelectedLocalScalarBowAimSneak", bowAim.interpMeleeConf.separateLocalScalar),
 
-	{ PAPYRUS_MANGLE("WorldCrosshairType"), [](BSFixedString& str) {
-			const auto upper = Util::UpperCase(str);
-			const auto it = Config::crosshairTypeLookup.find(upper.c_str());
-			if (it != Config::crosshairTypeLookup.end()) {
-				Config::GetCurrentConfig()->worldCrosshairType = it->second;
-				Config::SaveCurrentConfig();
-			}
+	{ PAPYRUS_MANGLE("WorldCrosshairType"), [](RE::BSFixedString& str) {
+		const auto upper = Util::UpperCase(str);
+		const auto it = Config::crosshairTypeLookup.find(upper.c_str());
+		if (it != Config::crosshairTypeLookup.end()) {
+			Config::GetCurrentConfig()->worldCrosshairType = it->second;
+			Config::SaveCurrentConfig();
+		}
+	}},
+
+	{ PAPYRUS_MANGLE("DialogueMode"), [](RE::BSFixedString& str) {
+		const auto upper = Util::UpperCase(str);
+		const auto it = Config::dialogueTypeLookup.find(upper.c_str());
+		if (it != Config::dialogueTypeLookup.end()) {
+			Config::GetCurrentConfig()->dialogueMode = it->second;
+			Config::SaveCurrentConfig();
+		}
 	}},
 };
 
-void PapyrusBindings::Bind(VMClassRegistry* registry) {
-	registry->RegisterFunction(
-		new NativeFunction2<StaticFunctionTag, void, BSFixedString, bool>(
-			"SmoothCam_SetBoolConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var, bool value) {
-				const auto it = boolGetters.find(var.c_str());
-				if (it != boolGetters.end()) {
-					*it->second = value;
-					Config::SaveCurrentConfig();
-				}
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, bool, BSFixedString>(
-			"SmoothCam_GetBoolConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto it = boolGetters.find(var.c_str());
-				if (it != boolGetters.end()) {
-					return *it->second;
-				} else {
-					const auto itf = boolGetterFNs.find(var.c_str());
-					if (itf != boolGetterFNs.end())
-						return itf->second();
-				}
-
-				return false;
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction2<StaticFunctionTag, void, BSFixedString, float>(
-			"SmoothCam_SetFloatConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var, float value) {
-				const auto it = floatGetters.find(var.c_str());
-				if (it != floatGetters.end()) {
-					*it->second = value;
-					Config::SaveCurrentConfig();
-				} else {
-					const auto itf = floatSetterFN.find(var.c_str());
-					if (itf != floatSetterFN.end()) {
-						itf->second(value);
-						Config::SaveCurrentConfig();
-					}	
-				}
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, float, BSFixedString>(
-			"SmoothCam_GetFloatConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto it = floatGetters.find(var.c_str());
-				if (it != floatGetters.end())
-					return *it->second;
-				else
-					return 0.0f;
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction2<StaticFunctionTag, void, BSFixedString, BSFixedString>(
-			"SmoothCam_SetStringConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var, BSFixedString value) {
-				const auto it = stringSetters.find(var.c_str());
-				if (it != stringSetters.end()) {
-					it->second(value);
-					Config::SaveCurrentConfig();
-				}
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, BSFixedString, BSFixedString>(
-			"SmoothCam_GetStringConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto it = stringGetters.find(var.c_str());
-				if (it != stringGetters.end())
-					return it->second();
-				else
-					return BSFixedString("");
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction2<StaticFunctionTag, void, BSFixedString, SInt32>(
-			"SmoothCam_SetIntConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var, SInt32 value) {
-				const auto it = intGetters.find(var.c_str());
-				if (it != intGetters.end()) {
-					*it->second = static_cast<int>(value);
-					Config::SaveCurrentConfig();
-				}
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, SInt32, BSFixedString>(
-			"SmoothCam_GetIntConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, BSFixedString var) {
-				const auto it = intGetters.find(var.c_str());
-				if (it != intGetters.end())
-					return static_cast<SInt32>(*it->second);
-				else
-					return static_cast<SInt32>(-1);
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction2<StaticFunctionTag, BSFixedString, SInt32, BSFixedString>(
-			"SmoothCam_SaveAsPreset",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, SInt32 index, BSFixedString name) {
-				return Config::SaveConfigAsPreset(index, name);
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, bool, SInt32>(
-			"SmoothCam_LoadPreset",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, SInt32 index) {
-				return Config::LoadPreset(index);
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, BSFixedString, SInt32>(
-			"SmoothCam_GetPresetNameAtIndex",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, SInt32 index) {
-				return Config::GetPresetSlotName(index);
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction0<StaticFunctionTag, void>(
-			"SmoothCam_ResetConfig",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput) {
-				Config::ResetConfig();
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction0<StaticFunctionTag, void>(
-			"SmoothCam_ResetCrosshair",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput) {
-				g_theCamera->GetThirdpersonCamera()->GetCrosshairManager()->Reset(true);
-			},
-			registry
-		)
-	);
-	
-	registry->RegisterFunction(
-		new NativeFunction0<StaticFunctionTag, void>(
-			"SmoothCam_FixCameraState",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput) {
-				g_theCamera->SetShouldForceCameraState(true, CorrectedPlayerCamera::kCameraState_ThirdPerson2);
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction0<StaticFunctionTag, SInt32>(
-			"SmoothCam_NumAPIConsumers",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput) {
-				return static_cast<SInt32>(Messaging::SmoothCamInterface::GetInstance()->GetConsumers().size());
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, BSFixedString, SInt32>(
-			"SmoothCam_GetAPIConsumerName",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, SInt32 index) {
-				const auto& arr = Messaging::SmoothCamInterface::GetInstance()->GetConsumers();
-				if (index >= arr.size()) return BSFixedString("");
-				return BSFixedString(arr.at(index).c_str());
-			},
-			registry
-		)
-	);
-
-	registry->RegisterFunction(
-		new NativeFunction1<StaticFunctionTag, BSFixedString, SInt32>(
-			"SmoothCam_IsModDetected",
-			ScriptClassName,
-			[](StaticFunctionTag* thisInput, SInt32 modID) {
-				switch (static_cast<Compat::Mod>(modID)) {
-					case Compat::Mod::ArcheryGameplayOverhaul:
-						return Compat::IsPresent(Compat::Mod::ArcheryGameplayOverhaul) ?
-							BSFixedString("Detected") : BSFixedString("Not Detected");
-
-					case Compat::Mod::ImmersiveFirstPersonView:
-						return Compat::IsPresent(Compat::Mod::ImmersiveFirstPersonView) ?
-							BSFixedString("Detected") : BSFixedString("Not Detected");
-
-					case Compat::Mod::ImprovedCamera: {
-						if (Compat::GetICDetectReason() == Compat::ICCheckResult::OK)
-							return BSFixedString("Detected");
-						else if (Compat::GetICDetectReason() == Compat::ICCheckResult::NOT_FOUND)
-							return BSFixedString("Not Detected");
-						else
-							return BSFixedString("Version Mismatch");
-					}
-					default:
-						return BSFixedString("Not Detected");
-				}
-			},
-			registry
-		)
-	);
+static void SmoothCam_SetBoolConfig(RE::StaticFunctionTag*, RE::BSFixedString var, bool value) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = boolGetters.find(var.c_str());
+	if (it != boolGetters.end()) {
+		*it->second = value;
+		Config::SaveCurrentConfig();
+	}
 }
+
+static bool SmoothCam_GetBoolConfig(RE::StaticFunctionTag*, RE::BSFixedString var) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = boolGetters.find(var.c_str());
+	if (it != boolGetters.end()) {
+		return *it->second;
+	} else {
+		const auto itf = boolGetterFNs.find(var.c_str());
+		if (itf != boolGetterFNs.end())
+			return itf->second();
+	}
+	return false;
+}
+
+static void SmoothCam_SetFloatConfig(RE::StaticFunctionTag*, RE::BSFixedString var, float value) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = floatGetters.find(var.c_str());
+	if (it != floatGetters.end()) {
+		*it->second = value;
+		Config::SaveCurrentConfig();
+	} else {
+		const auto itf = floatSetterFN.find(var.c_str());
+		if (itf != floatSetterFN.end()) {
+			itf->second(value);
+			Config::SaveCurrentConfig();
+		}	
+	}
+}
+
+static float SmoothCam_GetFloatConfig(RE::StaticFunctionTag*, RE::BSFixedString var) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = floatGetters.find(var.c_str());
+	if (it != floatGetters.end())
+		return *it->second;
+	else
+		return 0.0f;
+}
+
+static void SmoothCam_SetStringConfig(RE::StaticFunctionTag*, RE::BSFixedString var, RE::BSFixedString value) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = stringSetters.find(var.c_str());
+	if (it != stringSetters.end()) {
+		it->second(value);
+		Config::SaveCurrentConfig();
+	}
+}
+
+static RE::BSFixedString SmoothCam_GetStringConfig(RE::StaticFunctionTag*, RE::BSFixedString var) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = stringGetters.find(var.c_str());
+	if (it != stringGetters.end())
+		return it->second();
+	else
+		return RE::BSFixedString("");
+}
+
+static void SmoothCam_SetIntConfig(RE::StaticFunctionTag*, RE::BSFixedString var, int32_t value) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = intGetters.find(var.c_str());
+	if (it != intGetters.end()) {
+		*it->second = value;
+		Config::SaveCurrentConfig();
+	}
+}
+
+static int32_t SmoothCam_GetIntConfig(RE::StaticFunctionTag*, RE::BSFixedString var) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto it = intGetters.find(var.c_str());
+	if (it != intGetters.end())
+		return static_cast<int32_t>(*it->second);
+	else
+		return static_cast<int32_t>(-1);
+}
+
+static RE::BSFixedString SmoothCam_SaveAsPreset(RE::StaticFunctionTag*, int32_t index, RE::BSFixedString name) {
+	const auto mdmp = Debug::MiniDumpScope();
+	return Config::SaveConfigAsPreset(index, name);
+}
+
+static bool SmoothCam_LoadPreset(RE::StaticFunctionTag*, int32_t index) {
+	const auto mdmp = Debug::MiniDumpScope();
+	return Config::LoadPreset(index);
+}
+
+static RE::BSFixedString SmoothCam_GetPresetNameAtIndex(RE::StaticFunctionTag*, int32_t index) {
+	const auto mdmp = Debug::MiniDumpScope();
+	return Config::GetPresetSlotName(index);
+}
+
+static void SmoothCam_ResetConfig(RE::StaticFunctionTag*) {
+	const auto mdmp = Debug::MiniDumpScope();
+	Config::ResetConfig();
+}
+
+static void SmoothCam_ResetCrosshair(RE::StaticFunctionTag*) {
+	const auto mdmp = Debug::MiniDumpScope();
+	g_theCamera->GetThirdpersonCamera()->GetCrosshairManager()->Reset(true);
+}
+
+static void SmoothCam_FixCameraState(RE::StaticFunctionTag*) {
+	const auto mdmp = Debug::MiniDumpScope();
+	g_theCamera->SetShouldForceCameraState(true, RE::CameraState::kThirdPerson);
+}
+
+static int32_t SmoothCam_NumAPIConsumers(RE::StaticFunctionTag*) {
+	const auto mdmp = Debug::MiniDumpScope();
+	return static_cast<int32_t>(Messaging::SmoothCamInterface::GetInstance()->GetConsumers().size());
+}
+
+static RE::BSFixedString SmoothCam_GetAPIConsumerName(RE::StaticFunctionTag*, int32_t index) {
+	const auto mdmp = Debug::MiniDumpScope();
+	const auto& arr = Messaging::SmoothCamInterface::GetInstance()->GetConsumers();
+	if (index >= arr.size()) return RE::BSFixedString("");
+	return RE::BSFixedString(arr.at(index).c_str());
+}
+
+static RE::BSFixedString SmoothCam_IsModDetected(RE::StaticFunctionTag*, int32_t modID) {
+	const auto mdmp = Debug::MiniDumpScope();
+	switch (static_cast<Compat::Mod>(modID)) {
+		case Compat::Mod::ArcheryGameplayOverhaul:
+			return Compat::IsPresent(Compat::Mod::ArcheryGameplayOverhaul) ?
+				RE::BSFixedString("Detected") : RE::BSFixedString("Not Detected");
+
+		case Compat::Mod::ImmersiveFirstPersonView:
+			return Compat::IsPresent(Compat::Mod::ImmersiveFirstPersonView) ?
+				RE::BSFixedString("Detected") : RE::BSFixedString("Not Detected");
+
+		case Compat::Mod::ImprovedCamera: {
+			if (Compat::GetICDetectReason() == Compat::ICCheckResult::OK)
+				return RE::BSFixedString("Detected");
+			else if (Compat::GetICDetectReason() == Compat::ICCheckResult::NOT_FOUND)
+				return RE::BSFixedString("Not Detected");
+			else
+				return RE::BSFixedString("Version Mismatch");
+		}
+		default:
+			return RE::BSFixedString("Not Detected");
+	}
+}
+
+bool PapyrusBindings::Bind([[maybe_unused]] RE::BSScript::IVirtualMachine* vm) {
+	vm->RegisterFunction("SmoothCam_SetBoolConfig", ScriptClassName, SmoothCam_SetBoolConfig);
+	vm->RegisterFunction("SmoothCam_GetBoolConfig", ScriptClassName, SmoothCam_GetBoolConfig);
+	vm->RegisterFunction("SmoothCam_SetFloatConfig", ScriptClassName, SmoothCam_SetFloatConfig);
+	vm->RegisterFunction("SmoothCam_GetFloatConfig", ScriptClassName, SmoothCam_GetFloatConfig);
+	vm->RegisterFunction("SmoothCam_SetStringConfig", ScriptClassName, SmoothCam_SetStringConfig);
+	vm->RegisterFunction("SmoothCam_GetStringConfig", ScriptClassName, SmoothCam_GetStringConfig);
+	vm->RegisterFunction("SmoothCam_SetIntConfig", ScriptClassName, SmoothCam_SetIntConfig);
+	vm->RegisterFunction("SmoothCam_GetIntConfig", ScriptClassName, SmoothCam_GetIntConfig);
+	vm->RegisterFunction("SmoothCam_SaveAsPreset", ScriptClassName, SmoothCam_SaveAsPreset);
+	vm->RegisterFunction("SmoothCam_LoadPreset", ScriptClassName, SmoothCam_LoadPreset);
+	vm->RegisterFunction("SmoothCam_GetPresetNameAtIndex", ScriptClassName, SmoothCam_GetPresetNameAtIndex);
+	vm->RegisterFunction("SmoothCam_ResetConfig", ScriptClassName, SmoothCam_ResetConfig);
+	vm->RegisterFunction("SmoothCam_ResetCrosshair", ScriptClassName, SmoothCam_ResetCrosshair);
+	vm->RegisterFunction("SmoothCam_FixCameraState", ScriptClassName, SmoothCam_FixCameraState);
+	vm->RegisterFunction("SmoothCam_NumAPIConsumers", ScriptClassName, SmoothCam_NumAPIConsumers);
+	vm->RegisterFunction("SmoothCam_GetAPIConsumerName", ScriptClassName, SmoothCam_GetAPIConsumerName);
+	vm->RegisterFunction("SmoothCam_IsModDetected", ScriptClassName, SmoothCam_IsModDetected);
+	return true;
+}
+#pragma warning(pop)

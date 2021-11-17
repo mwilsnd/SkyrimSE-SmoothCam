@@ -25,7 +25,7 @@ void Render::VertexBuffer::CreateIALayout(const IALayout& layout, const Shader* 
 		inputLayout = nullptr;
 
 	const auto layoutCode = context.device->CreateInputLayout(
-		layout.data(), layout.size(),
+		layout.data(), static_cast<UINT>(layout.size()),
 		vertexProgram->binary->GetBufferPointer(), vertexProgram->binary->GetBufferSize(),
 		inputLayout.put()
 	);

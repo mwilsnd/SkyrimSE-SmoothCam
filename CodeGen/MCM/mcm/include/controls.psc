@@ -91,9 +91,11 @@
 	]
 
 	MACRO implSelectHandler = [
-		SmoothCam_ResetCrosshair()
-		ShowMessage("Crosshair reset.")
-		ForcePageReset()
+		if (ShowMessage("Are you sure? This will change some of your crosshair settings."))
+			SmoothCam_ResetCrosshair()
+			ShowMessage("Crosshair reset.")
+			ForcePageReset()
+		endIF
 	]
 
 	MACRO implDesc = [
@@ -127,6 +129,7 @@
 	string displayName = ""
 	string desc = ""
 	literal arrayType = PLACEHOLDER
+	bool resetPage = false
 	string page = ""
 	string header = ""
 
@@ -146,6 +149,81 @@
 	MACRO implAcceptHandler = [
 		SetMenuOptionValue(a_option, this->arrayType[a_index])
 		SmoothCam_SetStringConfig(this->settingName, this->arrayType[a_index])
+		#if (resetPage)
+		ForcePageReset()
+		#endif
+	]
+
+	MACRO implDesc = [
+		SetInfoText(this->desc)
+	]
+]
+; Like ListSetting, but using real storage rather than the arena (for mixing with paginated controls on the same page)
+#constexpr_struct ListSettingRealStorage [
+	real int ref = 0
+	mangle string settingName = ""
+	string displayName = ""
+	string desc = ""
+	literal arrayType = PLACEHOLDER
+	bool refreshPageOnUpdate = false
+	string page = ""
+	string header = ""
+
+	MACRO implControl = [
+		#if (header)
+		AddHeaderOption(this->header)
+		#endif
+		this->ref = AddMenuOption(this->displayName, this->arrayType[GetCurrentArrayIndex(this->settingName, this->arrayType)])
+	]
+
+	MACRO implOpenHandler = [
+		SetMenuDialogStartIndex(GetCurrentArrayIndex(this->settingName, this->arrayType))
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(this->arrayType)
+	]
+
+	MACRO implAcceptHandler = [
+		SetMenuOptionValue(a_option, this->arrayType[a_index])
+		SmoothCam_SetStringConfig(this->settingName, this->arrayType[a_index])
+		#if (refreshPageOnUpdate)
+		ForcePageReset()
+		#endif
+	]
+
+	MACRO implDesc = [
+		SetInfoText(this->desc)
+	]
+]
+; Like ListSettingRealStorage, but acting on a script variable rather than a smoothcam setting
+#constexpr_struct PapyrusListSetting [
+	real int ref = 0
+	string displayName = ""
+	string desc = ""
+	literal arrayType = PLACEHOLDER
+	literal lvalue = PLACEHOLDER
+	bool refreshPageOnUpdate = false
+	string page = ""
+	string header = ""
+
+	MACRO implControl = [
+		#if (header)
+		AddHeaderOption(this->header)
+		#endif
+		this->ref = AddMenuOption(this->displayName, this->arrayType[GetCurrentArrayIndexLocal(this->lvalue, this->arrayType)])
+	]
+
+	MACRO implOpenHandler = [
+		SetMenuDialogStartIndex(GetCurrentArrayIndexLocal(this->lvalue, this->arrayType))
+		SetMenuDialogDefaultIndex(0)
+		SetMenuDialogOptions(this->arrayType)
+	]
+
+	MACRO implAcceptHandler = [
+		SetMenuOptionValue(a_option, this->arrayType[a_index])
+		this->lvalue = this->arrayType[a_index]
+		#if (refreshPageOnUpdate)
+		ForcePageReset()
+		#endif
 	]
 
 	MACRO implDesc = [
@@ -160,7 +238,7 @@
 	string page = ""
 
 	MACRO implControl = [
-		this->ref = AddInputOption(this->displayName + " " + SmoothCam_GetPresetNameAtIndex(this->presetIndex), SmoothCam_GetPresetNameAtIndex(this->presetIndex))
+		this->ref = AddInputOption(this->displayName, SmoothCam_GetPresetNameAtIndex(this->presetIndex))
 	]
 
 	MACRO implOpenHandler = [
@@ -173,12 +251,14 @@
 	]
 
 	MACRO implAcceptHandler = [
-		if (SmoothCam_SaveAsPreset(this->presetIndex, a_input) == "")
-			ShowMessage("Preset saved.", false)
-		else
-			ShowMessage("Failed to save preset!", false)
-		endIf
-		ForcePageReset()
+		if (ShowMessage("Are you sure you want to save to this slot? Any previous save to this slot will be lost."))
+			if (SmoothCam_SaveAsPreset(this->presetIndex, a_input) == "")
+				ShowMessage("Preset saved.", false)
+			else
+				ShowMessage("Failed to save preset!", false)
+			endIf
+			ForcePageReset()
+		endIF
 	]
 
 	MACRO implDesc = [
@@ -197,11 +277,13 @@
 	]
 
 	MACRO implSelectHandler = [
-		if (!SmoothCam_LoadPreset(this->presetIndex))
-			ShowMessage("Failed to load preset! Have you saved this slot yet?", false)
-		else
-			ShowMessage("Preset loaded.", false)
-			ForcePageReset()
+		if (ShowMessage("Are you sure you want to load this preset? Your current settings will be lost."))
+			if (!SmoothCam_LoadPreset(this->presetIndex))
+				ShowMessage("Failed to load preset! Have you saved this slot yet?", false)
+			else
+				ShowMessage("Preset loaded.", false)
+				ForcePageReset()
+			endIf
 		endIf
 	]
 
@@ -241,7 +323,32 @@
 	]
 ]
 
+#alias TPSOffsetSliderSetting = SliderSetting
+#alias TPSOffsetListSetting = ListSetting
+#alias TPSOffsetToggleSetting = ToggleSetting
+
+#alias DialogueSliderSetting = SliderSetting
+#alias DialogueToggleSetting = ToggleSetting
+
 event OnOptionSelect(int a_option)
+	if (activePage == " Thirdperson Offsets")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeOffsetGroup, page,
+			implSelectHandler,
+			[TPSOffsetToggleSetting # ImplsOf]
+		)
+	endIf
+
+	if (activePage == " Dialogue")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeDialogueMode, page,
+			implSelectHandler,
+			[DialogueToggleSetting # ImplsOf]
+		)
+	endIf
+
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
@@ -257,6 +364,24 @@ event OnOptionSelect(int a_option)
 endEvent
 
 event OnOptionSliderOpen(int a_option)
+	if (activePage == " Thirdperson Offsets")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeOffsetGroup, page,
+			implOpenHandler,
+			[TPSOffsetSliderSetting # ImplsOf]
+		)
+	endIF
+
+	if (activePage == " Dialogue")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeDialogueMode, page,
+			implOpenHandler,
+			[DialogueSliderSetting # ImplsOf]
+		)
+	endIf
+	
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
@@ -266,6 +391,24 @@ event OnOptionSliderOpen(int a_option)
 endEvent
 
 event OnOptionSliderAccept(int a_option, float a_value)
+	if (activePage == " Thirdperson Offsets")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeOffsetGroup, page,
+			implAcceptHandler,
+			[TPSOffsetSliderSetting # ImplsOf]
+		)
+	endIf
+
+	if (activePage == " Dialogue")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeDialogueMode, page,
+			implAcceptHandler,
+			[DialogueSliderSetting # ImplsOf]
+		)
+	endIf
+
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
@@ -275,20 +418,46 @@ event OnOptionSliderAccept(int a_option, float a_value)
 endEvent
 
 event OnOptionMenuOpen(int a_option)
+	if (activePage == " Thirdperson Offsets")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeOffsetGroup, page,
+			implOpenHandler,
+			[TPSOffsetListSetting # ImplsOf]
+		)
+	endIf
+
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
 		implOpenHandler,
-		[ListSetting # ImplsOf]
+		[
+			ListSetting # ImplsOf,
+			ListSettingRealStorage # ImplsOf,
+			PapyrusListSetting # ImplsOf
+		]
 	)
 endEvent
 
 event OnOptionMenuAccept(int a_option, int a_index)
+	if (activePage == " Thirdperson Offsets")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeOffsetGroup, page,
+			implAcceptHandler,
+			[TPSOffsetListSetting # ImplsOf]
+		)
+	endIf
+
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
 		implAcceptHandler,
-		[ListSetting # ImplsOf]
+		[
+			ListSetting # ImplsOf,
+			ListSettingRealStorage # ImplsOf,
+			PapyrusListSetting # ImplsOf
+		]
 	)
 endEvent
 
@@ -320,6 +489,31 @@ event OnOptionKeyMapChange(int a_option, int a_keyCode, string a_conflictControl
 endEvent
 
 event OnOptionHighlight(int a_option)
+	if (activePage == " Thirdperson Offsets")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeOffsetGroup, page,
+			implDesc,
+			[
+				TPSOffsetSliderSetting # ImplsOf,
+				TPSOffsetListSetting # ImplsOf,
+				TPSOffsetToggleSetting # ImplsOf
+			]
+		)
+	endIf
+
+	if (activePage == " Dialogue")
+		#StructInvokeSwitchIfEquals(
+			a_option, ref,
+			activeDialogueMode, page,
+			implDesc,
+			[
+				DialogueSliderSetting # ImplsOf,
+				DialogueToggleSetting # ImplsOf
+			]
+		)
+	endIf
+
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
@@ -331,6 +525,8 @@ event OnOptionHighlight(int a_option)
 			ResetCrosshairSetting # ImplsOf,
 			FixStateSetting # ImplsOf,
 			ListSetting # ImplsOf,
+			ListSettingRealStorage # ImplsOf,
+			PapyrusListSetting # ImplsOf,
 			SavePresetSetting # ImplsOf,
 			LoadPresetSetting # ImplsOf,
 			KeyBindSetting # ImplsOf

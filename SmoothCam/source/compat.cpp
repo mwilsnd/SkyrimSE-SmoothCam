@@ -3,12 +3,13 @@
 #include <Psapi.h>
 #include <DbgHelp.h>
 
+extern Offsets* g_Offsets;
 Compat::ModDetectionFlags modDetectionFlags = {};
 
 static struct {
-	const ModInfo* ifpvDetector = nullptr;
-	const TESGlobal* ifpvIsFirstPerson = nullptr;
-	const ModInfo* ago = nullptr;
+	const RE::TESFile* ifpvDetector = nullptr;
+	const RE::TESGlobal* ifpvIsFirstPerson = nullptr;
+	const RE::TESFile *ago = nullptr;
 
 	Compat::ICCheckResult icDetectResult = Compat::ICCheckResult::NOT_FOUND;
 	HMODULE hImprovedCamera = NULL;
@@ -58,39 +59,48 @@ Compat::ICCheckResult loadImprovedCameraHandle(HMODULE& mod) noexcept {
 }
 
 void Compat::Initialize() noexcept {
-	detectedMods.ago = DataHandler::GetSingleton()->LookupModByName("DSerArcheryGameplayOverhaul.esp");
+	auto handler = RE::TESDataHandler::GetSingleton();
+	detectedMods.ago = handler->LookupModByName("DSerArcheryGameplayOverhaul.esp");
 	detectedMods.icDetectResult = loadImprovedCameraHandle(detectedMods.hImprovedCamera);
 
-	detectedMods.ifpvDetector = DataHandler::GetSingleton()->LookupModByName("IFPVDetector.esl");
+	detectedMods.ifpvDetector = handler->LookupModByName("IFPVDetector.esl");
 	if (detectedMods.ifpvDetector) {
-		detectedMods.ifpvIsFirstPerson = reinterpret_cast<const TESGlobal*>((*LookupFormByID)(
-			detectedMods.ifpvDetector->GetFormID(0x801)
+		detectedMods.ifpvIsFirstPerson = reinterpret_cast<const RE::TESGlobal*>(handler->LookupForm(
+			0x801, "IFPVDetector.esl"
 		));
 	}
 
 	switch (detectedMods.icDetectResult) {
 		case ICCheckResult::OK: {
 			modDetectionFlags.bImprovedCamera = true;
-			_MESSAGE("Found ImprovedCamera.dll beta 1.0.0.4");
+			logger::info("Found ImprovedCamera.dll beta 1.0.0.4");
 			break;
 		}
 		case ICCheckResult::NOT_FOUND: {
-			_MESSAGE("ImprovedCamera.dll beta 1.0.0.4 not found, running without compatibility.");
+			logger::info("ImprovedCamera.dll beta 1.0.0.4 not found, running without compatibility.");
 			break;
 		}
 		case ICCheckResult::VERSION_MISMATCH: {
-			_WARNING("Found ImprovedCamera.dll but unable to validate as beta 1.0.0.4, please install the offical release module for compatibility support.");
+			logger::warn("Found ImprovedCamera.dll but unable to validate as beta 1.0.0.4, please install the offical release module for compatibility support.");
 			break;
 		}
 	}
 
 	if (detectedMods.ifpvDetector) {
 		modDetectionFlags.bIFPV = true;
-		_MESSAGE("Found IFPVDetector for Immersive First Person View compatibility");
+		logger::info("Found IFPVDetector for Immersive First Person View compatibility");
 	}
 	if (detectedMods.ago) {
 		modDetectionFlags.bAGO = true;
-		_MESSAGE("Detected Archery Gameplay Overhaul");
+		logger::info("Detected Archery Gameplay Overhaul");
+	}
+
+	const auto& consumers = Messaging::SmoothCamInterface::GetInstance()->GetConsumers();
+	for (const auto& mod : consumers) {
+		if (mod == "TrueDirectionalMovement") {
+			modDetectionFlags.bTDM = true;
+			break;
+		}
 	}
 }
 
@@ -102,6 +112,8 @@ bool Compat::IsPresent(Compat::Mod mod) noexcept {
 			return detectedMods.ifpvDetector != nullptr;
 		case Compat::Mod::ArcheryGameplayOverhaul:
 			return detectedMods.ago != nullptr;
+		case Compat::Mod::TrueDirectionalMovement:
+			return modDetectionFlags.bTDM;
 		default: return false;
 	}
 }
@@ -119,9 +131,17 @@ bool Compat::IC_IsFirstPerson() noexcept {
 
 bool Compat::IFPV_IsFirstPerson() noexcept {
 	if (!detectedMods.ifpvIsFirstPerson) return false;
-	return detectedMods.ifpvIsFirstPerson->unk34 != 0;
+	return detectedMods.ifpvIsFirstPerson->value != 0;
 }
 
 Compat::ModDetectionFlags& Compat::GetDetectedMods() noexcept {
 	return modDetectionFlags;
+}
+
+bool Compat::IsConsumerPresent(const char* name) noexcept {
+	auto& consumers = Messaging::SmoothCamInterface::GetInstance()->GetConsumers();
+	for (auto it = consumers.cbegin(); it != consumers.cend(); ++it) {
+		if (it->compare(name) == 0) return true;
+	}
+	return false;
 }

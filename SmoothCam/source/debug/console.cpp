@@ -3,7 +3,6 @@
 #include "debug/ICommand.h"
 #include "debug/registry.h"
 
-#include "debug/commands/dump_addrlib_db.h"
 #include "debug/commands/dump_game_ini.h"
 #include "debug/commands/dump_game_perfs_ini.h"
 #include "debug/commands/get_setting.h"
@@ -21,7 +20,6 @@ std::mutex& Debug::GetTerminalLock() noexcept {
 }
 
 void Debug::StartREPL(FILE* outStream) noexcept {
-	CommandRegistry::Get()->Register(eastl::make_unique<Debug::DumpAddrLibDB>());
 	CommandRegistry::Get()->Register(eastl::make_unique<Debug::DumpGameINI>());
 	CommandRegistry::Get()->Register(eastl::make_unique<Debug::DumpGamePerfsINI>());
 	CommandRegistry::Get()->Register(eastl::make_unique<Debug::GetSetting>());
@@ -43,9 +41,9 @@ void Debug::StartREPL(FILE* outStream) noexcept {
 			std::lock_guard<std::mutex> listLock(commandListLock);
 
 			const auto pos = command.find_first_of(' ', 0);
-			auto cmd = pos != std::string::npos ? command.substr(0, pos) : command;
-			auto args = pos != std::string::npos ? command.substr(glm::min(pos+1, command.length())) : "";
-			commandList.push_back(eastl::tie(eastl::string(cmd.c_str()), eastl::string(args.c_str())));
+			auto cmd = pos != eastl::string::npos ? command.substr(0, pos) : command;
+			auto args = pos != eastl::string::npos ? command.substr(glm::min(pos+1, command.length())) : "";
+			commandList.emplace_back(eastl::string(cmd.c_str()), eastl::string(args.c_str()));
 		}
 	}, outStream);
 	repl.detach();

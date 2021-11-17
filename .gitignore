@@ -16,15 +16,12 @@
 *.tlog
 *.lastbuildstate
 
-Deps/skse*
-Deps/temp*
+x64/
+build/
 temp/
-SmoothCam/bin
-SmoothCam/bin-obj
 enc_temp_folder/
 
 SmoothCamMCM.psc
-CodeGen/gen_addrmap/*.txt
 /blend
 *.blend
 *.blend1

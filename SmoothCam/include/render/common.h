@@ -19,7 +19,7 @@ namespace Render {
 	// Get the current FOV
 	float GetFOV() noexcept;
 	// Get the current projection matrix for 3D rendering
-	glm::mat4 GetProjectionMatrix(const NiFrustum& frustum) noexcept;
+	glm::mat4 GetProjectionMatrix(const RE::NiFrustum& frustum) noexcept;
 	// Build a view matrix for 3D rendering
 	glm::mat4 BuildViewMatrix(const glm::vec3& position, const glm::vec2& rotation) noexcept;
 }

@@ -3,19 +3,23 @@
 #include "render/dwrite.h"
 #include "render/render_target.h"
 #include "render/shader.h"
+#include "render/shader_cache.h"
 #include "render/srv.h"
 #include "render/texture2d.h"
 #include "render/vertex_buffer.h"
 #include "util.h"
 #include "debug/eh.h"
 
+extern Offsets* g_Offsets;
+
 static Render::D3DContext gameContext;
 static eastl::vector<Render::DrawFunc> presentCallbacks;
 static eastl::unique_ptr<VTableDetour<IDXGISwapChain>> dxgiHook;
 static bool initialized = false;
+static bool hookAttempted = false;
 
 #ifdef WITH_D2D
-extern eastl::unique_ptr<Render::D2D> g_D2D;
+eastl::unique_ptr<Render::D2D> g_D2D = nullptr;
 #endif
 
 struct D3DObjectsStore {
@@ -49,66 +53,66 @@ static D3DObjectsStore d3dObjects;
 
 
 HRESULT Render::Present(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags) {
-	const auto mdmp = Debug::MiniDumpScope();
-
-	// Save some context state to restore later
-	winrt::com_ptr<ID3D11DepthStencilState> gameDSState;
-	uint32_t gameStencilRef;
-	gameContext.context->OMGetDepthStencilState(gameDSState.put(), &gameStencilRef);
-
-	winrt::com_ptr<ID3D11BlendState> gameBlendState;
-	float gameBlendFactors[4];
-	uint32_t gameSampleMask;
-	gameContext.context->OMGetBlendState(gameBlendState.put(), gameBlendFactors, &gameSampleMask);
-
-	D3D11_VIEWPORT gamePort;
-	uint32_t numPorts = 1;
-	gameContext.context->RSGetViewports(&numPorts, &gamePort);
-
-	D3D11_VIEWPORT port;
-	port.TopLeftX = gamePort.TopLeftX;
-	port.TopLeftY = gamePort.TopLeftY;
-	port.Width = gamePort.Width;
-	port.Height = gamePort.Height;
-	port.MinDepth = 0;
-	port.MaxDepth = 1;
-	gameContext.context->RSSetViewports(1, &port);
-
-	winrt::com_ptr<ID3D11RasterizerState> rasterState;
-	gameContext.context->RSGetState(rasterState.put());
-
-	gameContext.context->OMGetRenderTargets(1, d3dObjects.gameRTV.put(), d3dObjects.depthStencilView.put());
-
 	{
+		const auto mdmp = Debug::MiniDumpScope();
+		// Save some context state to restore later
+		winrt::com_ptr<ID3D11DepthStencilState> gameDSState;
+		uint32_t gameStencilRef;
+		gameContext.context->OMGetDepthStencilState(gameDSState.put(), &gameStencilRef);
+
+		winrt::com_ptr<ID3D11BlendState> gameBlendState;
+		float gameBlendFactors[4];
+		uint32_t gameSampleMask;
+		gameContext.context->OMGetBlendState(gameBlendState.put(), gameBlendFactors, &gameSampleMask);
+
+		D3D11_VIEWPORT gamePort;
+		uint32_t numPorts = 1;
+		gameContext.context->RSGetViewports(&numPorts, &gamePort);
+
+		D3D11_VIEWPORT port;
+		port.TopLeftX = gamePort.TopLeftX;
+		port.TopLeftY = gamePort.TopLeftY;
+		port.Width = gamePort.Width;
+		port.Height = gamePort.Height;
+		port.MinDepth = 0;
+		port.MaxDepth = 1;
+		gameContext.context->RSSetViewports(1, &port);
+
+		winrt::com_ptr<ID3D11RasterizerState> rasterState;
+		gameContext.context->RSGetState(rasterState.put());
+
+		gameContext.context->OMGetRenderTargets(1, d3dObjects.gameRTV.put(), d3dObjects.depthStencilView.put());
+
+		{
 #ifdef WITH_D2D
-		g_D2D->BeginFrame();
+			g_D2D->BeginFrame();
 #endif
 
-		for (auto& cb : presentCallbacks)
-			cb(gameContext);
+			for (auto& cb : presentCallbacks)
+				cb(gameContext);
 
 #ifdef WITH_D2D
-		g_D2D->EndFrame();
+			g_D2D->EndFrame();
 #endif
 
-		auto color = d3dObjects.gameRTV.get();
-		gameContext.context->OMSetRenderTargets(1, &color, d3dObjects.depthStencilView.get());
+			auto color = d3dObjects.gameRTV.get();
+			gameContext.context->OMSetRenderTargets(1, &color, d3dObjects.depthStencilView.get());
 
 #ifdef WITH_D2D
-		g_D2D->FlushAndSpin();
-		g_D2D->WriteToBackbuffer(gameContext);
+			g_D2D->FlushAndSpin();
+			g_D2D->WriteToBackbuffer(gameContext);
 #endif
+		}
+
+		// Put things back the way we found it
+		gameContext.context->RSSetState(rasterState.get());
+		gameContext.context->RSSetViewports(1, &gamePort);
+		gameContext.context->OMSetBlendState(gameBlendState.get(), gameBlendFactors, gameSampleMask);
+		gameContext.context->OMSetDepthStencilState(gameDSState.get(), gameStencilRef);
+
+		d3dObjects.depthStencilView = nullptr;
+		d3dObjects.gameRTV = nullptr;
 	}
-
-	// Put things back the way we found it
-	gameContext.context->RSSetState(rasterState.get());
-	gameContext.context->RSSetViewports(1, &gamePort);
-	gameContext.context->OMSetBlendState(gameBlendState.get(), gameBlendFactors, gameSampleMask);
-	gameContext.context->OMSetDepthStencilState(gameDSState.get(), gameStencilRef);
-
-	d3dObjects.depthStencilView = nullptr;
-	d3dObjects.gameRTV = nullptr;
-
 	return dxgiHook->GetBase<Render::D3D11Present>(8)(swapChain, syncInterval, flags);
 }
 
@@ -116,7 +120,7 @@ static bool ReadSwapChain() {
 	// Hopefully SEH will shield us from unexpected crashes with other mods/programs
 	// @Note: no MiniDumpScope here, we allow for this to fail and simply disable D3D features
 	__try {
-		auto data = *Offsets::Get<Render::D3D11Resources**>(524728);
+		auto data = *REL::Relocation<Render::D3D11Resources**>(g_Offsets->D3DObjects);
 		// Naked pointer to the swap chain
 		gameContext.swapChain = data->swapChain;
 		// Device
@@ -140,26 +144,43 @@ static bool ReadSwapChain() {
 }
 
 void Render::InstallHooks() {
+	assert(!hookAttempted);
+	hookAttempted = true;
+
 	if (!ReadSwapChain()) {
-		_ERROR("SmoothCam: Failed to hook IDXGISwapChain::Present and aquire device context, drawing is disabled.");
+		logger::error("SmoothCam: Failed to hook IDXGISwapChain::Present and aquire device context, drawing is disabled.");
 		return;
 	}
 
 	const auto mdmp = Debug::MiniDumpScope();
-
 	dxgiHook = eastl::make_unique<VTableDetour<IDXGISwapChain>>(gameContext.swapChain);
 	dxgiHook->Add(8, Render::Present);
 	if (!dxgiHook->Attach()) {
-		_ERROR("SmoothCam: Failed to place detour on virtual IDXGISwapChain->Present.");
+		logger::error("SmoothCam: Failed to place detour on virtual IDXGISwapChain->Present.");
 		return;
 	}
 
 	initialized = true;
 }
 
+#ifdef WITH_D2D
+void Render::InitD2D() {
+	logger::info("Initializing Direct2D\n");
+	g_D2D = eastl::make_unique<Render::D2D>(Render::GetContext());
+}
+#endif
+
 void Render::Shutdown() {
 	if (!initialized) return;
 	initialized = false;
+
+#ifdef WITH_D2D
+	DebugPrint("Freeing Direct2D\n");
+	g_D2D.reset();
+#endif
+
+	// Release shaders
+	Render::ShaderCache::Get().Release();
 
 	// Release program lifetime objects
 	d3dObjects.release();
@@ -178,6 +199,10 @@ Render::D3DContext& Render::GetContext() noexcept {
 
 bool Render::HasContext() noexcept {
 	return initialized;
+}
+
+bool Render::HasAttemptedHook() noexcept {
+	return hookAttempted;
 }
 
 winrt::com_ptr<ID3D11DepthStencilView>& Render::GetDepthStencilView() noexcept {
@@ -202,7 +227,7 @@ void Render::SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D
 
 	auto state = DSState{ ctx, key };
 	ctx.context->OMSetDepthStencilState(state.state.get(), 255);
-	d3dObjects.loadedDepthStates.emplace(key, std::move(state));
+	d3dObjects.loadedDepthStates.emplace(key, eastl::move(state));
 }
 
 void Render::SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp, D3D11_BLEND_OP blendAlphaOp,
@@ -230,7 +255,7 @@ void Render::SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp,
 	auto state = BlendState{ ctx, key };
 	ctx.context->OMSetBlendState(state.state.get(), key.factors, 0xffffffff);
 
-	d3dObjects.loadedBlendStates.emplace(key, std::move(state));
+	d3dObjects.loadedBlendStates.emplace(key, eastl::move(state));
 }
 
 void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CULL_MODE cullMode, bool frontCCW,
@@ -258,19 +283,5 @@ void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CUL
 
 	auto state = RasterState{ ctx, key };
 	ctx.context->RSSetState(state.state.get());
-	d3dObjects.loadedRasterStates.emplace(key, std::move(state));
-}
-
-Render::GBuffer::WrappedCameraData* Render::GBuffer::CameraSwap(NiCamera* inCamera, byte flags) noexcept {
-	// FUN_140d7d7b0
-	typedef WrappedCameraData*(*ty)(GBuffer* param_1, NiCamera* param_2, byte param_3);
-	static auto fn = Offsets::Get<ty>(75713);
-	return fn(this, inCamera, flags);
-}
-
-void Render::GBuffer::UpdateGPUCameraData(NiCamera* inCamera, byte flags) noexcept {
-	// FUN_140d7bab0
-	typedef void(*ty)(GBuffer* param_1, NiCamera* param_2, byte param_3);
-	static auto fn = Offsets::Get<ty>(75694);
-	fn(this, inCamera, flags);
+	d3dObjects.loadedRasterStates.emplace(key, eastl::move(state));
 }

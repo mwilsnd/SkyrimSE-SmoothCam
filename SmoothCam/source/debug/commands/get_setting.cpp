@@ -1,14 +1,13 @@
 #ifdef _DEBUG
 #include "debug/commands/get_setting.h"
-#include "debug/registry.h"
 
 Debug::GetSetting::~GetSetting() {}
 
 void Debug::GetSetting::Run(const eastl::string& args) noexcept {
-	auto setting = (*g_iniSettingCollection)->Get(args.c_str());
+	auto setting = RE::INISettingCollection::GetSingleton()->GetSetting(args.c_str());
 
 	if (!setting) {
-		setting = (*g_iniPrefSettingCollection)->Get(args.c_str());
+		setting = RE::INIPrefSettingCollection::GetSingleton()->GetSetting(args.c_str());
 		if (!setting) {
 			puts("Setting not found");
 			return;
@@ -16,24 +15,24 @@ void Debug::GetSetting::Run(const eastl::string& args) noexcept {
 	}
 
 	switch (setting->GetType()) {
-		case Setting::kType_Bool: {
-			printf("%s :: %s\n", setting->name, setting->data.u8 ? "true" : "false");
+		case RE::Setting::Type::kBool: {
+			printf("%s :: %s\n", setting->name, setting->GetBool() ? "true" : "false");
 			break;
 		}
-		case Setting::kType_Float: {
-			printf("%s :: %f\n", setting->name, setting->data.f32);
+		case RE::Setting::Type::kFloat: {
+			printf("%s :: %f\n", setting->name, setting->GetFloat());
 			break;
 		}
-		case Setting::kType_Integer: {
-			printf("%s :: %d\n", setting->name, setting->data.s32);
+		case RE::Setting::Type::kSignedInteger: {
+			printf("%s :: %d\n", setting->name, setting->GetSInt());
 			break;
 		}
-		case Setting::kType_String: {
-			printf("%s :: %s\n", setting->name, setting->data.s);
+		case RE::Setting::Type::kString: {
+			printf("%s :: %s\n", setting->name, setting->GetString());
 			break;
 		}
-		case Setting::kType_ID: {
-			printf("%s :: %d\n", setting->name, setting->data.u32);
+		case RE::Setting::Type::kUnsignedInteger: {
+			printf("%s :: %d\n", setting->name, setting->GetUInt());
 			break;
 		}
 		default: {

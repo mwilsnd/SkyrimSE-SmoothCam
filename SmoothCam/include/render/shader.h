@@ -39,7 +39,7 @@ namespace Render {
 
 	class Shader {
 		public:
-			explicit Shader(const ShaderCreateInfo& createInfo, D3DContext& ctx) noexcept;
+			Shader(const ShaderCreateInfo& createInfo, D3DContext& ctx) noexcept;
 			~Shader() noexcept;
 			Shader(const Shader&) = delete;
 			Shader(Shader&&) noexcept = delete;

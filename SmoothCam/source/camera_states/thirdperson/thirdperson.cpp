@@ -6,34 +6,35 @@
  */
 Camera::State::ThirdpersonState::ThirdpersonState(Thirdperson* camera) noexcept : BaseThird(camera) {}
 
-void Camera::State::ThirdpersonState::OnBegin(const PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera,
-	BaseThird* fromState) noexcept
+void Camera::State::ThirdpersonState::OnBegin(RE::PlayerCharacter*, RE::Actor*, RE::PlayerCamera*,
+	BaseThird*) noexcept
 {
 
 }
 
-void Camera::State::ThirdpersonState::OnEnd(const PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera,
-	BaseThird* nextState) noexcept
+bool Camera::State::ThirdpersonState::OnEnd(RE::PlayerCharacter*, RE::Actor*, RE::PlayerCamera*,
+	BaseThird* nextState, bool) noexcept
 {
 	StateHandOff(nextState);
+	return false;
 }
 
-void Camera::State::ThirdpersonState::Update(PlayerCharacter* player, const Actor* cameraRef, const CorrectedPlayerCamera* camera)
+void Camera::State::ThirdpersonState::Update(RE::PlayerCharacter* player, RE::Actor* cameraRef, RE::PlayerCamera* playerCamera)
 	noexcept
 {
-	BaseThird::Update(player, cameraRef, camera);
+	BaseThird::Update(player, cameraRef, playerCamera);
 
 	// Get our computed local-space xyz offset.
 	const auto cameraLocal = GetCameraOffsetStatePosition();
 	// Get the base world position for the camera which we will offset with the local-space values.
-	const auto worldTarget = GetCameraWorldPosition(cameraRef, camera);
+	const auto worldTarget = GetCameraWorldPosition(cameraRef);
 	// Transform the camera offsets based on the computed view matrix
-	const auto transformedLocalPos = GetTransformedCameraLocalPosition(camera);
+	const auto transformedLocalPos = GetTransformedCameraLocalPosition();
 
 	glm::vec3 preFinalPos{};
 	if (IsLocalInterpAllowed()) {
 		// Handle separate local-space interpolation
-		const auto loc = UpdateInterpolatedLocalPosition(player, transformedLocalPos);
+		const auto loc = UpdateInterpolatedLocalPosition(transformedLocalPos);
 
 		const auto& last = GetLastCameraPosition();
 		// Last offset position from ref
@@ -91,13 +92,20 @@ void Camera::State::ThirdpersonState::Update(PlayerCharacter* player, const Acto
 
 	// Otherwise, we just cast from +X offset like normal as nothing is overlapping
 	// Cast from origin towards the camera, Get back final position
-	const auto finalPos = ComputeRaycast(rayXOrigin, preFinalPos);
+	glm::vec3 finalPos;
+	if (GetConfig()->pitchZoomAfterInterp) {
+		coef.y -= camera->GetPitchZoom();
+		const auto pitchZoomedOffset = (f * coef.x) + (s * coef.y) + (u * coef.z);
+		finalPos = ComputeRaycast(rayXOrigin, pitchZoomedOffset);
+	} else {
+		finalPos = ComputeRaycast(rayXOrigin, preFinalPos);
+	}
 
 	// Set the position to the ray hit position
 	// This sets the rendering position of the camera, and applies game offsets
-	SetCameraPosition(finalPos, player, camera);
+	SetCameraPosition(finalPos, player, playerCamera);
 	// And store our world position BEFORE collision
 	GetCameraPosition().SetWorldPosition(preFinalPos);
 	// Update crosshair visibility
-	UpdateCrosshair(player, camera);
+	UpdateCrosshair(player, playerCamera);
 }

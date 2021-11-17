@@ -472,10 +472,17 @@ final class ConstStructParser : IConstruct {
             auto err = findDecls(tokenStream);
             if (!err.isOk()) return err;
 
-            err = findImpls(tokenStream);
-            if (!err.isOk()) return err;
-
             return Result!(bool).make(true);
+        }
+
+        /** 
+         * Parse struct impls
+         * Params:
+         *  tokenStream: Input tokens to parse
+         * Returns: Parse result
+         */
+        Result!bool parseImpls(ref const(TokenStream) tokenStream) @trusted {
+            return findImpls(tokenStream);
         }
         
         /**
@@ -502,6 +509,23 @@ final class ConstStructParser : IConstruct {
 
         void setArena(ref Arena arenaMgr) {
             arena = arenaMgr;
+        }
+
+        /** 
+         * Create a new type from an existing one, with a new name
+         * Params:
+         *   declType = Type to copy
+         *   newType = Name of the new type
+         * Returns: Copy result
+         */
+        Result!bool createStructAlias(ConstStructDecl* declType, string newType) @safe {
+            if (getDeclType(newType) !is null)
+                return Result!(bool).fail("Attempt to alias an already defined type. '" ~ newType ~ "'");
+            
+            ConstStructDecl copyDecl = *declType;
+            copyDecl.typeName = newType;
+            decls[newType] = copyDecl;
+            return Result!(bool).make(true);
         }
 
         /** 
@@ -814,7 +838,7 @@ final class ConstStructParser : IConstruct {
                 }
             );
 
-            state.onState(State.ExpectVarValue, [Tok.OtherValue, Tok.NumericValue, Tok.StringValue],
+            state.onState(State.ExpectVarValue, [Tok.OtherValue, Tok.NumericValue, Tok.StringValue, Tok.BoolValue],
                 (ref const(Token) tok, ref const(TokenStream) stream, ulong position) {
                     // Enforce numeric literals for number types
                     if (state.mem.type.type == Tok.tFloat || state.mem.type.type == Tok.tInt) {
@@ -836,11 +860,6 @@ final class ConstStructParser : IConstruct {
                             return Result!(Res).fail(
                                 "Expected a literal value, not '" ~ tok.value ~ "'!"
                             );
-                    } else if (state.mem.type.type == Tok.tBool) {
-                        if (tok.type != Tok.OtherValue || (tok.value.toLower != "true" && tok.value.toLower != "false"))
-                            return Result!(Res).fail(
-                                "Expected a boolean value, not '" ~ tok.value ~ "'!"
-                            );
                     }
 
                     MemberVar var;
@@ -852,7 +871,7 @@ final class ConstStructParser : IConstruct {
                     var.arenaPageGuard = state.mem.arenaGuardMember;
                     
                     switch (var.type) {
-                        case Tok.tBool:
+                        case Tok.tBool: //@TODO: Likely dead code now
                             if (tok.value.toLower == "true")
                                 var.defaultValue.boolValue = true;
                             else if (tok.value.toLower == "false")
@@ -1000,7 +1019,6 @@ final class ConstStructParser : IConstruct {
                     state.resetMemory();
                     state.gotoState(State.ExpectType);
                     return Result!(Res).make(Res.Continue);
-                    //return Result!(Res).fail("Expected OpenBrace, got " ~ tok.value ~ " - " ~ state.mem.implName);
                 }
             );
 

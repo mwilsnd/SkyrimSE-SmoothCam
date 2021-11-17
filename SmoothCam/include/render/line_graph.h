@@ -6,7 +6,7 @@
 namespace Render {
 	class LineGraph : public GradBox {
 		public:
-			explicit LineGraph(uint8_t numPlots, uint32_t maxPoints, uint32_t width, uint32_t height, D3DContext& ctx);
+			LineGraph(uint8_t numPlots, uint32_t maxPoints, uint32_t width, uint32_t height, D3DContext& ctx);
 			~LineGraph();
 			LineGraph(const LineGraph&) = delete;
 			LineGraph(LineGraph&&) noexcept = delete;

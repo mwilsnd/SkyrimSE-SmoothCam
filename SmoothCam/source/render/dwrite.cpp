@@ -28,7 +28,7 @@ void Render::DWrite::CreateFont() {
 		DWRITE_FONT_WEIGHT_LIGHT,
 		DWRITE_FONT_STYLE_NORMAL,
 		DWRITE_FONT_STRETCH_NORMAL,
-		14.0f,
+		10.0f,
 		L"en-US",
 		textFormat.put()
 	)))
@@ -45,7 +45,7 @@ winrt::com_ptr<IDWriteTextLayout>& Render::DWrite::GetLayout(const eastl::wstrin
 	textLayout = nullptr;
 	if (!SUCCEEDED(factory->CreateTextLayout(
 		text.data(),
-		text.length(),
+		static_cast<UINT32>(text.length()),
 		textFormat.get(),
 		maxWidth,
 		maxHeight,
@@ -63,7 +63,7 @@ void Render::DWrite::Write(const eastl::wstring_view& text, float maxWidth, floa
 	textLayout = nullptr;
 	if (!SUCCEEDED(factory->CreateTextLayout(
 		text.data(),
-		text.length(),
+		static_cast<UINT32>(text.length()),
 		textFormat.get(),
 		maxWidth,
 		maxHeight,

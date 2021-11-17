@@ -33,27 +33,27 @@ void Render::NiNodeTreeDisplay::SetSize(uint32_t w, uint32_t h) noexcept {
 	SetBackgroundSize({ w, h });
 }
 
-void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, NiNode* node) noexcept {
+void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, RE::NiNode* node) noexcept {
 	DrawBackground(ctx);
 
 	builder.clear();
 	eastl::wstring str;
 	
 	const auto maxSize = glm::vec2{ width, height };
-	eastl::function<void(NiAVObject*, float&, float&, uint32_t)> walkFun;
-	walkFun = [&ctx, &maxSize, &walkFun, &str, this](NiAVObject* n, float& x, float& y, uint32_t level) {
-		constexpr auto lineHeight = 14.0f;
+	eastl::function<void(RE::NiAVObject*, float&, float&, uint32_t)> walkFun;
+	walkFun = [&ctx, &maxSize, &walkFun, &str, this](RE::NiAVObject* n, float& x, float& y, uint32_t level) {
+		constexpr auto lineHeight = 10.0f;
 
-		if (!n->m_name) return;
+		if (!n || n->name.empty()) return;
 
 		// uuuggggggghhhhhhhhhh
-		auto len = MultiByteToWideChar(CP_UTF8, 0, n->m_name, -1, nullptr, 0);
+		auto len = MultiByteToWideChar(CP_UTF8, 0, n->name.c_str(), -1, nullptr, 0);
 		if (len > bufSize || buffer == nullptr) {
 			if (buffer) delete[] buffer;
 			buffer = new wchar_t[len];
 			bufSize = len;
 		}
-		MultiByteToWideChar(CP_UTF8, 0, n->m_name, -1, buffer , len);
+		MultiByteToWideChar(CP_UTF8, 0, n->name.c_str(), -1, buffer , len);
 
 		str.clear();
 		str.reserve(static_cast<size_t>(len) + 1);
@@ -70,19 +70,17 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, NiNode* node) noexcept {
 			builder.clear();
 		}
 		
-		for (auto i = 0; i < level; i++) builder.append(L"-");
+		for (uint32_t i = 0; i < level; i++) builder.append(L"-");
 		builder.append(std::move(str));
 		builder.append(L"::");
-		builder.append(int_to_hex(n->m_flags));
+		builder.append(int_to_hex(n->flags.underlying()));
 		builder.append(L"\n");
 		y += lineHeight;
 
-		auto no = DYNAMIC_CAST(n, NiAVObject, NiNode);
+		auto no = skyrim_cast<RE::NiNode*>(n);
 		if (no) {
-			for (auto i = 0; i < no->m_children.m_arrayBufLen; i++) {
-				if (no->m_children.m_data[i])
-					walkFun(no->m_children.m_data[i], x, y, level + 1);
-			}
+			for (auto& child : no->children)
+				walkFun(child.get(), x, y, level + 1);
 		}
 	};
 

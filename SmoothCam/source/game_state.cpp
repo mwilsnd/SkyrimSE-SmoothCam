@@ -1,15 +1,17 @@
 #include "game_state.h"
 #include "compat.h"
 
+extern Offsets* g_Offsets;
+
 // Returns the bits for player->actorState->flags04 which appear to convey movement info
-const eastl::bitset<32> GameState::GetPlayerMovementBits(const Actor* player) noexcept {
-	const auto bits = eastl::bitset<32>(player->actorState.flags04);
+const eastl::bitset<32> GameState::GetPlayerMovementBits(const RE::Actor* player) noexcept {
+	const auto bits = eastl::bitset<32>(*reinterpret_cast<const uint32_t*>(&player->actorState1));
 	return bits;
 }
 
 // Returns the bits for player->actorState->flags08 which appear to convey action info
-const eastl::bitset<32> GameState::GetPlayerActionBits(const Actor* player) noexcept {
-	const auto bits = eastl::bitset<32>(player->actorState.flags08);
+const eastl::bitset<32> GameState::GetPlayerActionBits(const RE::Actor* player) noexcept {
+	const auto bits = eastl::bitset<32>(*reinterpret_cast<const uint32_t*>(&player->actorState2));
 	return bits;
 }
 
@@ -28,87 +30,97 @@ const bool GameState::IFPV_InFirstPersonState() noexcept {
 }
 
 // Returns true if the player is in first person
-const bool GameState::IsFirstPerson(const CorrectedPlayerCamera* camera) noexcept {
+const bool GameState::IsFirstPerson(const RE::PlayerCamera* camera) noexcept {
 	if (Compat::IsPresent(Compat::Mod::ImmersiveFirstPersonView)) {
-		const auto fps = camera->cameraState == camera->cameraStates[camera->kCameraState_FirstPerson];
+		const auto fps = camera->currentState == camera->cameraStates[RE::CameraState::kFirstPerson];
 		return fps || IFPV_InFirstPersonState();
 	} else if (Compat::IsPresent(Compat::Mod::ImprovedCamera)) {
-		const auto fps = camera->cameraState == camera->cameraStates[camera->kCameraState_FirstPerson];
+		const auto fps = camera->currentState == camera->cameraStates[RE::CameraState::kFirstPerson];
 		return fps || IC_InFirstPersonState();
 	} else {
-		return camera->cameraState == camera->cameraStates[camera->kCameraState_FirstPerson];
+		return camera->currentState == camera->cameraStates[RE::CameraState::kFirstPerson];
 	}
 }
 
 // Returns true if the player is in third person
-const bool GameState::IsThirdPerson(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[camera->kCameraState_ThirdPerson2] && !IsFirstPerson(camera);
+const bool GameState::IsThirdPerson(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kThirdPerson] && !IsFirstPerson(camera);
 }
 
 // Returns true if the player has a weapon drawn and in third person
-const bool GameState::IsThirdPersonCombat(const Actor* player, const CorrectedPlayerCamera* camera) noexcept {
+const bool GameState::IsThirdPersonCombat(const RE::Actor* player, const RE::PlayerCamera* camera) noexcept {
 	return GameState::IsThirdPerson(camera) && GameState::IsWeaponDrawn(player);
 }
 
 // Returns true if a kill move is playing
-const bool GameState::IsInKillMove(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_VATS];
+const bool GameState::IsInKillMove(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kVATS];
 }
 
 // Returns true if the camera is tweening
-const bool GameState::IsInTweenCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_TweenMenu];
+const bool GameState::IsInTweenCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kTween];
 }
 
 // Returns true if the camera is transitioning
-const bool GameState::IsInCameraTransition(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Transition];
+const bool GameState::IsInCameraTransition(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kPCTransition];
 }
 
 // Returns true if the player is using an object
-const bool GameState::IsInUsingObjectCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_ThirdPerson1];
+const bool GameState::IsInUsingObjectCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kAnimated];
 }
 
 // Returns true if the camera is in auto vanity mode
-const bool GameState::IsInAutoVanityCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_AutoVanity];
+const bool GameState::IsInAutoVanityCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kAutoVanity];
 }
 
 // Returns true if the camera is in free mode
-const bool GameState::IsInFreeCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Free];
+const bool GameState::IsInFreeCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kFree];
 }
 
 // Returns true if the camera is in aiming mode
-const bool GameState::IsInAimingCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_IronSights];
+const bool GameState::IsInAimingCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kIronSights];
 }
 
 // Returns true if the camera is in furniture mode
-const bool GameState::IsInFurnitureCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Furniture];
+const bool GameState::IsInFurnitureCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kFurniture];
 }
 
 // Returns true if the player is riding a horse
-const bool GameState::IsInHorseCamera(const TESObjectREFR* ref, const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Horse] && !IsFirstPerson(camera);
+const bool GameState::IsInHorseCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kMount] && !IsFirstPerson(camera);
 }
 
 // Returns true if the player is bleeding out
-const bool GameState::IsInBleedoutCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Bleedout];
+const bool GameState::IsInBleedoutCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kBleedout];
 }
 
 // Returns true if the player is riding a dragon
-const bool GameState::IsInDragonCamera(const CorrectedPlayerCamera* camera) noexcept {
-	return camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Dragon];
+const bool GameState::IsInDragonCamera(const RE::PlayerCamera* camera) noexcept {
+	return camera->currentState == camera->cameraStates[RE::CameraState::kDragon];
 }
 
-const GameState::CameraState GameState::GetCameraState(const Actor* player, const CorrectedPlayerCamera* camera) noexcept {
+const bool GameState::IsInDialogue() noexcept {
+	return RE::MenuTopicManager::GetSingleton()->unkB1 != 0;
+}
+
+RE::NiPointer<RE::TESObjectREFR> GameState::GetDialogueTarget() noexcept {
+	return RE::MenuTopicManager::GetSingleton()->speaker.get();
+}
+
+const GameState::CameraState GameState::GetCameraState(const RE::Actor* player, const RE::PlayerCamera* camera) noexcept {
 	GameState::CameraState newState = GameState::CameraState::Unknown;
 
-	if (GameState::IsSleeping(player)) {
+	if (GameState::IsInDialogue() && GameState::IsThirdPerson(camera)) {
+		newState = CameraState::ThirdPersonDialogue;
+	} else if (GameState::IsSleeping(player)) {
 		newState = CameraState::FirstPerson;
 	} else if (GameState::IsInAutoVanityCamera(camera)) {
 		newState = CameraState::Vanity;
@@ -130,7 +142,7 @@ const GameState::CameraState GameState::GetCameraState(const Actor* player, cons
 		newState = CameraState::Furniture;
 	} else if (GameState::IsFirstPerson(camera)) {
 		newState = CameraState::FirstPerson;
-	} else if (GameState::IsInHorseCamera(player, camera)) {
+	} else if (GameState::IsInHorseCamera(camera)) {
 		newState = CameraState::Horseback;
 	} else if (GameState::IsInDragonCamera(camera)) {
 		newState = CameraState::Dragon;
@@ -145,37 +157,32 @@ const GameState::CameraState GameState::GetCameraState(const Actor* player, cons
 		}
 	}
 
-#ifdef _DEBUG
+#ifdef DEBUG
 	assert(newState != GameState::CameraState::Unknown);
 #endif
 	return newState;
 }
 
-const bool GameState::IsWeaponDrawn(const Actor* player) noexcept {
+const bool GameState::IsWeaponDrawn(const RE::Actor* player) noexcept {
 	const auto bits = GameState::GetPlayerActionBits(player);
 	return bits[6];
 }
 
 // Get an equipped weapon
-const TESObjectWEAP* GameState::GetEquippedWeapon(const Actor* player, bool leftHand) noexcept {
-	if(!player->processManager) return nullptr;
+const RE::TESObjectWEAP* GameState::GetEquippedWeapon(const RE::Actor* player, bool leftHand) noexcept {
+	if(!player->currentProcess) return nullptr;
 
-	TESForm* wep = nullptr;
+	RE::TESForm* wep = nullptr;
 	if(leftHand)
-		wep = player->processManager->equippedObject[ActorProcessManager::kEquippedHand_Left];
+		wep = player->currentProcess->equippedObjects[RE::AIProcess::Hand::kLeft];
 	else
-		wep = player->processManager->equippedObject[ActorProcessManager::kEquippedHand_Right];
+		wep = player->currentProcess->equippedObjects[RE::AIProcess::Hand::kRight];
 
 	if (!wep || !wep->IsWeapon()) return nullptr;
-	return reinterpret_cast<const TESObjectWEAP*>(wep);
+	return reinterpret_cast<const RE::TESObjectWEAP*>(wep);
 }
 
-const TESAmmo* GameState::GetCurrentAmmo(const Actor* player) noexcept {
-	typedef TESAmmo*(__thiscall Actor::* GetAmmo)() const;
-	return (player->*reinterpret_cast<GetAmmo>(&Actor::Unk_9E))();
-}
-
-float GameState::GetCurrentBowDrawTimer(const PlayerCharacter* player) noexcept {
+float GameState::GetCurrentBowDrawTimer(const RE::PlayerCharacter* player) noexcept {
 	// @Note: Read projectile->unk188
 	// This is the arrow draw duration/shot power, stored on the player in a small array used as a stack
 	// This grows, with the top value being the current timer - until an arrow is fired, clearing the stack
@@ -185,65 +192,60 @@ float GameState::GetCurrentBowDrawTimer(const PlayerCharacter* player) noexcept 
 	return drawTimerValue;
 }
 
-bool GameState::IsUsingMagicItem(const Actor* player, bool leftHand) noexcept {
-	if (leftHand && !player->leftHandSpell) return false;
-	if (!leftHand && !player->rightHandSpell) return false;
+bool GameState::IsUsingMagicItem(const RE::Actor* player, bool leftHand) noexcept {
+	if (leftHand && !player->selectedSpells[RE::Actor::SlotTypes::kLeftHand]) return false;
+	if (!leftHand && !player->selectedSpells[RE::Actor::SlotTypes::kRightHand]) return false;
 
-	const EnchantmentItem* ench = leftHand ?
-		DYNAMIC_CAST(player->leftHandSpell, TESForm, EnchantmentItem) :
-		DYNAMIC_CAST(player->rightHandSpell, TESForm, EnchantmentItem);
+	const RE::EnchantmentItem* ench = leftHand ?
+		skyrim_cast<RE::EnchantmentItem*>(player->selectedSpells[RE::Actor::SlotTypes::kLeftHand]) :
+		skyrim_cast<RE::EnchantmentItem*>(player->selectedSpells[RE::Actor::SlotTypes::kRightHand]);
 
 	if (!ench) return false;
 	const auto wep = GetEquippedWeapon(player, leftHand);
 	if (!wep) return false;
 	
 	// Just look for a staff right now, consider anything else to be non-magic
-	return wep->gameData.type == TESObjectWEAP::GameData::kType_Staff ||
-		wep->gameData.type == TESObjectWEAP::GameData::kType_Staff2;
+	return wep->weaponData.animationType == RE::WEAPON_TYPE::kStaff;
 }
 
-bool GameState::IsCombatMagic(const SpellItem* spell) noexcept {
+bool GameState::IsCombatMagic(const RE::MagicItem* spell) noexcept {
 	if (!spell) return false;
 
-	const auto spellType = spell->data.type;
-	const auto castType = spell->data.castType;
-	const auto deliveryType = spell->data.unk14;
-
-	// Spell, leveled spell, scrolls
-	if (spellType != 0 && spellType != 9 && spellType != 13)
+	const auto spellType = spell->GetSpellType();
+	if (spellType != RE::MagicSystem::SpellType::kSpell &&
+		spellType != RE::MagicSystem::SpellType::kLeveledSpell &&
+		spellType != RE::MagicSystem::SpellType::kScroll)
 		return false;
 
 	// On self
-	if (deliveryType == 0) return false;
+	if (spell->GetDelivery() == RE::MagicSystem::Delivery::kSelf)
+		return false;
 
 	// Constant effect
-	if (castType == 0) return false;
+	if (spell->GetCastingType() == RE::MagicSystem::CastingType::kConstantEffect)
+		return false;
 
 	return true;
 }
 
 // Returns true if the player has a melee weapon equiped
-const bool GameState::IsMeleeWeaponDrawn(const Actor* player) noexcept {
+const bool GameState::IsMeleeWeaponDrawn(const RE::Actor* player) noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return false;
 	const auto right = GameState::GetEquippedWeapon(player);
 	const auto left = GameState::GetEquippedWeapon(player, true);
 
 	// Continue to look for a staff here - consider a non-enchanted staff to be melee
 	if (right) {
-		if (right->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
-			right->gameData.type != TESObjectWEAP::GameData::kType_CrossBow &&
-			right->gameData.type != TESObjectWEAP::GameData::kType_Bow2 &&
-			right->gameData.type != TESObjectWEAP::GameData::kType_CBow)
+		if (right->weaponData.animationType != RE::WEAPON_TYPE::kBow &&
+			right->weaponData.animationType != RE::WEAPON_TYPE::kCrossbow)
 		{
 			return true;
 		}
 	}
 
 	if (left) {
-		if (left->gameData.type != TESObjectWEAP::GameData::kType_Bow &&
-			left->gameData.type != TESObjectWEAP::GameData::kType_CrossBow &&
-			left->gameData.type != TESObjectWEAP::GameData::kType_Bow2 &&
-			left->gameData.type != TESObjectWEAP::GameData::kType_CBow)
+		if (left->weaponData.animationType != RE::WEAPON_TYPE::kBow &&
+			left->weaponData.animationType != RE::WEAPON_TYPE::kCrossbow)
 		{
 			return true;
 		}
@@ -253,7 +255,7 @@ const bool GameState::IsMeleeWeaponDrawn(const Actor* player) noexcept {
 }
 
 // Returns true if the player has magic drawn
-const bool GameState::IsMagicDrawn(const Actor* player) noexcept {
+const bool GameState::IsMagicDrawn(const RE::Actor* player) noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return false;
 	
 	// Using an item that counts as magic
@@ -264,31 +266,27 @@ const bool GameState::IsMagicDrawn(const Actor* player) noexcept {
 		return true;
 
 	// Or a spell
-	return (GameState::IsCombatMagic(player->leftHandSpell) && !GetEquippedWeapon(player, true)) ||
-		(GameState::IsCombatMagic(player->rightHandSpell) && !GetEquippedWeapon(player));
+	return (GameState::IsCombatMagic(player->selectedSpells[RE::Actor::SlotTypes::kLeftHand]) && !GetEquippedWeapon(player, true)) ||
+		(GameState::IsCombatMagic(player->selectedSpells[RE::Actor::SlotTypes::kRightHand]) && !GetEquippedWeapon(player));
 }
 
 // Returns true if the player has a ranged weapon drawn
-const bool GameState::IsRangedWeaponDrawn(const Actor* player) noexcept {
+const bool GameState::IsRangedWeaponDrawn(const RE::Actor* player) noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return false;
 	const auto right = GameState::GetEquippedWeapon(player);
 	const auto left = GameState::GetEquippedWeapon(player, true);
 
 	if (right) {
-		if (right->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
-			right->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
-			right->gameData.type == TESObjectWEAP::GameData::kType_Bow2 ||
-			right->gameData.type == TESObjectWEAP::GameData::kType_CBow)
+		if (right->weaponData.animationType == RE::WEAPON_TYPE::kBow ||
+			right->weaponData.animationType == RE::WEAPON_TYPE::kCrossbow)
 		{
 			return true;
 		}
 	}
 
 	if (left) {
-		if (left->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
-			left->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
-			left->gameData.type == TESObjectWEAP::GameData::kType_Bow2 ||
-			left->gameData.type == TESObjectWEAP::GameData::kType_CBow)
+		if (left->weaponData.animationType == RE::WEAPON_TYPE::kBow ||
+			left->weaponData.animationType == RE::WEAPON_TYPE::kCrossbow)
 		{
 			return true;
 		}
@@ -297,83 +295,70 @@ const bool GameState::IsRangedWeaponDrawn(const Actor* player) noexcept {
 	return false;
 }
 
-const bool GameState::IsUsingCrossbow(const Actor* player) noexcept {
+const bool GameState::IsUsingCrossbow(const RE::Actor* player) noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return false;
 	const auto right = GameState::GetEquippedWeapon(player);
 	const auto left = GameState::GetEquippedWeapon(player, true);
 
-	if (right && (right->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
-		right->gameData.type == TESObjectWEAP::GameData::kType_CBow))
-	{
+	if (right && (right->weaponData.animationType == RE::WEAPON_TYPE::kCrossbow))
 		return true;
-	}
 
-	if (left && (left->gameData.type == TESObjectWEAP::GameData::kType_CrossBow ||
-		left->gameData.type == TESObjectWEAP::GameData::kType_CBow))
-	{
+	if (left && (left->weaponData.animationType == RE::WEAPON_TYPE::kCrossbow))
 		return true;
-	}
 
 	return false;
 }
 
-const bool GameState::IsUsingBow(const Actor* player) noexcept {
+const bool GameState::IsUsingBow(const RE::Actor* player) noexcept {
 	if (!GameState::IsWeaponDrawn(player)) return false;
 	const auto right = GameState::GetEquippedWeapon(player);
 	const auto left = GameState::GetEquippedWeapon(player, true);
 
-	if (right && (right->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
-		right->gameData.type == TESObjectWEAP::GameData::kType_Bow2))
-	{
+	if (right && (right->weaponData.animationType == RE::WEAPON_TYPE::kBow))
 		return true;
-	}
 
-	if (left && (left->gameData.type == TESObjectWEAP::GameData::kType_Bow ||
-		left->gameData.type == TESObjectWEAP::GameData::kType_Bow2))
-	{
+	if (left && (left->weaponData.animationType == RE::WEAPON_TYPE::kBow))
 		return true;
-	}
 
 	return false;
 }
 
 // Returns true if the player is sneaking
-const bool GameState::IsSneaking(const Actor* player) noexcept {
+const bool GameState::IsSneaking(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return movementBits[9];
 }
 
 // Returns true if the player is sprinting
-const bool GameState::IsSprinting(const Actor* player) noexcept {
+const bool GameState::IsSprinting(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return (movementBits[0] || movementBits[1]) && (movementBits[2] || movementBits[3]) &&
 		movementBits[8];
 }
 
 // Returns true if the player is running
-const bool GameState::IsRunning(const Actor* player) noexcept {
+const bool GameState::IsRunning(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return ((movementBits[0] || movementBits[1]) && (movementBits[2] || movementBits[3]) &&
 		movementBits[7]) && !IsOverEncumbered(player);
 }
 
 // Returns true if the player is swimming
-const bool GameState::IsSwimming(const Actor* player) noexcept {
+const bool GameState::IsSwimming(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return movementBits[10];
 }
 
 // Returns true if the player is walking
-const bool GameState::IsWalking(const Actor* player) noexcept {
+const bool GameState::IsWalking(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return (movementBits[0] || movementBits[1]) && (movementBits[2] || movementBits[3]) &&
 		(movementBits[6] || (movementBits[7] && IsOverEncumbered(player)));
 }
 
 // Returns true if the player is holding a bow and an arrow is drawn
-const bool GameState::IsBowDrawn(const Actor* player) noexcept {
+const bool GameState::IsBowDrawn(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
-	const auto actionBits = GameState::GetPlayerActionBits(player);
 
 	// AGO compat
 	if (Compat::IsPresent(Compat::Mod::ArcheryGameplayOverhaul) && !GameState::IsUsingCrossbow(player)) {
@@ -394,7 +379,7 @@ const bool GameState::IsBowDrawn(const Actor* player) noexcept {
 
 		if (!drawnLastCall && objective) {
 			drawnLastCall = true;
-			lastDrawnTimer = GameTime::CurTime() + 0.1f;
+			lastDrawnTimer = static_cast<float>(GameTime::CurTime()) + 0.1f;
 		}
 
 		if (objective && GameTime::CurTime() > lastDrawnTimer) {
@@ -413,13 +398,13 @@ const bool GameState::IsBowDrawn(const Actor* player) noexcept {
 }
 
 // Returns true if the player is sitting
-const bool GameState::IsSitting(const Actor* player) noexcept {
+const bool GameState::IsSitting(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return movementBits[14] && movementBits[15];
 }
 
 // Returns true if the player is sleeping
-const bool GameState::IsSleeping(const Actor* player) noexcept {
+const bool GameState::IsSleeping(const RE::Actor* player) noexcept {
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return (GameState::IsSitting(player) && movementBits[16]) || // in bed
 		movementBits[15] && movementBits[16] || //getting in bed
@@ -427,7 +412,7 @@ const bool GameState::IsSleeping(const Actor* player) noexcept {
 }
 
 // Returns true if the player is mounting a horse
-const bool GameState::IsMountingHorse(const Actor* player) noexcept {
+const bool GameState::IsMountingHorse(const RE::Actor* player) noexcept {
 	const auto actionBits = GameState::GetPlayerActionBits(player);
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return (actionBits[3] && actionBits[12] && movementBits[15] || (
@@ -436,29 +421,40 @@ const bool GameState::IsMountingHorse(const Actor* player) noexcept {
 }
 
 // Returns true if the player is dismounting a horse
-const bool GameState::IsDisMountingHorse(const Actor* player) noexcept {
+const bool GameState::IsDisMountingHorse(const RE::Actor* player) noexcept {
 	const auto actionBits = GameState::GetPlayerActionBits(player);
 	const auto movementBits = GameState::GetPlayerMovementBits(player);
 	return actionBits[3] && actionBits[12] && (movementBits[16]);
 }
 
 const bool GameState::InPOVSlideMode() noexcept {
-	return PlayerControls::GetSingleton()->unk04B;
+	return RE::PlayerControls::GetSingleton()->data.fovSlideMode; // unk04B;
 }
 
 // Returns true if the player is a vampire lord
-const bool GameState::IsVampireLord(const Actor* player) noexcept {
+const bool GameState::IsVampireLord(const RE::Actor* player) noexcept {
 	if (!player->race) return false;
-	return strcmp(player->race->fullName.name.c_str(), "Vampire Lord") == 0;
+	return strcmp(player->race->fullName.c_str(), "Vampire Lord") == 0;
 }
 
 // Returns true if the player is a werewolf
-const bool GameState::IsWerewolf(const Actor* player) noexcept {
+const bool GameState::IsWerewolf(const RE::Actor* player) noexcept {
 	if (!player->race) return false;
-	return strcmp(player->race->fullName.name.c_str(), "Werewolf") == 0;
+	return strcmp(player->race->fullName.c_str(), "Werewolf") == 0;
 }
 
-const bool GameState::IsOverEncumbered(const Actor* player) noexcept {
-	typedef bool(*getter)(const Actor*);
-	return Offsets::Get<getter>(36457)(player);
+const bool GameState::IsOverEncumbered(const RE::Actor* player) noexcept {
+	typedef bool(*getter)(const RE::Actor*);
+	return REL::Relocation<getter>(g_Offsets->IsOverEncumbered)(player);
+}
+
+bool GameState::IsActorTalking(RE::Actor* actor) noexcept {
+	const auto bits = eastl::bitset<32>(actor->boolBits.underlying());
+	return !(bits[7] && // kSoundFileDone
+			bits[8]) && // kVoiceFileDone
+			actor->voiceTimer > 0.0f; // voiceTimer
+}
+
+glm::vec4 GameState::GetBoundingSphere(RE::NiAVObject* obj) noexcept {
+	return *reinterpret_cast<glm::vec4*>(&obj->worldBound);
 }

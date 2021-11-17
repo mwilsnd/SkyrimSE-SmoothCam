@@ -5,22 +5,24 @@
 			<optionalFileGroups order="Explicit">
 				<group name="Select Version" type="SelectExactlyOne">
 					<plugins order="Explicit">
-						<plugin name="SmoothCam AVX">
-							<description>For use with modern CPUs</description>
+						<plugin name="SmoothCam SSE">
+							<description>For use with Skyrim Special Edition, 1.5.97 and earlier</description>
 							<files>
-								<file source="00 Data\AVX\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\SSE\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
+								<file source="00 Data\ExtraData\SmoothCam_FocusBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FocusBones_Default.txt" priority="0"/>
 								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>
 							</files>
 							<typeDescriptor>
 								<type name="Optional"/>
 							</typeDescriptor>
 						</plugin>
-						<plugin name="SmoothCam SSE">
-							<description>For use with older CPUs (~2011 and earlier)</description>
+						<plugin name="SmoothCam AE">
+							<description>For use with Skyrim Anniversary Edition, 1.6.318</description>
 							<files>
-								<file source="00 Data\SSE\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\AE\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
+								<file source="00 Data\ExtraData\SmoothCam_FocusBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FocusBones_Default.txt" priority="0"/>
 								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>
 							</files>
 							<typeDescriptor>

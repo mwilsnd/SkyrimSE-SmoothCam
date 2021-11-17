@@ -1,22 +1,31 @@
 #include "render/common.h"
 
+extern Offsets* g_Offsets;
+
 float Render::GetFOV() noexcept {
+#ifdef IS_SKYRIM_AE
+	static const auto fov = REL::Relocation<float*>(g_Offsets->FOV);
+	const auto deg = *fov + *REL::Relocation<float*>(g_Offsets->FOVOffset);
+	return glm::radians(deg);
+#else
 	// The game doesn't tell us about dyanmic changes to FOV in an easy way (that I can see, but I'm also blind)
 	// It does store the FOV indirectly in this global - we can just run the equations it uses in reverse.
-	static const auto fac = Offsets::Get<float*>(513786);
-	const auto x = *fac / 1.30322540;
+	static const auto fac = REL::Relocation<float*>(g_Offsets->FOV);
+	const auto base = *fac;
+	const auto x = base / 1.30322540f;
 	const auto y = glm::atan(x);
 	const auto fov = y / 0.01745328f / 0.5f;
 	return glm::radians(fov);
+#endif
 }
 
-glm::mat4 Render::GetProjectionMatrix(const NiFrustum& frustum) noexcept {
+glm::mat4 Render::GetProjectionMatrix(const RE::NiFrustum& frustum) noexcept {
 	const auto& viewSize = Render::GetContext().windowSize;
 	const float aspect = viewSize.x / viewSize.y;
 
 	auto f = frustum;
-	f.m_fNear *= RenderScale;
-	f.m_fFar *= RenderScale;
+	f.fNear *= RenderScale;
+	f.fFar *= RenderScale;
 
 	return mmath::Perspective(GetFOV(), aspect, f);
 }

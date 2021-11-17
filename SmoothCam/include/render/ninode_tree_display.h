@@ -7,7 +7,7 @@
 namespace Render {
 	class NiNodeTreeDisplay : public GradBox {
 		public:
-			explicit NiNodeTreeDisplay(uint32_t width, uint32_t height, D3DContext& ctx);
+			NiNodeTreeDisplay(uint32_t width, uint32_t height, D3DContext& ctx);
 			~NiNodeTreeDisplay();
 			NiNodeTreeDisplay(const NiNodeTreeDisplay&) = delete;
 			NiNodeTreeDisplay(NiNodeTreeDisplay&&) noexcept = delete;
@@ -19,7 +19,7 @@ namespace Render {
 			// Set the size of the graph
 			void SetSize(uint32_t w, uint32_t h) noexcept;
 			// Draw the chart
-			void Draw(D3DContext& ctx, NiNode* node) noexcept;
+			void Draw(D3DContext& ctx, RE::NiNode* node) noexcept;
 
 		private:
 			uint32_t width = 0;

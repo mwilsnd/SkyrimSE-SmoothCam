@@ -55,97 +55,25 @@ namespace Render {
 	static_assert(offsetof(D3D11Resources, swapChain) == 0x60);
 	static_assert(offsetof(D3D11Resources, unkB0) == 0xB0);
 
-	// 12: cbuffer12 Buffer 1196 0 - 4096 41 Variables, 656 bytes needed, 720 provided
-	struct CBuffer12 {
-		// Lots of duplicates
-		glm::mat4 unk0;
-		glm::mat4 proj0;
-		glm::mat4 projView0;
-		glm::mat4 projView1;
-		glm::mat4 projView2;
-		glm::mat4 frustum0;
-		glm::mat4 proj1;
-		glm::mat4 unk0Transposed;
-		glm::mat4 unk2;
-		glm::mat4 frustum1;
-		glm::mat4 pad8;
-		glm::vec4 pad9;
-
-		static ID3D11Buffer* Get() {
-			// DAT_143027e88
-			return *Offsets::Get<ID3D11Buffer**>(524768);
-		}
-
-		static void Set(ID3D11Buffer* buf) {
-			*Offsets::Get<ID3D11Buffer**>(524768) = buf;
-		}
-	};
-	static_assert(sizeof(CBuffer12) == 720);
-	static_assert(sizeof(CBuffer12) % 16 == 0);
-
 	typedef struct BatchRenderCommand {
 		using BSEffectShader = void;
 		BSEffectShader* shader;
-		BSEffectShaderProperty* properties;
-		BSGeometry* geometry;
+		RE::BSEffectShaderProperty* properties;
+		RE::BSGeometry* geometry;
 	} BatchRenderCommand;
 
 	typedef struct GBuffer {
-		NiSourceTexture* projectedNoise;
-		NiSourceTexture* projectedDiffuse;
-		NiSourceTexture* projectedNormal;
-		NiSourceTexture* projectedNormalDetail;
-
-		typedef struct WrappedCameraData {
-			NiCamera* camera;
-			// @Note: This might just be junk on the stack and not actually
-			// part of the return type - That said messing with these matrices
-			// does end up being transmitted to cbuffer 12
-			uintptr_t pad0;
-			glm::vec4 dc0;
-			glm::vec4 dc1;
-			glm::vec4 dc2;
-			glm::vec4 dc3;
-			glm::vec4 dc4;
-			glm::vec4 dc5;
-			glm::vec4 dc6;
-			glm::mat4 proj;
-			glm::mat4 projView0;
-			glm::mat4 projView1;
-			glm::mat4 projView2;
-			glm::mat4 projView3;
-		} WrappedCameraData;
-
-		// Called by UpdateGPUCameraData
-		WrappedCameraData* CameraSwap(NiCamera* inCamera, byte flags = 0x0) noexcept;
-		// Compute new contents of cbuffer 12 and update on the GPU
-		void UpdateGPUCameraData(NiCamera* inCamera, byte flags = 0x0) noexcept;
+		RE::NiSourceTexture* projectedNoise;
+		RE::NiSourceTexture* projectedDiffuse;
+		RE::NiSourceTexture* projectedNormal;
+		RE::NiSourceTexture* projectedNormalDetail;
 
 		static GBuffer* Get() noexcept {
 			// DAT_14302c890
-			static auto gbuffer = Offsets::Get<Render::GBuffer*>(524998);
+			extern Offsets* g_Offsets;
+			static auto gbuffer = REL::Relocation<GBuffer*>(g_Offsets->GBuffer).get();
 			return gbuffer;
 		}
-
-		// Other locations of interest:
-		// FUN_1412e3520:100421
-		// typedef void(*DrawEarlyZPass)(bool, bool);
-
-		// FUN_1412e3e70:100424
-		// typedef void(*DrawGBuffer)(char param_1);
-
-		// BSBatchRenderer::RenderBatch::FUN_141308440:100854
-		// typedef void(*RenderStuff)(Render::BatchRenderCommand* cmd, uint32_t id, bool unk0, uint32_t unk1);
-
-		// SkyrimSE.exe+0x00d6cbc7 <- Draw
-		// SkyrimSE.exe+0x00c7cb14 <- FUN_140c7ca70_RenderSomething::vtable.NiSkinPartition
-		// SkyrimSE.exe+0x00c6ba5f <- FUN_140c6b9f0::vtable.BSDismemberSkinInstance::Draw (One of many)
-		// SkyrimSE.exe+0x01308a97 <- CALL qword ptr [RAX + 0x128] CommonLibSSE : BSDismemberSkinInstance->Unk_25
-		// SkyrimSE.exe+<many>     <- ?
-		// SkyrimSE.exe+0x013082d3 <- BSBatchRenderer::RenderBatch::FUN_141308440
-		// SkyrimSE.exe+0x012ccf4f <- BSShaderAccumulator::FUN_141308030
-		// SkyrimSE.exe+<many>     <- ?
-		// SkyrimSE.exe+0x012c1672 <- NiCamera::FUN_140d7bab0:UpdateCameraDataAndCBuffer12
 	} GBuffer;
 
 	// The present hook
@@ -154,19 +82,24 @@ namespace Render {
 
 	// Install D3D hooks
 	void InstallHooks();
+#ifdef WITH_D2D
+	void InitD2D();
+#endif
 	// Shutdown, release references
 	void Shutdown();
 	// Get the game's D3D context
 	D3DContext& GetContext() noexcept;
 	// Returns true if we have a valid D3D context
 	bool HasContext() noexcept;
+	// Returns true if we have ever attempted to hook D3D
+	bool HasAttemptedHook() noexcept;
 	// Get the game's depth-stencil view for the back buffer
 	winrt::com_ptr<ID3D11DepthStencilView>& GetDepthStencilView() noexcept;
 	// Get the game's render target for the back buffer
 	winrt::com_ptr<ID3D11RenderTargetView>& GetGameRT() noexcept;
 
 	// Add a new function for drawing during the present hook
-	using DrawFunc = std::function<void(D3DContext&)>;
+	using DrawFunc = eastl::function<void(D3DContext&)>;
 	void OnPresent(DrawFunc&& callback) noexcept;
 
 	// Set the depth state
@@ -403,4 +336,4 @@ namespace Render {
 			return k1 == k2;
 		}
 	};
-}
+};

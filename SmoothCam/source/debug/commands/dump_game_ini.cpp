@@ -3,40 +3,37 @@
 
 Debug::DumpGameINI::~DumpGameINI() {}
 
-void Debug::DumpGameINI::Run(const eastl::string& args) noexcept {
-	auto settings = *g_iniSettingCollection;
-	auto node = &settings->items;
+void Debug::DumpGameINI::Run(const eastl::string&) noexcept {
+	auto settings = RE::INISettingCollection::GetSingleton();
 
 	puts("Current INI values:");
-
-	while (node) {
-		switch (node->setting->GetType()) {
-			case Setting::kType_Bool: {
-				printf("\t%s :: %s\n", node->setting->name, node->setting->data.u8 ? "true" : "false");
+	for (auto& setting : settings->settings) {
+		switch (setting->GetType()) {
+			case RE::Setting::Type::kBool: {
+				printf("\t%s :: %s\n", setting->name, setting->GetBool() ? "true" : "false");
 				break;
 			}
-			case Setting::kType_Float: {
-				printf("\t%s :: %f\n", node->setting->name, node->setting->data.f32);
+			case RE::Setting::Type::kFloat: {
+				printf("\t%s :: %f\n", setting->name, setting->GetFloat());
 				break;
 			}
-			case Setting::kType_Integer: {
-				printf("\t%s :: %d\n", node->setting->name, node->setting->data.s32);
+			case RE::Setting::Type::kSignedInteger: {
+				printf("\t%s :: %d\n", setting->name, setting->GetSInt());
 				break;
 			}
-			case Setting::kType_String: {
-				printf("\t%s :: %s\n", node->setting->name, node->setting->data.s);
+			case RE::Setting::Type::kString: {
+				printf("\t%s :: %s\n", setting->name, setting->GetString());
 				break;
 			}
-			case Setting::kType_ID: {
-				printf("\t%s :: %d\n", node->setting->name, node->setting->data.u32);
+			case RE::Setting::Type::kUnsignedInteger: {
+				printf("\t%s :: %d\n", setting->name, setting->GetUInt());
 				break;
 			}
 			default: {
-				printf("\t%s :: unhandled value type\n", node->setting->name);
+				printf("\t%s :: unhandled value type\n", setting->name);
 				break;
 			}
 		}
-		node = node->next;
 	}
 
 	puts("");

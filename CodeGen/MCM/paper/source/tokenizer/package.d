@@ -223,9 +223,15 @@ public Result!bool tokenize(ref const(string) source, out Array!Token tokens) @t
                 const auto str = (i != 0) ? source[state.startPos..i] : source[state.startPos..$];
                 const auto kwd = isKeyword(str);
                 const auto ty = isType(str);
-                const auto tok = kwd.isOk() ? kwd.unwrap() : (ty.isOk() ? ty.unwrap() : Tok.OtherValue);
 
-                tokens.insertBack(Token(tok, str));
+                // Bool
+                if (str == "true" || str == "false")
+                    tokens.insertBack(Token(Tok.BoolValue, str));
+                else {
+                    const auto tok = kwd.isOk() ? kwd.unwrap() : (ty.isOk() ? ty.unwrap() : Tok.OtherValue);
+                    tokens.insertBack(Token(tok, str));
+                }
+            
                 state.expect = true;
                 state.reading = false;
                 break;

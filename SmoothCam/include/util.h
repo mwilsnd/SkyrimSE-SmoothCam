@@ -1,4 +1,9 @@
 ﻿#pragma once
+#ifdef DEBUG
+namespace Render {
+	struct D3DContext;
+}
+#endif
 
 namespace Util {
 	// @Note: We are tagging the 3 0 bits (caused by pointer alignment rules)
@@ -45,7 +50,7 @@ namespace Util {
 		return result;
 	}
 
-	inline eastl::string UpperCase(const BSFixedString& str) noexcept {
+	inline eastl::string UpperCase(const RE::BSFixedString& str) noexcept {
 		eastl::string result;
 		const auto len = std::strlen(str.c_str());
 		result.reserve(len);
@@ -60,4 +65,21 @@ namespace Util {
 
 		return result;
 	}
+
+	template <typename T>
+	std::string IntToHexStr(T w, size_t hex_len = sizeof(T) << 1) {
+		static const char* digits = "0123456789ABCDEF";
+		auto ret = std::string(hex_len, '0');
+
+		for (size_t i = 0, j = (hex_len - 1) * 4 ; i < hex_len; ++i, j-=4)
+			ret[i] = digits[(w >> j) & 0x0f];
+
+		return ret;
+	}
+
+#ifdef DEBUG
+	void InitializeDebugDrawing(Render::D3DContext& ctx) noexcept;
+	void DrawCross3D(const glm::vec3& pos, float extents, const glm::vec4& color = { 1.0f, 0.0f, 0.0f, 1.0f }) noexcept;
+	void DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec4& color = { 1.0f, 0.0f, 0.0f, 1.0f }) noexcept;
+#endif
 }

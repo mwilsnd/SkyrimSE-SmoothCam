@@ -24,7 +24,7 @@ Render::Texture2D::Texture2D(Render::D3DContext& ctx, const Texture2DCreateInfo&
 }
 
 Render::Texture2D::Texture2D(Render::D3DContext& ctx, winrt::com_ptr<ID3D11Texture2D> texture,
-	const Texture2DCreateInfo& info) : texture(texture)
+	const Texture2DCreateInfo& info) noexcept : texture(texture)
 {
 	CreateSamplerState(ctx, info);
 }

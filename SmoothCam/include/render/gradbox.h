@@ -7,7 +7,7 @@ namespace Render {
 
 	class GradBox {
 		public:
-			explicit GradBox(Render::D3DContext& ctx, uint32_t width, uint32_t height);
+			GradBox(Render::D3DContext& ctx, uint32_t width, uint32_t height);
 			~GradBox();
 			GradBox(const GradBox&) = delete;
 			GradBox(GradBox&&) noexcept = delete;

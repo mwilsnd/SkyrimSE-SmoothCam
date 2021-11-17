@@ -54,7 +54,7 @@ namespace Render {
 
 	class D2D {
 		public:
-			D2D(D3DContext& ctx);
+			explicit D2D(D3DContext& ctx);
 			~D2D();
 
 			// Start rendering a frame

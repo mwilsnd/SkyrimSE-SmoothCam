@@ -25,7 +25,7 @@ void Render::MeshDrawer::CreateObjects(eastl::vector<Model::Vertex>& vertices, D
 
 	Render::VertexBufferCreateInfo vbInfo;
 	vbInfo.elementSize = sizeof(Model::Vertex);
-	vbInfo.numElements = vertices.size();
+	vbInfo.numElements = static_cast<uint32_t>(vertices.size());
 	vbInfo.elementData = &data;
 	vbInfo.topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	vbInfo.bufferUsage = D3D11_USAGE::D3D11_USAGE_IMMUTABLE;

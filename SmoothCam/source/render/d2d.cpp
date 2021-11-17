@@ -309,8 +309,8 @@ void Render::D2D::DrawEllipse(const glm::vec2& center, const glm::vec2& extents,
 
 void Render::D2D::CreateRenderTarget(D3DContext& ctx, D3DContext& renderingCtx) {
 	Texture2DCreateInfo texInfo;
-	texInfo.width = renderingCtx.windowSize.x;
-	texInfo.height = renderingCtx.windowSize.y;
+	texInfo.width = static_cast<uint32_t>(renderingCtx.windowSize.x);
+	texInfo.height = static_cast<uint32_t>(renderingCtx.windowSize.y);
 	texInfo.format = DXGI_FORMAT_B8G8R8A8_UNORM;
 	texInfo.usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
 	texInfo.bindFlags = D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE |

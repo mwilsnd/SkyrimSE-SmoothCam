@@ -1,10 +1,52 @@
-Config::UserConfig currentConfig;
+#pragma warning(push)
+#pragma warning(disable : 5103)
 
+Config::UserConfig currentConfig;
 #define CREATE_JSON_VALUE(obj, member) {#member, obj.member}
 #define VALUE_FROM_JSON(obj, member)	\
 {										\
 	const auto def = obj.##member##;	\
 	obj.member = j.value(#member, def);	\
+}
+
+void Config::to_json(json& j, const DialogueOblivion& obj) {
+	j = json{
+		CREATE_JSON_VALUE(obj, fovOffset),
+		CREATE_JSON_VALUE(obj, zoomInDuration),
+		CREATE_JSON_VALUE(obj, zoomOutDuration),
+		CREATE_JSON_VALUE(obj, runInFirstPerson)
+	};
+}
+
+void Config::from_json(const json& j, DialogueOblivion& obj) {
+	VALUE_FROM_JSON(obj, fovOffset)
+	VALUE_FROM_JSON(obj, zoomInDuration)
+	VALUE_FROM_JSON(obj, zoomOutDuration)
+	VALUE_FROM_JSON(obj, runInFirstPerson)
+}
+
+void Config::to_json(json& j, const DialogueFaceToFace& obj) {
+	j = json{
+		CREATE_JSON_VALUE(obj, sideOffset),
+		CREATE_JSON_VALUE(obj, upOffset),
+		CREATE_JSON_VALUE(obj, zoomOffset),
+		CREATE_JSON_VALUE(obj, rotationDuration),
+		CREATE_JSON_VALUE(obj, zoomInDuration),
+		CREATE_JSON_VALUE(obj, zoomOutDuration),
+		CREATE_JSON_VALUE(obj, faceToFaceNoSwitch),
+		CREATE_JSON_VALUE(obj, forceThirdPerson)
+	};
+}
+
+void Config::from_json(const json& j, DialogueFaceToFace& obj) {
+	VALUE_FROM_JSON(obj, sideOffset)
+	VALUE_FROM_JSON(obj, upOffset)
+	VALUE_FROM_JSON(obj, zoomOffset)
+	VALUE_FROM_JSON(obj, rotationDuration)
+	VALUE_FROM_JSON(obj, zoomInDuration)
+	VALUE_FROM_JSON(obj, zoomOutDuration)
+	VALUE_FROM_JSON(obj, faceToFaceNoSwitch)
+	VALUE_FROM_JSON(obj, forceThirdPerson)
 }
 
 void Config::to_json(json& j, const OffsetGroupScalar& obj) {
@@ -152,6 +194,13 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, enableCrashDumps),
 		CREATE_JSON_VALUE(obj, toggleUserDefinedOffsetGroupKey),
 
+		// Pitch Zoom
+		CREATE_JSON_VALUE(obj, enablePitchZoom),
+		CREATE_JSON_VALUE(obj, pitchZoomAfterInterp),
+		CREATE_JSON_VALUE(obj, pitchZoomMaxAngle),
+		CREATE_JSON_VALUE(obj, pitchZoomMax),
+		CREATE_JSON_VALUE(obj, pitchZoomMethod),
+
 		// Primary interpolation
 		CREATE_JSON_VALUE(obj, enableInterp),
 		CREATE_JSON_VALUE(obj, currentScalar),
@@ -198,6 +247,11 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, localInterpOverrideSmoothing),
 		CREATE_JSON_VALUE(obj, localInterpOverrideMethod),
 
+		// Dialogue
+		CREATE_JSON_VALUE(obj, dialogueMode),
+		CREATE_JSON_VALUE(obj, oblivionDialogue),
+		CREATE_JSON_VALUE(obj, faceToFaceDialogue),
+
 		// Distance clamping
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXEnable),
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXMin),
@@ -222,6 +276,7 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, dragon),
 		CREATE_JSON_VALUE(obj, vampireLord),
 		CREATE_JSON_VALUE(obj, werewolf),
+		CREATE_JSON_VALUE(obj, vanity),
 		CREATE_JSON_VALUE(obj, userDefined)
 	};
 }
@@ -261,6 +316,13 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, applyZOffsetKey)
 	VALUE_FROM_JSON(obj, enableCrashDumps)
 	VALUE_FROM_JSON(obj, toggleUserDefinedOffsetGroupKey)
+
+	// Pitch Zoom
+	VALUE_FROM_JSON(obj, enablePitchZoom)
+	VALUE_FROM_JSON(obj, pitchZoomAfterInterp)
+	VALUE_FROM_JSON(obj, pitchZoomMaxAngle)
+	VALUE_FROM_JSON(obj, pitchZoomMax)
+	VALUE_FROM_JSON(obj, pitchZoomMethod)
 
 	// Primary interpolation
 	VALUE_FROM_JSON(obj, enableInterp)
@@ -308,6 +370,11 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, fovScalar)
 	VALUE_FROM_JSON(obj, fovInterpDurationSecs)
 
+	// Dialogue
+	VALUE_FROM_JSON(obj, dialogueMode)
+	VALUE_FROM_JSON(obj, oblivionDialogue)
+	VALUE_FROM_JSON(obj, faceToFaceDialogue)
+
 	// Distance clamping
 	VALUE_FROM_JSON(obj, cameraDistanceClampXEnable)
 	VALUE_FROM_JSON(obj, cameraDistanceClampXMin)
@@ -340,6 +407,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, dragon)
 	VALUE_FROM_JSON(obj, vampireLord)
 	VALUE_FROM_JSON(obj, werewolf)
+	VALUE_FROM_JSON(obj, vanity)
 	VALUE_FROM_JSON(obj, userDefined)
 
 	obj.standing.id = OffsetGroupID::Standing;
@@ -354,6 +422,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	obj.dragon.id = OffsetGroupID::Dragon;
 	obj.vampireLord.id = OffsetGroupID::VampireLord;
 	obj.werewolf.id = OffsetGroupID::Werewolf;
+	obj.vanity.id = OffsetGroupID::Vanity;
 	obj.userDefined.id = OffsetGroupID::UserDefined;
 }
 
@@ -850,6 +919,8 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.dragon.id = OffsetGroupID::Dragon;
 	conf.vampireLord.id = OffsetGroupID::VampireLord;
 	conf.werewolf.id = OffsetGroupID::Werewolf;
+	conf.userDefined.id = OffsetGroupID::UserDefined;
+	conf.vanity.id = OffsetGroupID::Vanity;
 
 	return conf;
 }
@@ -866,7 +937,7 @@ void Config::ReadConfigFile() {
 		} catch (const std::exception& e) {
 			// Welp, something broke
 			// Save the default config
-			_WARNING("%s - %s", "Failed to load user config! Loading Defaults. Error message:", e.what());
+			logger::warn(FMT_STRING("Failed to load user config! Loading Defaults. Error message: {}"), e.what());
 			cfg = currentConfig = GetDefaultConfig();
 			SaveCurrentConfig();
 		}
@@ -878,6 +949,7 @@ void Config::ReadConfigFile() {
 
 	// Load bone data
 	LoadBonePriorities();
+	LoadFocusBonePriorities();
 #ifdef DEVELOPER
 	LoadEyeBonePriorities();
 #endif
@@ -899,7 +971,7 @@ void Config::ResetConfig() {
 	SaveCurrentConfig();
 }
 
-BSFixedString Config::SaveConfigAsPreset(int slot, const BSFixedString& name) {
+RE::BSFixedString Config::SaveConfigAsPreset(int slot, const RE::BSFixedString& name) {
 	if (slot >= MaxPresetSlots) {
 		return { "ERROR: Preset index out of range" };
 	}
@@ -930,7 +1002,7 @@ bool Config::LoadPreset(int slot) {
 		} catch (const std::exception& e) {
 			// Welp, something broke
 			// Save the default config
-			_WARNING("%s <%d> %s", "Failed to load preset config! Error message:", slot, e.what());
+			logger::warn(FMT_STRING("Failed to load preset config! Loading Defaults. Error message: {}"), e.what());
 			return false;
 		}
 	} else {
@@ -954,9 +1026,7 @@ Config::LoadStatus Config::LoadPresetName(int slot, eastl::string& name) {
 			is >> j;
 			p = j.get<Config::Preset>();
 		} catch (const std::exception& e) {
-			// Welp, something broke
-			// Save the default config
-			_WARNING("%s <%d> %s", "Failed to load preset config! Error message:", slot, e.what());
+			logger::warn(FMT_STRING("Failed to load preset config! Error message: {}"), e.what());
 			return LoadStatus::FAILED;
 		}
 	} else {
@@ -967,7 +1037,7 @@ Config::LoadStatus Config::LoadPresetName(int slot, eastl::string& name) {
 	return LoadStatus::OK;
 }
 
-BSFixedString Config::GetPresetSlotName(int slot) {
+RE::BSFixedString Config::GetPresetSlotName(int slot) {
 	if (slot >= MaxPresetSlots)
 		return { "ERROR: Preset index out of range" };
 
@@ -988,7 +1058,7 @@ eastl::wstring Config::GetPresetPath(int slot) {
 	return slotName;
 }
 
-void trimString(std::string& outStr) {
+static void trimString(std::string& outStr) {
 	while(outStr.size() && isspace(outStr.front())) 
 		outStr.erase(outStr.begin());
 
@@ -996,8 +1066,7 @@ void trimString(std::string& outStr) {
 		outStr.pop_back();
 }
 
-static Config::BoneList bonePriorities = {};
-void Config::LoadBonePriorities() {
+bool Config::LoadBoneList(const std::wstring_view&& searchName, BoneList& outBones) {
 	// @Issue:35: std::filesystem::directory_iterator throws on unicode paths
 	// @Note: Relative paths don't seem to work without MO2, prepend the full CWD
 	const auto sz = GetCurrentDirectory(0, nullptr);
@@ -1006,7 +1075,8 @@ void Config::LoadBonePriorities() {
 
 	std::wstring path = L"\\\\?\\"; 
 	path.append(buf);
-	path.append(L"\\Data\\SKSE\\Plugins\\SmoothCam_FollowBones_*.txt");
+	path.append(L"\\Data\\SKSE\\Plugins\\");
+	path.append(searchName);
 
 	WIN32_FIND_DATA data;
 	auto hf = FindFirstFileEx(
@@ -1030,7 +1100,7 @@ void Config::LoadBonePriorities() {
 					if (line.length() == 0) continue;
 					if (line.rfind("//", 0) == 0) continue;
 
-					bonePriorities.emplace_back(line.c_str());
+					outBones.emplace_back(line.c_str());
 				}
 			}
 
@@ -1040,11 +1110,16 @@ void Config::LoadBonePriorities() {
 			}
 		} while (hf != INVALID_HANDLE_VALUE);
 	else
-		_WARNING("FindFirstFileEx reported error %d", GetLastError());
+		logger::warn(FMT_STRING("FindFirstFileEx reported error {}"), GetLastError());
 
 	free(buf);
 
-	if (bonePriorities.size() == 0) {
+	return outBones.size() > 0;
+}
+
+static Config::BoneList bonePriorities = {};
+void Config::LoadBonePriorities() {
+	if (!LoadBoneList(L"SmoothCam_FollowBones_*.txt", bonePriorities)) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_FollowBones_Default.txt present in the SKSE plugins directory?
 Will fall back to default third-person camera bone.
 To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
@@ -1056,56 +1131,24 @@ Config::BoneList& Config::GetBonePriorities() noexcept {
 	return bonePriorities;
 }
 
+static Config::BoneList focusBonePriorities = {};
+void Config::LoadFocusBonePriorities() {
+	if (!LoadBoneList(L"SmoothCam_FocusBones_*.txt", focusBonePriorities)) {
+		WarningPopup(LR"(SmoothCam: Did not find any bone names to focus during dialogue while loading! Is SmoothCam_FocusBones_Default.txt present in the SKSE plugins directory?
+Will fall back to default focal bone.
+To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
+		focusBonePriorities.emplace_back("NPC Head [Head]");
+	}
+}
+
+Config::BoneList& Config::GetFocusBonePriorities() noexcept {
+	return focusBonePriorities;
+}
+
 #ifdef DEVELOPER
 static Config::BoneList eyeBonePriorities = {};
 void Config::LoadEyeBonePriorities() {
-	// @Issue:35: std::filesystem::directory_iterator throws on unicode paths
-	// @Note: Relative paths don't seem to work without MO2, prepend the full CWD
-	const auto sz = GetCurrentDirectory(0, nullptr);
-	WCHAR* buf = (WCHAR*)malloc(sizeof(WCHAR) * sz);
-	GetCurrentDirectory(sz, buf);
-
-	std::wstring path = L"\\\\?\\"; 
-	path.append(buf);
-	path.append(L"\\Data\\SKSE\\Plugins\\SmoothCam_EyeBones_*.txt");
-
-	WIN32_FIND_DATA data;
-	auto hf = FindFirstFileEx(
-		path.c_str(),
-		FINDEX_INFO_LEVELS::FindExInfoStandard,
-		&data,
-		FINDEX_SEARCH_OPS::FindExSearchLimitToDirectories,
-		nullptr,
-		0
-	);
-
-	if (hf != INVALID_HANDLE_VALUE)
-		do {
-			std::wstring filePath = L"Data/SKSE/Plugins/";
-			filePath.append(data.cFileName);
-			std::ifstream ifs(filePath);
-			if (ifs.good()) {
-				std::string line;
-				while (std::getline(ifs, line)) {
-					trimString(line);
-					if (line.length() == 0) continue;
-					if (line.rfind("//", 0) == 0) continue;
-
-					eyeBonePriorities.emplace_back(line.c_str());
-				}
-			}
-
-			if (!FindNextFile(hf, &data)) {
-				FindClose(hf);
-				break;
-			}
-		} while (hf != INVALID_HANDLE_VALUE);
-	else
-		_WARNING("FindFirstFileEx reported error %d", GetLastError());
-
-	free(buf);
-
-	if (eyeBonePriorities.size() == 0) {
+	if (!LoadBoneList(L"SmoothCam_EyeBones_*.txt", eyeBonePriorities)) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_EyeBones_Default.txt present in the SKSE plugins directory?
 Will fall back to default first-person camera bone.
 To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
@@ -1117,3 +1160,4 @@ Config::BoneList& Config::GetEyeBonePriorities() noexcept {
 	return eyeBonePriorities;
 }
 #endif
+#pragma warning(pop)

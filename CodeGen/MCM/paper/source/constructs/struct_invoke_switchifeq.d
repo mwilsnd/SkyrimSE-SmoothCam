@@ -77,6 +77,13 @@ private {
                 stream ~= Token(Tok.Arrow, "->");
                 stream ~= Token(Tok.Exclamation, "!");
                 stream ~= Token(Tok.OtherValue, macroName);
+
+                // return
+                stream ~= Token(Tok.CharReturn, "\r");
+                stream ~= Token(Tok.NewLine, "\n");
+                stream ~= Token(Tok.Tab, "\t");
+                stream ~= Token(Tok.Tab, "\t");
+                stream ~= Token(Tok.kReturn, "return");
             }
 
             stream ~= Token(Tok.CharReturn, "\r");

@@ -6,8 +6,9 @@
 #endif
 #include "firstperson.h"
 #include "thirdperson.h"
-
 #include "debug/eh.h"
+
+extern Offsets* g_Offsets;
 
 Camera::Camera::Camera() noexcept : config(Config::GetCurrentConfig()) {
 	cameraFirst = eastl::make_unique<Firstperson>(this);
@@ -24,53 +25,53 @@ Camera::Camera::~Camera() {
 }
 
 // Called when the player toggles the POV
-void Camera::Camera::OnTogglePOV(const ButtonEvent* ev) noexcept {
-	povIsThird = !povIsThird;
+void Camera::Camera::OnTogglePOV(RE::ButtonEvent* ev) noexcept {
 	povWasPressed = true;
 	if (activeCamera)
 		activeCamera->OnTogglePOV(ev);
 }
 
-void Camera::Camera::OnKeyPress(const ButtonEvent* ev) noexcept {
-	auto code = ev->keyMask;
-	if (code <= 0x6 && ev->deviceType == kDeviceType_Mouse)
+void Camera::Camera::OnKeyPress(const RE::ButtonEvent* ev) noexcept {
+	auto code = static_cast<int32_t>(ev->idCode);
+	if (code <= 0x6 && ev->device == RE::INPUT_DEVICE::kMouse)
 		code += 0x100;
 
-	// Cycle next preset
-	if (config->nextPresetKey >= 0 && code == config->nextPresetKey && ev->timer <= 0.000001f) {
-		// wrap to 0..5
-		if (++currentPresetIndex > 5) currentPresetIndex = 0;
-
-		// Try and load from currentIndex, up to n slots wrapping back to startIndex
-		const auto startIndex = currentPresetIndex;
-		while (!Config::LoadPreset(currentPresetIndex)) {
+	if (!inMenuMode) {
+		// Cycle next preset
+		if (config->nextPresetKey >= 0 && code == config->nextPresetKey && ev->heldDownSecs <= 0.000001f) {
+			// wrap to 0..5
 			if (++currentPresetIndex > 5) currentPresetIndex = 0;
-			if (currentPresetIndex == startIndex) break; // No valid preset to load
+
+			// Try and load from currentIndex, up to n slots wrapping back to startIndex
+			const auto startIndex = currentPresetIndex;
+			while (!Config::LoadPreset(currentPresetIndex)) {
+				if (++currentPresetIndex > 5) currentPresetIndex = 0;
+				if (currentPresetIndex == startIndex) break; // No valid preset to load
+			}
+
+			return;
+		} else if (config->modToggleKey >= 0 && code == config->modToggleKey && ev->heldDownSecs <= 0.000001f) {
+			// Mod enable/disable
+			config->modDisabled = !config->modDisabled;
+			return;
 		}
-
-		return;
-	} else if (config->modToggleKey >= 0 && code == config->modToggleKey && ev->timer <= 0.000001f) {
-		// Mod enable/disable
-		config->modDisabled = !config->modDisabled;
 	}
-
 
 	if (activeCamera && activeCamera->OnKeyPress(ev)) return;
 }
 
-void Camera::Camera::OnMenuOpenClose(MenuID id, const MenuOpenCloseEvent* const ev) noexcept {
+void Camera::Camera::OnMenuOpenClose(MenuID id, const RE::MenuOpenCloseEvent* const ev) noexcept {
 	if (activeCamera && activeCamera->OnMenuOpenClose(id, ev)) return;
 
 	switch (id) {
-		case MenuID::InventoryMenu:
-		case MenuID::DialogMenu:
-		case MenuID::MapMenu:
-			break;
+		case MenuID::InventoryMenu: [[fallthrough]];
+		case MenuID::DialogMenu: [[fallthrough]];
+		case MenuID::MapMenu: break;
 		case MenuID::LoadingMenu:
 			wasLoading = true;
 			[[fallthrough]];
 		default: {
-			loadScreenDepth = glm::clamp(
+			loadScreenDepth = glm::clamp<int8_t>(
 				loadScreenDepth + (ev->opening ? 1 : -1),
 				0,
 				127
@@ -80,12 +81,21 @@ void Camera::Camera::OnMenuOpenClose(MenuID id, const MenuOpenCloseEvent* const 
 	}
 }
 
+void Camera::Camera::OnMenuModeChange(bool isMenuMode) noexcept {
+	inMenuMode = isMenuMode;
+}
+
+bool Camera::Camera::IsInputLocked(RE::TESCameraState* state) noexcept {
+	if (!cameraThird) return false;
+	return cameraThird->IsInputLocked(state);
+}
+
 // Updates our POV state to the true value the game expects for each state
-const bool Camera::Camera::UpdateCameraPOVState(const PlayerCharacter* player, const CorrectedPlayerCamera* camera) noexcept {
+const bool Camera::Camera::UpdateCameraPOVState(const RE::PlayerCamera* camera) noexcept {
 	povIsThird = GameState::IsInAutoVanityCamera(camera) ||
 		GameState::IsInCameraTransition(camera) || GameState::IsInUsingObjectCamera(camera) ||
 		GameState::IsInKillMove(camera) || GameState::IsInBleedoutCamera(camera) ||
-		GameState::IsInFurnitureCamera(camera) || GameState::IsInHorseCamera(player, camera) ||
+		GameState::IsInFurnitureCamera(camera) || GameState::IsInHorseCamera(camera) ||
 		GameState::IsInDragonCamera(camera) || GameState::IsThirdPerson(camera);
 	return povIsThird;
 }
@@ -99,34 +109,36 @@ const Camera::CameraActionState Camera::Camera::GetCurrentCameraActionState() co
 }
 
 // Returns the current camera state for use in selecting an update method
-const GameState::CameraState Camera::Camera::UpdateCurrentCameraState(const PlayerCharacter* player,
-	const CorrectedPlayerCamera* camera) noexcept
+const GameState::CameraState Camera::Camera::UpdateCurrentCameraState(RE::PlayerCharacter* player,
+	const RE::Actor* forRef, RE::PlayerCamera* camera) noexcept
 {
-	const GameState::CameraState newState = GameState::GetCameraState(player, camera);
-	const auto tps = reinterpret_cast<const CorrectedThirdPersonState*>(camera->cameraState);
+	const GameState::CameraState newState = GameState::GetCameraState(forRef, camera);
 	if (newState != currentState) {
-		lastState = currentState;
-		currentState = newState;
-		OnCameraStateTransition(player, camera, newState, lastState);
+		if (!OnCameraStateTransition(player, camera, newState, currentState)) {
+			lastState = currentState;
+			currentState = newState;
+		}
 	}
-	return newState;
+	return currentState;
 }
 
 // Returns the current camera action state for use in the selected update method
-const Camera::CameraActionState Camera::Camera::UpdateCurrentCameraActionState(const PlayerCharacter* player,
-	const CorrectedPlayerCamera* camera) noexcept
+const Camera::CameraActionState Camera::Camera::UpdateCurrentCameraActionState(const RE::PlayerCharacter* player,
+	const RE::Actor* forRef, const RE::PlayerCamera* camera) noexcept
 {
 	CameraActionState newState = CameraActionState::Unknown;
 
-	if (GameState::IsVampireLord(player)) {
+	if (GameState::IsInAutoVanityCamera(camera)) {
+		newState = CameraActionState::Vanity;
+	} else if (GameState::IsVampireLord(forRef)) {
 		newState = CameraActionState::VampireLord;
-	} else if (GameState::IsWerewolf(player)) {
+	} else if (GameState::IsWerewolf(forRef)) {
 		newState = CameraActionState::Werewolf;
-	} else if (camera->cameraState == camera->cameraStates[PlayerCamera::kCameraState_Horse]) {
+	} else if (camera->currentState == camera->cameraStates[RE::CameraStates::kMount]) {
 		// FPV camera mod compat
 		if (GameState::IsFirstPerson(camera)) {
 			newState = CameraActionState::FirstPersonHorseback;
-		} else if (GameState::IsDisMountingHorse(player)) {
+		} else if (GameState::IsDisMountingHorse(forRef)) {
 			newState = CameraActionState::DisMounting;
 		} else {
 			newState = CameraActionState::Horseback;
@@ -138,28 +150,28 @@ const Camera::CameraActionState Camera::Camera::UpdateCurrentCameraActionState(c
 		} else {
 			newState = CameraActionState::Dragon;
 		}
-	} else if (GameState::IsSleeping(player)) {
+	} else if (GameState::IsSleeping(forRef)) {
 		newState = CameraActionState::Sleeping;
 	} else if (GameState::IsInFurnitureCamera(camera)) {
 		newState = CameraActionState::SittingTransition;
-	} else if (GameState::IsSitting(player)) {
+	} else if (GameState::IsSitting(forRef)) {
 		// FPV camera mod compat
 		if (GameState::IsFirstPerson(camera)) {
 			newState = CameraActionState::FirstPersonSitting;
 		} else {
 			newState = CameraActionState::Sitting;
 		}
-	} else if (GameState::IsBowDrawn(player)) { // Bow being drawn should have priority here
+	} else if (GameState::IsBowDrawn(forRef)) { // Bow being drawn should have priority here
 		newState = CameraActionState::Aiming;
-	} else if (GameState::IsSneaking(player)) {
+	} else if (GameState::IsSneaking(forRef)) {
 		newState = CameraActionState::Sneaking;
-	} else if (GameState::IsSwimming(player)) {
+	} else if (GameState::IsSwimming(forRef)) {
 		newState = CameraActionState::Swimming;
-	} else if (GameState::IsSprinting(player)) {
+	} else if (GameState::IsSprinting(forRef)) {
 		newState = CameraActionState::Sprinting;
-	} else if (GameState::IsWalking(player)) {
+	} else if (GameState::IsWalking(forRef)) {
 		newState = CameraActionState::Walking;
-	} else if (GameState::IsRunning(player)) {
+	} else if (GameState::IsRunning(forRef)) {
 		newState = CameraActionState::Running;
 	} else {
 		newState = CameraActionState::Standing;
@@ -175,7 +187,7 @@ const Camera::CameraActionState Camera::Camera::UpdateCurrentCameraActionState(c
 }
 
 // Triggers when the camera action state changes, for debugging
-void Camera::Camera::OnCameraActionStateTransition(const PlayerCharacter* player,
+void Camera::Camera::OnCameraActionStateTransition(const RE::PlayerCharacter* player,
 	const CameraActionState newState, const CameraActionState oldState) const noexcept
 {
 	if (activeCamera)
@@ -183,16 +195,15 @@ void Camera::Camera::OnCameraActionStateTransition(const PlayerCharacter* player
 }
 
 // Triggers when the camera state changes
-void Camera::Camera::OnCameraStateTransition(const PlayerCharacter* player, const CorrectedPlayerCamera* camera,
+bool Camera::Camera::OnCameraStateTransition(RE::PlayerCharacter* player, RE::PlayerCamera* camera,
 	const GameState::CameraState newState, const GameState::CameraState oldState) noexcept
 {
 	if (activeCamera)
-		activeCamera->OnCameraStateTransition(player, camera, newState, oldState);
+		return activeCamera->OnCameraStateTransition(player, camera, newState, oldState);
+	return false;
 }
 
-void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCamera* camera, NiCamera* niCamera) noexcept {
-	auto cameraNode = camera->cameraNode;
-
+void Camera::Camera::SetPosition(const glm::vec3& pos, const RE::PlayerCamera* camera, RE::NiCamera* niCamera) noexcept {
 #ifdef _DEBUG
 	if (!mmath::IsValid(pos)) {
 		__debugbreak();
@@ -200,35 +211,25 @@ void Camera::Camera::SetPosition(const glm::vec3& pos, const CorrectedPlayerCame
 	}
 #endif
 
-	cameraNode->m_localTransform.pos = cameraNode->m_worldTransform.pos = (niCamera ? niCamera : cameraNi)->m_worldTransform.pos =
+	auto& cameraNode = camera->cameraRoot;
+	cameraNode->local.translate = cameraNode->world.translate = (niCamera ? niCamera : cameraNi.get())->world.translate =
 		{ pos.x, pos.y, pos.z };
 
 	if (currentState == GameState::CameraState::ThirdPerson || currentState == GameState::CameraState::ThirdPersonCombat) {
-		auto state = reinterpret_cast<CorrectedThirdPersonState*>(camera->cameraState);
-		state->translation = cameraNode->m_localTransform.pos;
+		auto state = reinterpret_cast<RE::ThirdPersonState*>(camera->currentState.get());
+		state->translation = cameraNode->local.translate;
 	}
 }
 
-void Camera::Camera::UpdateInternalWorldToScreenMatrix(const mmath::Rotation& rot, const CorrectedPlayerCamera* camera,
-	NiCamera* niCamera) noexcept
-{
-	auto camNi = niCamera ? niCamera : cameraNi;
-	// Run the THT to get a world to scaleform matrix
-	const auto lastRotation = camNi->m_worldTransform.rot;
-	camNi->m_worldTransform.rot = rot.THT();
-	// Force the game to compute the matrix for us
-	typedef void(*UpdateWorldToScreenMtx)(NiCamera*);
-	static auto toScreenFunc = Offsets::Get<UpdateWorldToScreenMtx>(69271);
+void Camera::Camera::UpdateInternalWorldToScreenMatrix(RE::NiCamera* niCamera) noexcept {
+	auto camNi = niCamera ? niCamera : cameraNi.get();
+	typedef void(*UpdateWorldToScreenMtx)(RE::NiCamera*);
+	static auto toScreenFunc = REL::Relocation<UpdateWorldToScreenMtx>(g_Offsets->ComputeToScreenMatrix);
 	toScreenFunc(camNi);
-	// Grab it
-	worldToScaleform = *reinterpret_cast<mmath::NiMatrix44*>(camNi->m_aafWorldToCam);
-	// Now restore the normal camera rotation
-	camNi->m_worldTransform.rot = lastRotation;
-	// And compute the normal toScreen matrix
-	toScreenFunc(camNi);
+	worldToScaleform = *reinterpret_cast<mmath::NiMatrix44*>(camNi->worldToCam);
 }
 
-const NiFrustum& Camera::Camera::GetFrustum() const noexcept {
+const RE::NiFrustum& Camera::Camera::GetFrustum() const noexcept {
 	return frustum;
 }
 
@@ -236,33 +237,33 @@ const glm::vec3& Camera::Camera::GetLastRecordedCameraPosition() const noexcept 
 	return gameLastActualPosition;
 }
 
-NiPointer<Actor> Camera::Camera::GetCurrentCameraTarget(const CorrectedPlayerCamera* camera) noexcept {
-	const auto ctrls = PlayerControls::GetSingleton();
-	if (!ctrls) return *g_thePlayer;
+RE::NiPointer<RE::Actor> Camera::Camera::GetCurrentCameraTarget(const RE::PlayerCamera* camera) noexcept {
+	// Special case - In horse camera, just return the player
+	if (GameState::IsInHorseCamera(camera))
+		return RE::NiPointer<RE::Actor>(RE::PlayerCharacter::GetSingleton());
 
-	auto controlled = reinterpret_cast<const tArray<UInt32>*>(&ctrls->unk150);
-	auto controlledRef = controlled->count > 0 ? controlled->entries[controlled->count-1] : 0x0;
+	// We should be looking at this first
+	if (camera->cameraTarget)
+		return camera->cameraTarget.get();
 
-	if (controlledRef == 0) return *g_thePlayer;
-	NiPointer<TESObjectREFR> refr;
-	(*LookupREFRByHandle)(controlledRef, refr);
+	const auto ctrls = RE::PlayerControls::GetSingleton();
+	if (!ctrls) return RE::NiPointer<RE::Actor>(RE::PlayerCharacter::GetSingleton());
 
-	if (refr) {
-		NiPointer<Actor> actor = DYNAMIC_CAST(refr.get(), TESObjectREFR, Actor);
-		if (actor) {
-			// Special case - In horse camera, just return the player
-			if (GameState::IsInHorseCamera(actor, camera))
-				return *g_thePlayer;
-			return actor;
-		}
-	}
+	if (ctrls->actionInterestedActor.size() == 0)
+		return RE::NiPointer<RE::Actor>(RE::PlayerCharacter::GetSingleton());
 
-	// Fallback to the player
-	return *g_thePlayer;
+	auto refr = ctrls->actionInterestedActor.front(); // Otherwise the most interested input observer
+	if (!refr) return RE::NiPointer<RE::Actor>(RE::PlayerCharacter::GetSingleton());
+
+	return refr.get();
 }
 
 bool Camera::Camera::InLoadingScreen() const noexcept {
 	return loadScreenDepth != 0;
+}
+
+bool Camera::Camera::InMenuMode() const noexcept {
+	return inMenuMode;
 }
 
 void Camera::Camera::SetShouldForceCameraState(bool force, uint8_t newCameraState) noexcept {
@@ -280,13 +281,12 @@ Camera::Firstperson* Camera::Camera::GetFirstpersonCamera() noexcept {
 	return cameraFirst.get();
 }
 
-NiPointer<NiCamera> Camera::Camera::GetNiCamera(CorrectedPlayerCamera* camera) const noexcept {
+RE::NiPointer<RE::NiCamera> Camera::Camera::GetNiCamera(RE::PlayerCamera* camera) const noexcept {
 	// Do other things parent stuff to the camera node? Better safe than sorry I guess
-	if (camera->cameraNode->m_children.m_size == 0) return nullptr;
-	for (auto i = 0; i < camera->cameraNode->m_children.m_size; i++) {
-		auto entry = camera->cameraNode->m_children.m_data[i];
-		auto asCamera = DYNAMIC_CAST(entry, NiAVObject, NiCamera);
-		if (asCamera) return asCamera;
+	if (camera->cameraRoot->children.size() == 0) return nullptr;
+	for (auto& entry : camera->cameraRoot->children) {
+		auto asCamera = skyrim_cast<RE::NiCamera*>(entry.get());
+		if (asCamera) return RE::NiPointer<RE::NiCamera>(asCamera);
 	}
 	return nullptr;
 }
@@ -299,17 +299,14 @@ void Camera::Camera::Render(Render::D3DContext& ctx) {
 
 // Use this method to snatch modifications done by mods that run after us 
 // Called before the internal game method runs which will overwrite most of that
-bool Camera::Camera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamera* camera,
-	BSTSmartPointer<TESCameraState>& nextState)
+bool Camera::Camera::PreGameUpdate(RE::PlayerCharacter* player, RE::PlayerCamera* camera,
+	RE::BSTSmartPointer<RE::TESCameraState>& nextState)
 {
 	// Force the camera to a new state
 	if (wantNewCameraState && !Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken()) {
 		auto wantState = camera->cameraStates[wantNewState];
-		if (wantState && camera->cameraState != wantState) {
-			if (nextState.ptr)
-				InterlockedDecrement(&nextState.ptr->refCount.m_refCount);
-			InterlockedIncrement(&wantState->refCount.m_refCount);
-			nextState.ptr = wantState;
+		if (wantState && camera->currentState != wantState) {
+			nextState = wantState;
 		}
 		wantNewCameraState = false;
 		return true;
@@ -326,9 +323,9 @@ bool Camera::Camera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamer
 	cameraNi = GetNiCamera(camera);
 	if (cameraNi) {
 		gameLastActualPosition = {
-			cameraNi->m_worldTransform.pos.x,
-			cameraNi->m_worldTransform.pos.y,
-			cameraNi->m_worldTransform.pos.z
+			cameraNi->world.translate.x,
+			cameraNi->world.translate.y,
+			cameraNi->world.translate.z
 		};
 	}
 
@@ -336,13 +333,20 @@ bool Camera::Camera::PreGameUpdate(PlayerCharacter* player, CorrectedPlayerCamer
 }
 
 // Selects the correct update method and positions the camera
-void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera* camera,
-	BSTSmartPointer<TESCameraState>& nextState)
+void Camera::Camera::UpdateCamera(RE::PlayerCharacter* player, RE::PlayerCamera* camera,
+	RE::BSTSmartPointer<RE::TESCameraState>& nextState)
 {
 	// Check if the user has turned the camera off
 	// Also check if another mod has been given camera control via the interface
 	const auto wantsControl = Messaging::SmoothCamInterface::GetInstance()->IsCameraTaken();
 	const auto wantsUpdates = Messaging::SmoothCamInterface::GetInstance()->WantsInterpolatorUpdates();
+
+	if (wantsControl) {
+		wasCameraAPIControlled = apiControlled = true;
+	} else {
+		wasCameraAPIControlled = apiControlled;
+		apiControlled = false;
+	}
 
 	if (config->modDisabled || (wantsControl && !wantsUpdates)) {
 		if (ranLastFrame) {
@@ -369,12 +373,12 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 	}
 
 	// Update states
-	const auto state = UpdateCurrentCameraState(player, camera);
-	const auto pov = UpdateCameraPOVState(player, camera);
-	const auto actionState = UpdateCurrentCameraActionState(player, camera);
+	const auto state = UpdateCurrentCameraState(player, currentFocusObject, camera);
+	const auto pov = UpdateCameraPOVState(camera);
+	const auto actionState = UpdateCurrentCameraActionState(player, currentFocusObject, camera);
 
 	// Set our frustum
-	frustum = cameraNi->m_frustum;
+	frustum = cameraNi->viewFrustum;
 
 	// Now based on POV state, select the active camera
 	ICamera* nextCamera = nullptr;
@@ -385,7 +389,8 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 		if (TrackIR::IsRunning())
 			trackIRData = TrackIR::GetTrackingData();
 #endif
-	} else if (pov)
+	} else if (pov && (skyrim_cast<RE::ThirdPersonState*>(camera->currentState.get()) ||
+		camera->currentState->id == RE::CameraState::kAutoVanity))
 		nextCamera = cameraThird.get();
 
 	if (activeCamera != nextCamera) {
@@ -403,5 +408,5 @@ void Camera::Camera::UpdateCamera(PlayerCharacter* player, CorrectedPlayerCamera
 	wasLoading = false;
 	ranLastFrame = true;
 	wasDialogOpen = false;
-	wasCameraAPIControlled = !wantsControl;
+	povWasPressed = false;
 }

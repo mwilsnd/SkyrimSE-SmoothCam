@@ -1,18 +1,17 @@
 ﻿#ifdef _DEBUG
 #include "debug/commands/set_setting.h"
-#include "debug/registry.h"
 
 Debug::SetSetting::~SetSetting() {}
 
 void Debug::SetSetting::Run(const eastl::string& args) noexcept {
 	const auto pos = args.find_first_of(' ', 0);
-	auto name = pos != std::string::npos ? args.substr(0, pos) : args;
-	auto value = pos != std::string::npos ? args.substr(glm::min(pos+1, args.length())) : "";
+	auto name = pos != eastl::string::npos ? args.substr(0, pos) : args;
+	auto value = pos != eastl::string::npos ? args.substr(glm::min(pos+1, args.length())) : "";
 
-	auto setting = (*g_iniSettingCollection)->Get(name.c_str());
+	auto setting = RE::INISettingCollection::GetSingleton()->GetSetting(name.c_str());
 
 	if (!setting) {
-		setting = (*g_iniPrefSettingCollection)->Get(name.c_str());
+		setting = RE::INIPrefSettingCollection::GetSingleton()->GetSetting(name.c_str());
 		if (!setting) {
 			puts("Setting not found");
 			return;
@@ -20,20 +19,20 @@ void Debug::SetSetting::Run(const eastl::string& args) noexcept {
 	}
 
 	switch (setting->GetType()) {
-		case Setting::kType_Bool: {
-			setting->data.u8 = value.compare("true") == 0;
+		case RE::Setting::Type::kBool: {
+			setting->data.b = value.compare("true") == 0;
 			break;
 		}
-		case Setting::kType_Float: {
-			setting->data.f32 = std::stof(value.c_str());
+		case RE::Setting::Type::kFloat: {
+			setting->data.f = std::stof(value.c_str());
 			break;
 		}
-		case Setting::kType_Integer: {
-			setting->data.s32 = std::stoi(value.c_str());
+		case RE::Setting::Type::kSignedInteger: {
+			setting->data.i = std::stoi(value.c_str());
 			break;
 		}
-		case Setting::kType_ID: {
-			setting->data.u32 = std::stoul(value.c_str());
+		case RE::Setting::Type::kUnsignedInteger: {
+			setting->data.u = std::stoul(value.c_str());
 			break;
 		}
 		default: {

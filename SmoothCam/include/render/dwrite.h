@@ -11,7 +11,7 @@ namespace Render {
 
 	class DWrite {
 		public:
-			DWrite(D2D* d2d);
+			explicit DWrite(D2D* d2d);
 			~DWrite();
 
 			// Generate and return a text layout

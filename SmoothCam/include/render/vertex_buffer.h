@@ -5,8 +5,8 @@
 namespace Render {
 	using IALayout = eastl::vector<D3D11_INPUT_ELEMENT_DESC>;
 	struct VertexBufferCreateInfo {
-		size_t elementSize = 0;
-		size_t numElements = 0;
+		uint32_t elementSize = 0;
+		uint32_t numElements = 0;
 		D3D11_SUBRESOURCE_DATA* elementData = nullptr;
 		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		D3D11_USAGE bufferUsage = D3D11_USAGE_IMMUTABLE;
@@ -17,7 +17,7 @@ namespace Render {
 
 	class VertexBuffer {
 		public:
-			explicit VertexBuffer(const VertexBufferCreateInfo& createInfo, D3DContext& ctx) noexcept;
+			VertexBuffer(const VertexBufferCreateInfo& createInfo, D3DContext& ctx) noexcept;
 			~VertexBuffer() noexcept;
 			VertexBuffer(const VertexBuffer&) = delete;
 			VertexBuffer(VertexBuffer&&) noexcept = delete;

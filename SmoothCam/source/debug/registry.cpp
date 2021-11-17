@@ -8,7 +8,7 @@ Debug::CommandRegistry* Debug::CommandRegistry::Get() noexcept {
 }
 
 void Debug::CommandRegistry::Register(eastl::unique_ptr<ICommand>&& command) noexcept {
-	registry.insert({ command->GetName(), std::move(command) });
+	registry.insert({ command->GetName(), eastl::move(command) });
 }
 
 const Debug::CommandRegistry::CommandTable& Debug::CommandRegistry::GetCommands() const noexcept {

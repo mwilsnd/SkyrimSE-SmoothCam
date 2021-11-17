@@ -1,3 +1,13 @@
+; Kind of hacked in, but worth it since it cleans the menus up
+PapyrusListSetting offsetGroupPicker -> [
+	displayName: "Offset Gorup"
+	desc: "Select an offset group to edit"
+	arrayType: offsetGroups
+	lvalue: activeOffsetGroup
+	refreshPageOnUpdate: true
+	page: " Thirdperson Offsets"
+]
+
 ; Standing
 #CreateOffsetGroup(Standing, " Standing")
 ; Walking
@@ -20,12 +30,14 @@
 #CreateOffsetGroup(VampireLord, " Vampire Lord", NoRanged)
 ; Werewolf
 #CreateOffsetGroup(Werewolf, " Werewolf", NoRanged, NoMagic)
+; Vanity
+#CreateOffsetGroup(Vanity, " Vanity", NoMelee, NoRanged, NoMagic)
 ; User-defined
 #CreateOffsetGroup(Custom, " Custom")
 ; Group edit
 #CreateOffsetGroup(Group, " Group Edit", NoInterpToggles)
 ; Bow aiming
-SliderSetting bowaim_sideOffset -> [
+TPSOffsetSliderSetting bowaim_sideOffset -> [
 	settingName: "Bowaim:SideOffset"
 	displayName: "Side Offset"
 	desc: "The amount to move the camera to the right."
@@ -34,14 +46,14 @@ SliderSetting bowaim_sideOffset -> [
 	page: " Bow Aiming"
 	header: "Bow Aiming Offsets"
 ]
-SliderSetting bowaim_upOffset -> [
+TPSOffsetSliderSetting bowaim_upOffset -> [
 	settingName: "Bowaim:UpOffset"
 	displayName: "Up Offset"
 	desc: "The amount to move the camera up."
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_zoomOffset -> [
+TPSOffsetSliderSetting bowaim_zoomOffset -> [
 	settingName: "Bowaim:ZoomOffset"
 	displayName: "Zoom Offset"
 	desc: "The amount to offset the camera zoom by."
@@ -50,7 +62,7 @@ SliderSetting bowaim_zoomOffset -> [
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_fovOffset -> [
+TPSOffsetSliderSetting bowaim_fovOffset -> [
 	settingName: "Bowaim:FOVOffset"
 	displayName: "FOV Offset"
 	desc: "The amount to offset the camera FOV by. Note this will be clamped to a lower bound of 10 and an upper bound of 170."
@@ -59,7 +71,7 @@ SliderSetting bowaim_fovOffset -> [
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_sideOffsetHorseback -> [
+TPSOffsetSliderSetting bowaim_sideOffsetHorseback -> [
 	settingName: "BowaimHorse:SideOffset"
 	displayName: "Horseback Side Offset"
 	desc: "The amount to move the camera to the right when on horseback."
@@ -68,14 +80,14 @@ SliderSetting bowaim_sideOffsetHorseback -> [
 	page: " Bow Aiming"
 	header: "Bow Aiming Horseback Offsets"
 ]
-SliderSetting bowaim_upOffsetHorseback -> [
+TPSOffsetSliderSetting bowaim_upOffsetHorseback -> [
 	settingName: "BowaimHorse:UpOffset"
 	displayName: "Horseback Up Offset"
 	desc: "The amount to move the camera up when on horseback."
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_zoomOffsetHorseback -> [
+TPSOffsetSliderSetting bowaim_zoomOffsetHorseback -> [
 	settingName: "BowaimHorse:ZoomOffset"
 	displayName: "Horseback Zoom Offset"
 	desc: "The amount to offset the camera zoom by when on horseback."
@@ -84,7 +96,7 @@ SliderSetting bowaim_zoomOffsetHorseback -> [
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_fovOffsetHorseback -> [
+TPSOffsetSliderSetting bowaim_fovOffsetHorseback -> [
 	settingName: "BowaimHorse:FOVOffset"
 	displayName: "Horseback FOV Offset"
 	desc: "The amount to offset the camera FOV by when on horseback. Note this will be clamped to a lower bound of 10 and an upper bound of 170."
@@ -93,7 +105,7 @@ SliderSetting bowaim_fovOffsetHorseback -> [
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_sideOffsetSneaking -> [
+TPSOffsetSliderSetting bowaim_sideOffsetSneaking -> [
 	settingName: "BowaimSneak:SideOffset"
 	displayName: "Sneaking Side Offset"
 	desc: "The amount to move the camera to the right when sneaking."
@@ -102,14 +114,14 @@ SliderSetting bowaim_sideOffsetSneaking -> [
 	page: " Bow Aiming"
 	header: "Bow Aiming Sneaking Offsets"
 ]
-SliderSetting bowaim_upOffsetSneaking -> [
+TPSOffsetSliderSetting bowaim_upOffsetSneaking -> [
 	settingName: "BowaimSneak:UpOffset"
 	displayName: "Sneaking Up Offset"
 	desc: "The amount to move the camera up when sneaking."
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_zoomOffsetSneaking -> [
+TPSOffsetSliderSetting bowaim_zoomOffsetSneaking -> [
 	settingName: "BowaimSneak:ZoomOffset"
 	displayName: "Sneaking Zoom Offset"
 	desc: "The amount to offset the camera zoom by when sneaking."
@@ -118,7 +130,7 @@ SliderSetting bowaim_zoomOffsetSneaking -> [
 	displayFormat: "{0}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_fovOffsetSneaking -> [
+TPSOffsetSliderSetting bowaim_fovOffsetSneaking -> [
 	settingName: "BowaimSneak:FOVOffset"
 	displayName: "Sneaking FOV Offset"
 	desc: "The amount to offset the camera FOV by when sneaking. Note this will be clamped to a lower bound of 10 and an upper bound of 170."
@@ -129,20 +141,20 @@ SliderSetting bowaim_fovOffsetSneaking -> [
 ]
 
 ; Bow aim interp
-ToggleSetting bowaim_interp -> [
+TPSOffsetToggleSetting bowaim_interp -> [
 	settingName: "InterpBowAim"
 	displayName: "Enable Interpolation"
 	desc: "Enables interpolation in this state."
 	page: " Bow Aiming"
 	header: "Interpolation"
 ]
-ToggleSetting bowaim_overrideInterp -> [
+TPSOffsetToggleSetting bowaim_overrideInterp -> [
 	settingName: "OverrideInterpBowAim"
 	displayName: "Override Interpolation"
 	desc: "Overrides interpolation values in this state."
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_minFollowRate -> [
+TPSOffsetSliderSetting bowaim_minFollowRate -> [
 	settingName: "MinFollowRateBowAim"
 	displayName: "Min Follow Rate"
 	desc: "The smoothing rate to use when the camera is close to the player."
@@ -153,7 +165,7 @@ SliderSetting bowaim_minFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_maxFollowRate -> [
+TPSOffsetSliderSetting bowaim_maxFollowRate -> [
 	settingName: "MaxFollowRateBowAim"
 	displayName: "Max Follow Rate"
 	desc: "The smoothing rate to use when the camera is far away from the player."
@@ -164,7 +176,7 @@ SliderSetting bowaim_maxFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_maxSmoothingInterpDistance -> [
+TPSOffsetSliderSetting bowaim_maxSmoothingInterpDistance -> [
 	settingName: "MaxSmoothingInterpDistanceBowAim"
 	displayName: "Max Interpolation Distance"
 	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
@@ -173,7 +185,7 @@ SliderSetting bowaim_maxSmoothingInterpDistance -> [
 	max: 650.0
 	page: " Bow Aiming"
 ]
-ListSetting bowaim_interpMethod -> [
+TPSOffsetListSetting bowaim_interpMethod -> [
 	settingName: "SelectedScalarBowAim"
 	displayName: "Method"
 	desc: "The scalar method to use for camera smoothing."
@@ -182,14 +194,14 @@ ListSetting bowaim_interpMethod -> [
 ]
 
 ; Bow aim local interp
-ToggleSetting bowaim_overrideLocalInterp -> [
+TPSOffsetToggleSetting bowaim_overrideLocalInterp -> [
 	settingName: "OverrideLocalInterpBowAim"
 	displayName: "Override Local Interpolation"
 	desc: "Overrides local-space interpolation values in this state."
 	page: " Bow Aiming"
 	header: "Local Interpolation"
 ]
-SliderSetting bowaim_localMinFollowRate -> [
+TPSOffsetSliderSetting bowaim_localMinFollowRate -> [
 	settingName: "MinSepLocalFollowRateBowAim"
 	displayName: "Min Follow Rate"
 	desc: "The smoothing rate to use when the camera is close to the player."
@@ -200,7 +212,7 @@ SliderSetting bowaim_localMinFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_localMaxFollowRate -> [
+TPSOffsetSliderSetting bowaim_localMaxFollowRate -> [
 	settingName: "MaxSepLocalFollowRateBowAim"
 	displayName: "Max Follow Rate"
 	desc: "The smoothing rate to use when the camera is far away from the player."
@@ -211,7 +223,7 @@ SliderSetting bowaim_localMaxFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaim_localMaxSmoothingInterpDistance -> [
+TPSOffsetSliderSetting bowaim_localMaxSmoothingInterpDistance -> [
 	settingName: "MaxSepLocalSmoothingInterpDistanceBowAim"
 	displayName: "Max Interpolation Distance"
 	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
@@ -220,7 +232,7 @@ SliderSetting bowaim_localMaxSmoothingInterpDistance -> [
 	max: 300.0
 	page: " Bow Aiming"
 ]
-ListSetting bowaim_LocalnterpMethod -> [
+TPSOffsetListSetting bowaim_LocalnterpMethod -> [
 	settingName: "SelectedLocalScalarBowAim"
 	displayName: "Method"
 	desc: "The scalar method to use for camera smoothing."
@@ -230,20 +242,20 @@ ListSetting bowaim_LocalnterpMethod -> [
 
 
 ; Bow aim interp - Horseback
-ToggleSetting bowaimHorseback_interp -> [
+TPSOffsetToggleSetting bowaimHorseback_interp -> [
 	settingName: "InterpBowAimHorseback"
 	displayName: "Enable Interpolation"
 	desc: "Enables interpolation in this state."
 	page: " Bow Aiming"
 	header: "Horseback Interpolation"
 ]
-ToggleSetting bowaimHorseback_overrideInterp -> [
+TPSOffsetToggleSetting bowaimHorseback_overrideInterp -> [
 	settingName: "OverrideInterpBowAimHorseback"
 	displayName: "Override Interpolation"
 	desc: "Overrides interpolation values in this state."
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimHorseback_minFollowRate -> [
+TPSOffsetSliderSetting bowaimHorseback_minFollowRate -> [
 	settingName: "MinFollowRateBowAimHorseback"
 	displayName: "Min Follow Rate"
 	desc: "The smoothing rate to use when the camera is close to the player."
@@ -254,7 +266,7 @@ SliderSetting bowaimHorseback_minFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimHorseback_maxFollowRate -> [
+TPSOffsetSliderSetting bowaimHorseback_maxFollowRate -> [
 	settingName: "MaxFollowRateBowAimHorseback"
 	displayName: "Max Follow Rate"
 	desc: "The smoothing rate to use when the camera is far away from the player."
@@ -265,7 +277,7 @@ SliderSetting bowaimHorseback_maxFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimHorseback_maxSmoothingInterpDistance -> [
+TPSOffsetSliderSetting bowaimHorseback_maxSmoothingInterpDistance -> [
 	settingName: "MaxSmoothingInterpDistanceBowAimHorseback"
 	displayName: "Max Interpolation Distance"
 	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
@@ -274,7 +286,7 @@ SliderSetting bowaimHorseback_maxSmoothingInterpDistance -> [
 	max: 650.0
 	page: " Bow Aiming"
 ]
-ListSetting bowaimHorseback_interpMethod -> [
+TPSOffsetListSetting bowaimHorseback_interpMethod -> [
 	settingName: "SelectedScalarBowAimHorseback"
 	displayName: "Method"
 	desc: "The scalar method to use for camera smoothing."
@@ -283,14 +295,14 @@ ListSetting bowaimHorseback_interpMethod -> [
 ]
 
 ; Bow aim local interp - horseback
-ToggleSetting bowaimHorseback_overrideLocalInterp -> [
+TPSOffsetToggleSetting bowaimHorseback_overrideLocalInterp -> [
 	settingName: "OverrideLocalInterpBowAimHorseback"
 	displayName: "Override Local Interpolation"
 	desc: "Overrides local-space interpolation values in this state."
 	page: " Bow Aiming"
 	header: "Horseback Local Interpolation"
 ]
-SliderSetting bowaimHorseback_localMinFollowRate -> [
+TPSOffsetSliderSetting bowaimHorseback_localMinFollowRate -> [
 	settingName: "MinSepLocalFollowRateBowAimHorseback"
 	displayName: "Min Follow Rate"
 	desc: "The smoothing rate to use when the camera is close to the player."
@@ -301,7 +313,7 @@ SliderSetting bowaimHorseback_localMinFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimHorseback_localMaxFollowRate -> [
+TPSOffsetSliderSetting bowaimHorseback_localMaxFollowRate -> [
 	settingName: "MaxSepLocalFollowRateBowAimHorseback"
 	displayName: "Max Follow Rate"
 	desc: "The smoothing rate to use when the camera is far away from the player."
@@ -312,7 +324,7 @@ SliderSetting bowaimHorseback_localMaxFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimHorseback_localMaxSmoothingInterpDistance -> [
+TPSOffsetSliderSetting bowaimHorseback_localMaxSmoothingInterpDistance -> [
 	settingName: "MaxSepLocalSmoothingInterpDistanceBowAimHorseback"
 	displayName: "Max Interpolation Distance"
 	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
@@ -321,7 +333,7 @@ SliderSetting bowaimHorseback_localMaxSmoothingInterpDistance -> [
 	max: 300.0
 	page: " Bow Aiming"
 ]
-ListSetting bowaimHorseback_LocalnterpMethod -> [
+TPSOffsetListSetting bowaimHorseback_LocalnterpMethod -> [
 	settingName: "SelectedLocalScalarBowAimHorseback"
 	displayName: "Method"
 	desc: "The scalar method to use for camera smoothing."
@@ -331,20 +343,20 @@ ListSetting bowaimHorseback_LocalnterpMethod -> [
 
 
 ; Bow aim interp - Sneaking
-ToggleSetting bowaimSneaking_interp -> [
+TPSOffsetToggleSetting bowaimSneaking_interp -> [
 	settingName: "InterpBowAimSneak"
 	displayName: "Enable Interpolation"
 	desc: "Enables interpolation in this state."
 	page: " Bow Aiming"
 	header: "Sneaking Interpolation"
 ]
-ToggleSetting bowaimSneaking_overrideInterp -> [
+TPSOffsetToggleSetting bowaimSneaking_overrideInterp -> [
 	settingName: "OverrideInterpBowAimSneak"
 	displayName: "Override Interpolation"
 	desc: "Overrides interpolation values in this state."
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimSneaking_minFollowRate -> [
+TPSOffsetSliderSetting bowaimSneaking_minFollowRate -> [
 	settingName: "MinFollowRateBowAimSneak"
 	displayName: "Min Follow Rate"
 	desc: "The smoothing rate to use when the camera is close to the player."
@@ -355,7 +367,7 @@ SliderSetting bowaimSneaking_minFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimSneaking_maxFollowRate -> [
+TPSOffsetSliderSetting bowaimSneaking_maxFollowRate -> [
 	settingName: "MaxFollowRateBowAimSneak"
 	displayName: "Max Follow Rate"
 	desc: "The smoothing rate to use when the camera is far away from the player."
@@ -366,7 +378,7 @@ SliderSetting bowaimSneaking_maxFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimSneaking_maxSmoothingInterpDistance -> [
+TPSOffsetSliderSetting bowaimSneaking_maxSmoothingInterpDistance -> [
 	settingName: "MaxSmoothingInterpDistanceBowAimSneak"
 	displayName: "Max Interpolation Distance"
 	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
@@ -375,7 +387,7 @@ SliderSetting bowaimSneaking_maxSmoothingInterpDistance -> [
 	max: 650.0
 	page: " Bow Aiming"
 ]
-ListSetting bowaimSneaking_interpMethod -> [
+TPSOffsetListSetting bowaimSneaking_interpMethod -> [
 	settingName: "SelectedScalarBowAimSneak"
 	displayName: "Method"
 	desc: "The scalar method to use for camera smoothing."
@@ -384,14 +396,14 @@ ListSetting bowaimSneaking_interpMethod -> [
 ]
 
 ; Bow aim local interp - sneaking
-ToggleSetting bowaimSneaking_overrideLocalInterp -> [
+TPSOffsetToggleSetting bowaimSneaking_overrideLocalInterp -> [
 	settingName: "OverrideLocalInterpBowAimSneak"
 	displayName: "Override Local Interpolation"
 	desc: "Overrides local-space interpolation values in this state."
 	page: " Bow Aiming"
 	header: "Sneaking Local Interpolation"
 ]
-SliderSetting bowaimSneaking_localMinFollowRate -> [
+TPSOffsetSliderSetting bowaimSneaking_localMinFollowRate -> [
 	settingName: "MinSepLocalFollowRateBowAimSneak"
 	displayName: "Min Follow Rate"
 	desc: "The smoothing rate to use when the camera is close to the player."
@@ -402,7 +414,7 @@ SliderSetting bowaimSneaking_localMinFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimSneaking_localMaxFollowRate -> [
+TPSOffsetSliderSetting bowaimSneaking_localMaxFollowRate -> [
 	settingName: "MaxSepLocalFollowRateBowAimSneak"
 	displayName: "Max Follow Rate"
 	desc: "The smoothing rate to use when the camera is far away from the player."
@@ -413,7 +425,7 @@ SliderSetting bowaimSneaking_localMaxFollowRate -> [
 	displayFormat: "{2}"
 	page: " Bow Aiming"
 ]
-SliderSetting bowaimSneaking_localMaxSmoothingInterpDistance -> [
+TPSOffsetSliderSetting bowaimSneaking_localMaxSmoothingInterpDistance -> [
 	settingName: "MaxSepLocalSmoothingInterpDistanceBowAimSneak"
 	displayName: "Max Interpolation Distance"
 	desc: "The distance at which the max follow rate value is used for smoothing. Below this value a mix of min and max is used."
@@ -422,7 +434,7 @@ SliderSetting bowaimSneaking_localMaxSmoothingInterpDistance -> [
 	max: 300.0
 	page: " Bow Aiming"
 ]
-ListSetting bowaimSneaking_LocalnterpMethod -> [
+TPSOffsetListSetting bowaimSneaking_LocalnterpMethod -> [
 	settingName: "SelectedLocalScalarBowAimSneak"
 	displayName: "Method"
 	desc: "The scalar method to use for camera smoothing."

@@ -1,0 +1,6 @@
+// Bones used for targeting actors in dialogue.
+
+NPC Head [Head]
+NPC Head
+NPCEyeBone
+Canine_Head

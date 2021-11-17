@@ -1,4 +1,5 @@
 #pragma once
+
 #ifdef _DEBUG
 namespace Debug {
 	class ICommand {

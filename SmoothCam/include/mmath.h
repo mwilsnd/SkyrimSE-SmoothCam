@@ -1,10 +1,5 @@
 ﻿#pragma once
 
-namespace Config {
-	enum class ScalarMethods : uint8_t;
-	struct OffsetGroupScalar;
-}
-
 namespace mmath {
 	constexpr const float half_pi = 1.57079632679485f;
 
@@ -30,16 +25,12 @@ namespace mmath {
 	// Return the forward view vector
 	glm::vec3 GetViewVector(const glm::vec3& forwardRefer, float pitch, float yaw) noexcept;
 	// Extracts pitch and yaw from a rotation matrix
-	glm::vec3 NiMatrixToEuler(const NiMatrix33& m) noexcept;
-	// Creates a rotation matrix for NiCameras to compute a proper world to screen matrix for scaleform
-	NiMatrix33 ToddHowardTransform(const float pitch, const float yaw) noexcept;
+	glm::vec3 NiMatrixToEuler(const RE::NiMatrix3& m) noexcept;
 	// Decompose a position to 3 basis vectors and the coefficients, given an euler rotation
 	void DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 		glm::vec3& forward, glm::vec3& right, glm::vec3& up, glm::vec3& coef) noexcept;
-	// Project a world position to screen-space
-	glm::vec3 PointToScreen(const glm::vec3& point) noexcept;
 	// Construct a 3D perspective projection matrix that matches what is used by the game
-	glm::mat4 Perspective(float fov, float aspect, const NiFrustum& frustum) noexcept;
+	glm::mat4 Perspective(float fov, float aspect, const RE::NiFrustum& frustum) noexcept;
 	// Construct a view matrix
 	glm::mat4 LookAt(const glm::vec3& pos, const glm::vec3& at, const glm::vec3& up) noexcept;
 
@@ -164,6 +155,9 @@ namespace mmath {
 		}
 	}
 
+	using OffsetTransition = TransitionGroup<glm::vec3>;
+	using FloatTransition = TransitionGroup<float>;
+
 	// A fixed-goal transition (from a start position to an end position)
 	template<typename T>
 	struct FixedTransitionGoal {
@@ -192,25 +186,6 @@ namespace mmath {
 		return fixedGoalState.lastPosition;
 	}
 
-	typedef struct aabb {
-		glm::vec3 mins;
-		glm::vec3 maxs;
-
-		aabb aabb::operator+ (const glm::vec3& rhs) {
-			return {
-				mins + rhs,
-				maxs + rhs
-			};
-		}
-
-		aabb aabb::operator+ (const NiPoint3& rhs) {
-			return {
-				mins + glm::vec3{ rhs.x, rhs.y, rhs.z },
-				maxs + glm::vec3{ rhs.x, rhs.y, rhs.z }
-			};
-		}
-	} AABB;
-
 	enum class BindPosition {
 		Yes,
 		No
@@ -234,7 +209,7 @@ namespace mmath {
 		glm::vec3 up;
 
 		// Set the reference for local space computation
-		void SetRef(const NiPoint3& pos, const NiPoint3& rot) noexcept {
+		void SetRef(const RE::NiPoint3& pos, const RE::NiPoint3& rot) noexcept {
 			SetRef(glm::vec3{ pos.x, pos.y, pos.z }, { rot.x, rot.y, rot.z });
 		}
 
@@ -251,7 +226,7 @@ namespace mmath {
 		}
 
 		// Set the world space position, updates the local position if BindPositions = true
-		void SetWorldPosition(const NiPoint3& pos) noexcept {
+		void SetWorldPosition(const RE::NiPoint3& pos) noexcept {
 			SetWorldPosition(glm::vec3{ pos.x, pos.y, pos.z });
 		}
 
@@ -263,7 +238,7 @@ namespace mmath {
 		}
 
 		// Set the local space position, updates the world position if BindPositions = true
-		void SetLocalPosition(const NiPoint3& pos) noexcept {
+		void SetLocalPosition(const RE::NiPoint3& pos) noexcept {
 			SetLocalPosition(glm::vec3{ pos.x, pos.y, pos.z });
 		}
 
@@ -275,7 +250,7 @@ namespace mmath {
 		}
 
 		// Set the local position in axis-aligned space, updates the world position if BindPositions = true
-		void SetLocalPositionAxisAligned(const glm::vec3& pos, const NiPoint3& refRotation) noexcept {
+		void SetLocalPositionAxisAligned(const glm::vec3& pos, const RE::NiPoint3& refRotation) noexcept {
 			SetLocalPositionAxisAligned(pos, glm::vec3{
 				refRotation.x,
 				refRotation.y,
@@ -284,7 +259,7 @@ namespace mmath {
 		}
 
 		// Set the local position in axis-aligned space, updates the world position if BindPositions = true
-		void SetLocalPositionAxisAligned(const NiPoint3& pos, const NiPoint3& refRotation) noexcept {
+		void SetLocalPositionAxisAligned(const RE::NiPoint3& pos, const RE::NiPoint3& refRotation) noexcept {
 			SetLocalPositionAxisAligned(glm::vec3{ pos.x, pos.y, pos.z }, glm::vec3{
 				refRotation.x,
 				refRotation.y,
@@ -319,7 +294,7 @@ namespace mmath {
 		}
 
 		// Convert world position to NiPoint3
-		NiPoint3 ToNiPoint3() const noexcept {
+		RE::NiPoint3 ToNiPoint3() const noexcept {
 			return {
 				world.x,
 				world.y,
@@ -352,27 +327,24 @@ namespace mmath {
 
 			// Set with a quaternion and update euler angles
 			void SetQuaternion(const glm::quat& q) noexcept;
-			void SetQuaternion(const NiQuaternion& q) noexcept;
+			void SetQuaternion(const RE::NiQuaternion& q) noexcept;
 
 			// Copy rotation from a TESObjectREFR
-			void CopyFrom(const TESObjectREFR* ref) noexcept;
+			void CopyFrom(const RE::TESObjectREFR* ref) noexcept;
 
 			// Compute a quaternion after setting euler angles
 			void UpdateQuaternion() noexcept;
 
 			// Get a quaternion pointing in the opposite direction (p/y inverted)
 			glm::quat InverseQuat() const noexcept;
-			NiQuaternion InverseNiQuat() const noexcept;
+			RE::NiQuaternion InverseNiQuat() const noexcept;
 
-			NiQuaternion ToNiQuat() const noexcept;
-			NiPoint2 ToNiPoint2() const noexcept;
-			NiPoint3 ToNiPoint3() const noexcept;
+			RE::NiQuaternion ToNiQuat() const noexcept;
+			RE::NiPoint2 ToNiPoint2() const noexcept;
+			RE::NiPoint3 ToNiPoint3() const noexcept;
 
 			// Get a 4x4 rotation matrix
 			glm::mat4 ToRotationMatrix() noexcept;
-
-			// ToddHowardTransform
-			NiMatrix33 THT() const noexcept;
 
 		private:
 			glm::mat4 mat = glm::identity<glm::mat4>();
@@ -403,30 +375,30 @@ namespace mmath {
 		Config::ScalarMethods method;
 
 		template<typename T, mmath::Local isLocal = mmath::Local::No>
-		T GetBlendResult(T distance, bool withDT = true) const noexcept {
+		T GetBlendResult(T distance) const noexcept {
 			if (from == to || progress >= 1.0f) {
 				if constexpr (isLocal == mmath::Local::No)
-					return RunGlobal<T>(to, distance, withDT);
+					return RunGlobal<T>(to, distance);
 				else
-					return RunLocal<T>(to, distance, withDT);
+					return RunLocal<T>(to, distance);
 
 			} else {
 				T fromRes{};
 				T toRes{};
 
 				if constexpr (isLocal == mmath::Local::No)
-					toRes = RunGlobal<T>(to, distance, withDT);
+					toRes = RunGlobal<T>(to, distance);
 				else
-					toRes = RunLocal<T>(to, distance, withDT);
+					toRes = RunLocal<T>(to, distance);
 
 				if (!from) {
 					if (!prev) return toRes;
-					fromRes = prev->GetBlendResult<T, isLocal>(distance, withDT);
+					fromRes = prev->GetBlendResult<T, isLocal>(distance);
 				} else {
 					if constexpr (isLocal == mmath::Local::No)
-						fromRes = RunGlobal<T>(from, distance, withDT);
+						fromRes = RunGlobal<T>(from, distance);
 					else
-						fromRes = RunLocal<T>(from, distance, withDT);
+						fromRes = RunLocal<T>(from, distance);
 				}
 
 				return mmath::Interpolate<T>(fromRes, toRes, mmath::RunScalarFunction(method, progress));
@@ -434,8 +406,8 @@ namespace mmath {
 		}
 
 		template<typename T>
-		T RunGlobal(const Config::OffsetGroupScalar* s, T distance, bool withDT) const noexcept {
-			constexpr const T minZero = 0.000000000001;
+		T RunGlobal(const Config::OffsetGroupScalar* s, T distance) const noexcept {
+			constexpr const T minZero = (T)0.000000000001;
 
 			const auto scalar = glm::clamp(
 				glm::max(
@@ -446,21 +418,14 @@ namespace mmath {
 			auto remapped = mmath::Remap<T>(
 				scalar, (T)0.0, (T)1.0,
 				static_cast<T>(s->minCameraFollowRate), static_cast<T>(s->maxCameraFollowRate)
-				);
+			);
 
-			if (withDT) {
-				const T delta = glm::max(static_cast<T>(GameTime::GetFrameDelta()), minZero);
-				const T fps = (T)1.0 / delta;
-				const T mul = -fps * glm::log2((T)1.0 - remapped);
-				remapped = glm::clamp((T)1.0 - glm::exp2(-mul * delta), (T)0.0, (T)1.0);
-			}
-
-			return mmath::RunScalarFunction<double>(s->currentScalar, remapped);
+			return mmath::RunScalarFunction<T>(s->currentScalar, remapped);
 		}
 
 		template<typename T>
-		T RunLocal(const Config::OffsetGroupScalar* s, T distance, bool withDT) const noexcept {
-			constexpr const T minZero = 0.000000000001;
+		T RunLocal(const Config::OffsetGroupScalar* s, T distance) const noexcept {
+			constexpr const T minZero = (T)0.000000000001;
 
 			const auto scalar = glm::clamp(
 				glm::max(
@@ -471,16 +436,9 @@ namespace mmath {
 			auto remapped = mmath::Remap<T>(
 				scalar, (T)0.0, (T)1.0,
 				static_cast<T>(s->localMinFollowRate), static_cast<T>(s->localMaxFollowRate)
-				);
+			);
 
-			if (withDT) {
-				const T delta = glm::max(static_cast<T>(GameTime::GetFrameDelta()), minZero);
-				const T fps = (T)1.0 / delta;
-				const T mul = -fps * glm::log2((T)1.0 - remapped);
-				remapped = glm::clamp((T)1.0 - glm::exp2(-mul * delta), (T)0.0, (T)1.0);
-			}
-
-			return mmath::RunScalarFunction<double>(s->separateLocalScalar, remapped);
+			return mmath::RunScalarFunction<T>(s->separateLocalScalar, remapped);
 		}
 	};
 
@@ -541,8 +499,17 @@ namespace mmath {
 
 		template<typename T, mmath::Local isLocal = mmath::Local::No>
 		T BlendResult(T distance, bool withDT = true) noexcept {
-			if (stack.empty()) return 1;
-			return stack.back().GetBlendResult<T, isLocal>(distance, withDT);
+			if (stack.empty()) return (T)1.0;
+			const auto result = stack.back().GetBlendResult<T, isLocal>(distance);
+
+			if (withDT) {
+				constexpr const T minZero = (T)0.000000000001;
+				const T delta = glm::max(static_cast<T>(GameTime::GetFrameDelta()), minZero);
+				const T lambda = (T)1.0 - glm::pow((T)1.0 - result, delta * (T)60.0);
+				return glm::clamp(lambda, (T)0.0, (T)1.0);
+			}
+
+			return result;
 		}
 	};
 }

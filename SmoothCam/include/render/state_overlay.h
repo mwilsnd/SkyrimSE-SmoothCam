@@ -14,7 +14,7 @@ namespace Camera {
 namespace Render {
 	class StateOverlay : public GradBox {
 		public:
-			explicit StateOverlay(uint32_t width, uint32_t height, Camera::Thirdperson* camera, D3DContext& ctx);
+			StateOverlay(uint32_t width, uint32_t height, Camera::Thirdperson* camera, D3DContext& ctx);
 			~StateOverlay();
 			StateOverlay(const StateOverlay&) = delete;
 			StateOverlay(StateOverlay&&) noexcept = delete;
@@ -28,7 +28,7 @@ namespace Render {
 			// Set the running third-person state
 			void SetThirdPersonState(Camera::State::BaseThird* third) noexcept;
 			// Draw the chart
-			void Draw(const Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept;
+			void Draw(const RE::Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept;
 
 		private:
 			void DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,

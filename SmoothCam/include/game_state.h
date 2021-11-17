@@ -52,6 +52,7 @@ namespace GameState {
 		FirstPerson,
 		ThirdPerson,
 		ThirdPersonCombat,
+		ThirdPersonDialogue,
 		KillMove,
 		Tweening,
 		Transitioning,
@@ -111,9 +112,9 @@ namespace GameState {
 	using PlayerArrayBA0 = SSA<UnkBowDrawnTimerEntry, 2>;
 
 	// Returns the bits for player->actorState->flags04 which appear to convey movement info
-	const eastl::bitset<32> GetPlayerMovementBits(const Actor* player) noexcept;
+	const eastl::bitset<32> GetPlayerMovementBits(const RE::Actor* player) noexcept;
 	// Returns the bits for player->actorState->flags08 which appear to convey action info
-	const eastl::bitset<32> GetPlayerActionBits(const Actor* player) noexcept;
+	const eastl::bitset<32> GetPlayerActionBits(const RE::Actor* player) noexcept;
 
 	// Check if the camera is near the player's head (for first person mods)
 	const bool IC_InFirstPersonState() noexcept;
@@ -121,84 +122,91 @@ namespace GameState {
 
 	/// Camera state detection
 	// Returns true if the player is in first person
-	const bool IsFirstPerson(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsFirstPerson(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the player is in third person
-	const bool IsThirdPerson(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsThirdPerson(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the player has a weapon drawn and in third person
-	const bool IsThirdPersonCombat(const Actor* player, const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsThirdPersonCombat(const RE::Actor* player, const RE::PlayerCamera* camera) noexcept;
 	// Returns true if a kill move is playing
-	const bool IsInKillMove(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInKillMove(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the camera is tweening
-	const bool IsInTweenCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInTweenCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the camera is transitioning
-	const bool IsInCameraTransition(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInCameraTransition(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the player is using an object
-	const bool IsInUsingObjectCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInUsingObjectCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the camera is in auto vanity mode
-	const bool IsInAutoVanityCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInAutoVanityCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the camera is in free mode
-	const bool IsInFreeCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInFreeCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the camera is in aiming mode
-	const bool IsInAimingCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInAimingCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the camera is in furniture mode
-	const bool IsInFurnitureCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInFurnitureCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the player is riding a horse
-	const bool IsInHorseCamera(const TESObjectREFR* player, const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInHorseCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the player is bleeding out
-	const bool IsInBleedoutCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInBleedoutCamera(const RE::PlayerCamera* camera) noexcept;
 	// Returns true if the player is riding a dragon
-	const bool IsInDragonCamera(const CorrectedPlayerCamera* camera) noexcept;
+	const bool IsInDragonCamera(const RE::PlayerCamera* camera) noexcept;
+	// Returns true if the player is in dialogue with another actor
+	const bool IsInDialogue() noexcept;
+	// Returns the actor being conversed with if in dialogue
+	RE::NiPointer<RE::TESObjectREFR> GetDialogueTarget() noexcept;
 	// Get the current camera state
-	const CameraState GetCameraState(const Actor* player, const CorrectedPlayerCamera* canera) noexcept;
+	const CameraState GetCameraState(const RE::Actor* player, const RE::PlayerCamera* canera) noexcept;
 
 	/// Player action states
-	const bool IsWeaponDrawn(const Actor* player) noexcept;
+	const bool IsWeaponDrawn(const RE::Actor* player) noexcept;
 	// Get an equipped weapon
-	const TESObjectWEAP* GetEquippedWeapon(const Actor* player, bool leftHand = false) noexcept;
-	// Get currently equipped ammo
-	const TESAmmo* GetCurrentAmmo(const Actor* player) noexcept;
+	const RE::TESObjectWEAP* GetEquippedWeapon(const RE::Actor* player, bool leftHand = false) noexcept;
 	// Get the amount of time the player has been holding an arrow back in the bow
-	float GetCurrentBowDrawTimer(const PlayerCharacter* player) noexcept;
+	float GetCurrentBowDrawTimer(const RE::PlayerCharacter* player) noexcept;
 	// Returns true if the player is holding an enchanted item that counts as 'magic' in the given hand
-	bool IsUsingMagicItem(const Actor* player, bool leftHand = false) noexcept;
+	bool IsUsingMagicItem(const RE::Actor* player, bool leftHand = false) noexcept;
 	// Returns true if the given spell counts as "combat" magic
-	bool IsCombatMagic(const SpellItem* spell) noexcept;
+	bool IsCombatMagic(const RE::MagicItem* spell) noexcept;
 	// Returns true if the player has a melee weapon equiped
-	const bool IsMeleeWeaponDrawn(const Actor* player) noexcept;
+	const bool IsMeleeWeaponDrawn(const RE::Actor* player) noexcept;
 	// Returns true if the player has magic drawn
-	const bool IsMagicDrawn(const Actor* player) noexcept;
+	const bool IsMagicDrawn(const RE::Actor* player) noexcept;
 	// Returns true if the player has a ranged weapon drawn
-	const bool IsRangedWeaponDrawn(const Actor* player) noexcept;
+	const bool IsRangedWeaponDrawn(const RE::Actor* player) noexcept;
 	// Returns true if a crossbow is drawn
-	const bool IsUsingCrossbow(const Actor* player) noexcept;
+	const bool IsUsingCrossbow(const RE::Actor* player) noexcept;
 	// Returns true if a bow is drawn
-	const bool IsUsingBow(const Actor* player) noexcept;
+	const bool IsUsingBow(const RE::Actor* player) noexcept;
 	// Returns true if the player is sneaking
-	const bool IsSneaking(const Actor* player) noexcept;
+	const bool IsSneaking(const RE::Actor* player) noexcept;
 	// Returns true if the player is sprinting
-	const bool IsSprinting(const Actor* player) noexcept;
+	const bool IsSprinting(const RE::Actor* player) noexcept;
 	// Returns true if the player is swimming
-	const bool IsSwimming(const Actor* player) noexcept;
+	const bool IsSwimming(const RE::Actor* player) noexcept;
 	// Returns true if the player is walking
-	const bool IsWalking(const Actor* player) noexcept;
+	const bool IsWalking(const RE::Actor* player) noexcept;
 	// Returns true if the player is running
-	const bool IsRunning(const Actor* player) noexcept;
+	const bool IsRunning(const RE::Actor* player) noexcept;
 	// Returns true if the player is holding a bow and an arrow is drawn
-	const bool IsBowDrawn(const Actor* player) noexcept;
+	const bool IsBowDrawn(const RE::Actor* player) noexcept;
 	// Returns true if the player is sitting
-	const bool IsSitting(const Actor* player) noexcept;
+	const bool IsSitting(const RE::Actor* player) noexcept;
 	// Returns true if the player is sleeping
-	const bool IsSleeping(const Actor* player) noexcept;
+	const bool IsSleeping(const RE::Actor* player) noexcept;
 	// Returns true if the player is mounting a horse
-	const bool IsMountingHorse(const Actor* player) noexcept;
+	const bool IsMountingHorse(const RE::Actor* player) noexcept;
 	// Returns true if the player is dismounting a horse
-	const bool IsDisMountingHorse(const Actor* player) noexcept;
+	const bool IsDisMountingHorse(const RE::Actor* player) noexcept;
 	// Returns true if we are in POV slide mode (Holding F key)
 	const bool InPOVSlideMode() noexcept;
 	// Returns true if the player is a vampire lord
-	const bool IsVampireLord(const Actor* player) noexcept;
+	const bool IsVampireLord(const RE::Actor* player) noexcept;
 	// Returns true if the player is a werewolf
-	const bool IsWerewolf(const Actor* player) noexcept;
+	const bool IsWerewolf(const RE::Actor* player) noexcept;
 	// Returns true if the player is over-encumbered
-	const bool IsOverEncumbered(const Actor* player) noexcept;
+	const bool IsOverEncumbered(const RE::Actor* player) noexcept;
+
+	// True if the actor is speaking
+	bool IsActorTalking(RE::Actor* actor) noexcept;
+	// Get a bounding sphere from an NiAVObject
+	glm::vec4 GetBoundingSphere(RE::NiAVObject* obj) noexcept;
 }

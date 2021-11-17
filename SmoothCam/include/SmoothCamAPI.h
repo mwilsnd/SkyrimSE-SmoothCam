@@ -27,6 +27,7 @@ namespace SmoothCamAPI {
 
 #ifdef SMOOTHCAM_API_COMMONLIB
 	using PluginHandle = SKSE::PluginHandle;
+	using Actor = RE::Actor;
 	using TESObjectREFR = RE::TESObjectREFR;
 	using NiCamera = RE::NiCamera;
 	using NiPoint3 = RE::NiPoint3;
@@ -35,7 +36,8 @@ namespace SmoothCamAPI {
 	// Available SmoothCam interface versions
 	enum class InterfaceVersion : uint8_t {
 		V1,
-		V2
+		V2,
+		V3
 	};
 
 	// Error types that may be returned by the SmoothCam API
@@ -171,10 +173,10 @@ namespace SmoothCamAPI {
 		/// <param name="myPluginHandle">Your assigned plugin handle</param>
 		/// <param name="shouldMoveToGoal">Instructs the camera to move to it's goal position when control is gained back</param>
 		/// <param name="moveNow">Move to the current goal immediately</param>
-		/// /// <param name="ref">Object reference for rotation calculations</param>
+		/// <param name="ref">Object reference for rotation calculations</param>
 		/// <returns>OK, NotOwner</returns>
 		virtual APIResult SendToGoalPosition(PluginHandle myPluginHandle, bool shouldMoveToGoal, bool moveNow = false,
-			const TESObjectREFR* ref = nullptr, NiCamera* niCamera = nullptr) noexcept = 0;
+			const Actor* ref = nullptr) noexcept = 0;
 
 		/// <summary>
 		/// Return SmoothCam's current goal position.
@@ -191,6 +193,16 @@ namespace SmoothCamAPI {
 		/// </summary>
 		/// <returns>Enabled</returns>
 		virtual bool IsCameraEnabled() const noexcept = 0;
+	};
+
+	class IVSmoothCam3 : public IVSmoothCam2 {
+		public:
+		/// <summary>
+		/// Enable or disable the unlocked aim vector when on horseback
+		/// </summary>
+		/// <param name="enable">Enables an unlocked aim vector on horseback</param>
+		/// <returns></returns>
+		virtual void EnableUnlockedHorseAim(bool enable) noexcept = 0;
 	};
 
 	struct PluginCommand {
@@ -247,7 +259,7 @@ namespace SmoothCamAPI {
 	/// <returns>If any plugin was listening for this request, true. See skse/PluginAPI.h</returns>
 	[[nodiscard]]
 	inline bool RequestInterface(SKSEMessagingInterface* skseMessaging, PluginHandle myPluginHandle,
-		InterfaceVersion version = InterfaceVersion::V2) noexcept
+		InterfaceVersion version = InterfaceVersion::V3) noexcept
 	{
 		InterfaceRequest req = {};
 		req.interfaceVersion = version;
@@ -315,7 +327,7 @@ namespace SmoothCamAPI {
 	/// <returns>If any plugin was listening for this request, true. See skse/PluginAPI.h</returns>
 	[[nodiscard]]
 	inline bool RequestInterface(const SKSE::MessagingInterface* skseMessaging,
-		InterfaceVersion version = InterfaceVersion::V2) noexcept
+		InterfaceVersion version = InterfaceVersion::V3) noexcept
 	{
 		InterfaceRequest req = {};
 		req.interfaceVersion = version;
