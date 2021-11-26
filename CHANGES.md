@@ -7,6 +7,7 @@
 **Fixes:**
 * Added frame smoothing accumulator to delta time to correct for motion jitter caused by inconsistent frame times.
 * Fixed 3D crosshair enabling the HUD crosshair even if bShowCrosshair:Interface was set to false.
+* Gamepad support for MCM keybindings.
 
 # Beta 1.6
 * Bumped module and MCM version number to 15

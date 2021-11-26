@@ -470,6 +470,8 @@ bool Camera::Thirdperson::OnKeyPress(const RE::ButtonEvent* ev) noexcept {
 	auto code = static_cast<int32_t>(ev->idCode);
 	if (code <= 0x6 && ev->device == RE::INPUT_DEVICE::kMouse)
 		code += 0x100;
+	else if (ev->device == RE::INPUT_DEVICE::kGamepad)
+		code = Util::GamepadMaskToKeycode(code);
 
 	if (config->shoulderSwapKey >= 0 && config->shoulderSwapKey == code && ev->heldDownSecs <= 0.000001f) {
 		shoulderSwap = shoulderSwap == 1 ? -1 : 1;

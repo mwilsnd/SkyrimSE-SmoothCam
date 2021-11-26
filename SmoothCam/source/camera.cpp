@@ -35,6 +35,8 @@ void Camera::Camera::OnKeyPress(const RE::ButtonEvent* ev) noexcept {
 	auto code = static_cast<int32_t>(ev->idCode);
 	if (code <= 0x6 && ev->device == RE::INPUT_DEVICE::kMouse)
 		code += 0x100;
+	else if (ev->device == RE::INPUT_DEVICE::kGamepad)
+		code = Util::GamepadMaskToKeycode(code);
 
 	if (!inMenuMode) {
 		// Cycle next preset
@@ -347,7 +349,7 @@ void Camera::Camera::UpdateCamera(RE::PlayerCharacter* player, RE::PlayerCamera*
 		wasCameraAPIControlled = apiControlled;
 		apiControlled = false;
 	}
-
+		
 	if (config->modDisabled || (wantsControl && !wantsUpdates)) {
 		if (ranLastFrame) {
 			if (activeCamera) activeCamera->OnEnd(player, camera, nullptr);
