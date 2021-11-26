@@ -10,60 +10,58 @@ Offsets::Offsets() noexcept {
 
 #ifdef IS_SKYRIM_AE
 void Offsets::populateAE() noexcept {
-	const auto base = REL::Module::get().base();
+	RenderShutdown = REL::ID(AE.RenderShutdown).address();
+	RenderStartup = REL::ID(AE.RenderStartup).address();
+	FactorCameraOffset = REL::ID(AE.FactorCameraOffset).address();
+	FUN_140c69b20 = REL::ID(AE.FUN_140c69b20).address();
+	FUN_140c69bd0_MakeNiSomething = REL::ID(AE.FUN_140c69bd0_MakeNiSomething).address();
+	GetObjectByName = REL::ID(AE.GetObjectByName).address();
+	DoPOVSwitch = REL::ID(AE.DoPOVSwitch).address();
+	DoPovSwitchFPV = REL::ID(AE.DoPovSwitchFPV).address();
+	vtable_ThirdPersonState_1 = REL::ID(AE.vtable_ThirdPersonState_1).address();
+	vtable_HorseCameraState_1 = REL::ID(AE.vtable_HorseCameraState_1).address();
+	vtable_DragonCameraState_1 = REL::ID(AE.vtable_DragonCameraState_1).address();
+	vtable_BleedoutCameraState_1 = REL::ID(AE.vtable_BleedoutCameraState_1).address();
+	vtable_FirstPersonState_1 = REL::ID(AE.vtable_FirstPersonState_1).address();
+	vtable_FreeCameraState_1 = REL::ID(AE.vtable_FreeCameraState_1).address();
 
-	RenderShutdown = base + AE.RenderShutdown;
-	RenderStartup = base + AE.RenderStartup;
-	FactorCameraOffset = base + AE.FactorCameraOffset;
-	FUN_140c69b20 = base + AE.FUN_140c69b20;
-	FUN_140c69bd0_MakeNiSomething = base + AE.FUN_140c69bd0_MakeNiSomething;
-	GetObjectByName = base + AE.GetObjectByName;
-	DoPOVSwitch = base + AE.DoPOVSwitch;
-	DoPovSwitchFPV = base + AE.DoPovSwitchFPV;
-	vtable_ThirdPersonState_1 = base + AE.vtable_ThirdPersonState_1;
-	vtable_HorseCameraState_1 = base + AE.vtable_HorseCameraState_1;
-	vtable_DragonCameraState_1 = base + AE.vtable_DragonCameraState_1;
-	vtable_BleedoutCameraState_1 = base + AE.vtable_BleedoutCameraState_1;
-	vtable_FirstPersonState_1 = base + AE.vtable_FirstPersonState_1;
-	vtable_FreeCameraState_1 = base + AE.vtable_FreeCameraState_1;
+	S2 = REL::ID(AE.S2).address();
+	Power = REL::ID(AE.Power).address();
+	RWLocker = REL::ID(AE.RWLocker).address();
+	DAT_142eff7d8 = REL::ID(AE.DAT_142eff7d8).address();
+	UnkData = REL::ID(AE.UnkData).address();
+	UpdateFlightPath = REL::ID(AE.UpdateFlightPath).address();
+	DebugTraceProjectile = REL::ID(AE.DebugTraceProjectile).address();
+	DebugSpawnProjectile = REL::ID(AE.DebugSpawnProjectile).address();
 
-	S2 = base + AE.S2;
-	Power = base + AE.Power;
-	RWLocker = base + AE.RWLocker;
-	DAT_142eff7d8 = base + AE.DAT_142eff7d8;
-	UnkData = base + AE.UnkData;
-	UpdateFlightPath = base + AE.UpdateFlightPath;
-	DebugTraceProjectile = base + AE.DebugTraceProjectile;
-	DebugSpawnProjectile = base + AE.DebugSpawnProjectile;
+	ComputeToScreenMatrix = REL::ID(AE.ComputeToScreenMatrix).address();
 
-	ComputeToScreenMatrix = base + AE.ComputeToScreenMatrix;
+	GFxGotoAndStop = REL::ID(AE.GFxGotoAndStop).address();
+	GFxInvoke = REL::ID(AE.GFxInvoke).address();
+	DAT_141de0da8 = REL::ID(AE.DAT_141de0da8).address();
+	DAT_141de0dc0 = REL::ID(AE.DAT_141de0dc0).address();
+	DAT_142f01438 = REL::ID(AE.DAT_142f01438).address();
+	DAT_141de0df0 = REL::ID(AE.DAT_141de0df0).address();
+	DAT_141de0e08 = REL::ID(AE.DAT_141de0e08).address();
 
-	GFxGotoAndStop = base + AE.GFxGotoAndStop;
-	GFxInvoke = base + AE.GFxInvoke;
-	DAT_141de0da8 = base + AE.DAT_141de0da8;
-	DAT_141de0dc0 = base + AE.DAT_141de0dc0;
-	DAT_142f01438 = base + AE.DAT_142f01438;
-	DAT_141de0df0 = base + AE.DAT_141de0df0;
-	DAT_141de0e08 = base + AE.DAT_141de0e08;
+	SwitchSkeleton = REL::ID(AE.SwitchSkeleton).address();
+	RenderStuff = REL::ID(AE.RenderStuff).address();
 
-	SwitchSkeleton = base + AE.SwitchSkeleton;
-	RenderStuff = base + AE.RenderStuff;
+	IsOverEncumbered = REL::ID(AE.IsOverEncumbered).address();
 
-	IsOverEncumbered = base + AE.IsOverEncumbered;
+	CameraCaster = REL::ID(AE.CameraCaster).address();
+	GetNiAVObject = REL::ID(AE.GetNiAVObject).address();
 
-	CameraCaster = base + AE.CameraCaster;
-	GetNiAVObject = base + AE.GetNiAVObject;
+	FOVOffset = REL::ID(AE.FOVOffset).address();
+	SwitchToFPV = REL::ID(AE.SwitchToFPV).address();
+	UpdateFreeCamTransform = REL::ID(AE.UpdateFreeCamTransform).address();
 
-	FOVOffset = base + AE.FOVOffset;
-	SwitchToFPV = base + AE.SwitchToFPV;
-	UpdateFreeCamTransform = base + AE.UpdateFreeCamTransform;
-
-	FOV = base + AE.FOV;
-	D3DObjects = base + AE.D3DObjects;
-	CameraSwap = base + AE.CameraSwap;
-	UpdateGPUCameraData = base + AE.UpdateGPUCameraData;
-	CBuffer12 = base + AE.CBuffer12;
-	GBuffer = base + AE.GBuffer;
+	FOV = REL::ID(AE.FOV).address();
+	D3DObjects = REL::ID(AE.D3DObjects).address();
+	CameraSwap = REL::ID(AE.CameraSwap).address();
+	UpdateGPUCameraData = REL::ID(AE.UpdateGPUCameraData).address();
+	CBuffer12 = REL::ID(AE.CBuffer12).address();
+	GBuffer = REL::ID(AE.GBuffer).address();
 }
 #else
 void Offsets::populateSE() noexcept {

@@ -149,6 +149,9 @@ void Camera::State::BaseThird::UpdateCrosshair(const RE::Actor* player, const RE
 			}
 		}
 	} else {
+		static auto disableHUDCrosshair = RE::INISettingCollection::GetSingleton()->GetSetting("bShowCrosshair:Interface");
+		if (!disableHUDCrosshair->GetBool()) return;
+
 		if (GetConfig()->hideNonCombatCrosshair) {
 			camera->crosshair->SetCrosshairEnabled(false);
 		} else {

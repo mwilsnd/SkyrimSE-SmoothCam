@@ -29,7 +29,7 @@ Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 		graph_localSpace = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
 		graph_rotation = eastl::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
 		graph_tpsRotation = eastl::make_unique<Render::LineGraph>(4, 128, 600, 128, Render::GetContext());
-		graph_computeTime = eastl::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
+		graph_computeTime = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
 
 		const auto xColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		const auto yColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
@@ -71,7 +71,8 @@ Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 
 		graph_computeTime->SetLineColor(0, { 1.0f, 0.266f, 0.984f, 1.0f });
 		graph_computeTime->SetLineColor(1, { 1.0f, 0.541f, 0.218f, 1.0f });
-		graph_computeTime->SetName(L"Compute Time <pink> (Camera::Update()), Frame Time <orange>, seconds");
+		graph_computeTime->SetLineColor(2, { 1.0f, 0.0f, 0.0f, 1.0f });
+		graph_computeTime->SetName(L"Compute Time <pink> (Camera::Update()), Frame Time <orange>, seconds, Smooth Frame Time <red>");
 		graph_computeTime->SetPosition(0, 768);
 
 		Render::CBufferCreateInfo cbuf;
@@ -417,6 +418,7 @@ void Camera::Thirdperson::Render(Render::D3DContext& ctx) noexcept {
 
 			graph_computeTime->AddPoint(0, lastProfSnap);
 			graph_computeTime->AddPoint(1, static_cast<float>(GameTime::GetFrameDelta()));
+			graph_computeTime->AddPoint(2, static_cast<float>(GameTime::GetSmoothFrameDelta()));
 
 			graph_worldPosTarget->Draw(ctx);
 			graph_localSpace->Draw(ctx);
@@ -1304,7 +1306,7 @@ double Camera::Thirdperson::GetCurrentSmoothingScalar(const RE::Actor* player, c
 	}
 
 	if (!config->disableDeltaTime) {
-		const auto delta = glm::max(GameTime::GetFrameDelta(), minZero);
+		const auto delta = glm::max(GameTime::GetSmoothFrameDelta(), minZero);
 		const auto lambda = 1.0 - glm::pow(1.0 - remapped, delta * 60.0);
 		return glm::clamp(lambda, 0.0, 1.0);
 	} else {

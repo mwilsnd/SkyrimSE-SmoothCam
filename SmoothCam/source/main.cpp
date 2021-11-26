@@ -36,10 +36,11 @@ static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 #ifdef IS_SKYRIM_AE
 extern "C" __declspec(dllexport) constexpr auto SKSEPlugin_Version = []() {
 	SKSE::PluginVersionData v{};
-	v.pluginVersion = 15;
+	v.pluginVersion = 16;
 	v.PluginName("SmoothCam"sv);
 	v.AuthorName("mwilsnd"sv);
 	v.CompatibleVersions({ SKSE::RUNTIME_1_6_318 });
+	v.UsesAddressLibrary(true);
 	return v;
 }();
 #endif
@@ -77,7 +78,7 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::Query
 
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
 	a_info->name = "SmoothCam";
-	a_info->version = 15;
+	a_info->version = 16;
 
 	if (a_skse->IsEditor()) {
 		logger::critical("Loaded in editor, marking as incompatible"sv);
@@ -94,11 +95,18 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::Query
 }
 
 extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) {
+#ifdef DEBUG
+#ifdef IS_SKYRIM_AE
+	Debug::StartREPL();
+#endif
+	while (!IsDebuggerPresent()) {}
+#endif
+
 	SKSE::Init(a_skse);
 	g_Offsets = &Offsets::Get();
 
 	logger::info("Reading config file");
-	Config::ReadConfigFile();
+	Config::Initialize();
 
 #ifdef EMIT_MINIDUMPS
 	if (Config::GetCurrentConfig()->enableCrashDumps) {

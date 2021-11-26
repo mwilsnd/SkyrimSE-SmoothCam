@@ -26,7 +26,7 @@ string activeDialogueMode
 ]
 
 ScriptMeta scriptMetaInfo -> [
-	version: 15
+	version: 16
 ]
 
 int Function GetVersion()

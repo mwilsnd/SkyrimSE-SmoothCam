@@ -1,3 +1,5 @@
+#include "detours.h"
+
 #pragma warning(push)
 #pragma warning(disable : 5103)
 
@@ -925,6 +927,31 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	return conf;
 }
 
+struct BoneLists {
+	Config::BoneList bonePriorities = {};
+	Config::BoneList focusBonePriorities = {};
+	Config::BoneList eyeBonePriorities = {};
+};
+static eastl::unique_ptr<BoneLists> boneLists = nullptr;
+
+void Config::Initialize() {
+	ReadConfigFile();
+	
+	// Load bone data
+	boneLists = eastl::make_unique<BoneLists>();
+	LoadBonePriorities();
+	LoadFocusBonePriorities();
+#ifdef DEVELOPER
+	LoadEyeBonePriorities();
+#endif
+
+	Detours::RegisterGameShutdownEvent(Config::Shutdown);
+}
+
+void Config::Shutdown() {
+	if (boneLists) boneLists.reset();
+}
+
 void Config::ReadConfigFile() {
 	Config::UserConfig cfg;
 
@@ -947,12 +974,6 @@ void Config::ReadConfigFile() {
 		SaveCurrentConfig();
 	}
 
-	// Load bone data
-	LoadBonePriorities();
-	LoadFocusBonePriorities();
-#ifdef DEVELOPER
-	LoadEyeBonePriorities();
-#endif
 	currentConfig = cfg;
 }
 
@@ -1117,47 +1138,44 @@ bool Config::LoadBoneList(const std::wstring_view&& searchName, BoneList& outBon
 	return outBones.size() > 0;
 }
 
-static Config::BoneList bonePriorities = {};
 void Config::LoadBonePriorities() {
-	if (!LoadBoneList(L"SmoothCam_FollowBones_*.txt", bonePriorities)) {
+	if (!LoadBoneList(L"SmoothCam_FollowBones_*.txt", boneLists->bonePriorities)) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_FollowBones_Default.txt present in the SKSE plugins directory?
 Will fall back to default third-person camera bone.
 To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
-		bonePriorities.emplace_back("Camera3rd [Cam3]");
+		boneLists->bonePriorities.emplace_back("Camera3rd [Cam3]");
 	}
 }
 
 Config::BoneList& Config::GetBonePriorities() noexcept {
-	return bonePriorities;
+	return boneLists->bonePriorities;
 }
 
-static Config::BoneList focusBonePriorities = {};
 void Config::LoadFocusBonePriorities() {
-	if (!LoadBoneList(L"SmoothCam_FocusBones_*.txt", focusBonePriorities)) {
+	if (!LoadBoneList(L"SmoothCam_FocusBones_*.txt", boneLists->focusBonePriorities)) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to focus during dialogue while loading! Is SmoothCam_FocusBones_Default.txt present in the SKSE plugins directory?
 Will fall back to default focal bone.
 To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
-		focusBonePriorities.emplace_back("NPC Head [Head]");
+		boneLists->focusBonePriorities.emplace_back("NPC Head [Head]");
 	}
 }
 
 Config::BoneList& Config::GetFocusBonePriorities() noexcept {
-	return focusBonePriorities;
+	return boneLists->focusBonePriorities;
 }
 
 #ifdef DEVELOPER
-static Config::BoneList eyeBonePriorities = {};
 void Config::LoadEyeBonePriorities() {
-	if (!LoadBoneList(L"SmoothCam_EyeBones_*.txt", eyeBonePriorities)) {
+	if (!LoadBoneList(L"SmoothCam_EyeBones_*.txt", boneLists->eyeBonePriorities)) {
 		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_EyeBones_Default.txt present in the SKSE plugins directory?
 Will fall back to default first-person camera bone.
 To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
-		eyeBonePriorities.emplace_back("NPCEyeBone");
+		boneLists->eyeBonePriorities.emplace_back("NPCEyeBone");
 	}
 }
 
 Config::BoneList& Config::GetEyeBonePriorities() noexcept {
-	return eyeBonePriorities;
+	return boneLists->eyeBonePriorities;
 }
 #endif
 #pragma warning(pop)

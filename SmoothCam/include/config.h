@@ -363,6 +363,9 @@ namespace Config {
 
 	const UserConfig& GetDefaultConfig() noexcept;
 
+	void Initialize();
+	void Shutdown();
+
 	void ReadConfigFile();
 	void SaveCurrentConfig();
 	UserConfig* GetCurrentConfig() noexcept;

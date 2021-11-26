@@ -82,66 +82,66 @@ class Offsets {
 
 		struct {
 			// Detours
-			uintptr_t RenderShutdown = 0xda4260;
-			uintptr_t RenderStartup = 0xdc4f80;
-			uintptr_t FactorCameraOffset = 0x8770b0;
-			uintptr_t FUN_140c69b20 = 0xc91ff0;
-			uintptr_t FUN_140c69bd0_MakeNiSomething = 0xc920a0;
-			uintptr_t GetObjectByName = 0xc7f970;
-			uintptr_t DoPOVSwitch = 0x87bd00;
-			uintptr_t DoPovSwitchFPV = 0x873650;
-			uintptr_t vtable_ThirdPersonState_1 = 0x17258e0;
-			uintptr_t vtable_HorseCameraState_1 = 0x179c8b0;
-			uintptr_t vtable_DragonCameraState_1 = 0x1725998;
-			uintptr_t vtable_BleedoutCameraState_1 = 0x179d5a8;
-			uintptr_t vtable_FirstPersonState_1 = 0x179d310;
-			uintptr_t vtable_FreeCameraState_1 = 0x179d400;
+			uintptr_t RenderShutdown = 77227;
+			uintptr_t RenderStartup = 77649;
+			uintptr_t FactorCameraOffset = 50799;
+			uintptr_t FUN_140c69b20 = 70734;
+			uintptr_t FUN_140c69bd0_MakeNiSomething = 70735;
+			uintptr_t GetObjectByName = 70299;
+			uintptr_t DoPOVSwitch = 50906;
+			uintptr_t DoPovSwitchFPV = 50730;
+			uintptr_t vtable_ThirdPersonState_1 = 205238;
+			uintptr_t vtable_HorseCameraState_1 = 214839;
+			uintptr_t vtable_DragonCameraState_1 = 205242;
+			uintptr_t vtable_BleedoutCameraState_1 = 214875;
+			uintptr_t vtable_FirstPersonState_1 = 214857;
+			uintptr_t vtable_FreeCameraState_1 = 214865;
 
 			// ArrowFixes
-			uintptr_t S2 = 0x75d1c0;
-			uintptr_t Power = 0x75d1a0;
-			uintptr_t RWLocker = 0x139160;
-			uintptr_t DAT_142eff7d8 = 0x2f99f90;
-			uintptr_t UnkData = 0x2f603b0;
-			uintptr_t UpdateFlightPath = 0x77d760;
-			uintptr_t DebugTraceProjectile = 0x77ecc0;
-			uintptr_t DebugSpawnProjectile = 0x778480;
+			uintptr_t S2 = 43700;
+			uintptr_t Power = 43699;
+			uintptr_t RWLocker = 12332;
+			uintptr_t DAT_142eff7d8 = 401069;
+			uintptr_t UnkData = 400883;
+			uintptr_t UpdateFlightPath = 44184;
+			uintptr_t DebugTraceProjectile = 44199;
+			uintptr_t DebugSpawnProjectile = 44108;
 
 			// Camera
-			uintptr_t ComputeToScreenMatrix = 0xc8e8e0;
+			uintptr_t ComputeToScreenMatrix = 70641;
 
 			// Crosshair
-			uintptr_t GFxGotoAndStop = 0xf0ccc0;
-			uintptr_t GFxInvoke = 0xf0cfd0;
-			uintptr_t DAT_141de0da8 = 0x1e74e88;
-			uintptr_t DAT_141de0dc0 = 0x1e74ea0;
-			uintptr_t DAT_142f01438 = 0x2f9bb58;
-			uintptr_t DAT_141de0df0 = 0x1e74ed0;
-			uintptr_t DAT_141de0e08 = 0x1e74ee8;
+			uintptr_t GFxGotoAndStop = 82253;
+			uintptr_t GFxInvoke = 82256;
+			uintptr_t DAT_141de0da8 = 374223;
+			uintptr_t DAT_141de0dc0 = 374226;
+			uintptr_t DAT_142f01438 = 401668;
+			uintptr_t DAT_141de0df0 = 374232;
+			uintptr_t DAT_141de0e08 = 374235;
 
 			// Firstperson
-			uintptr_t SwitchSkeleton = 0x6c9f30;
-			uintptr_t RenderStuff = 0x142f580;
+			uintptr_t SwitchSkeleton = 40476;
+			uintptr_t RenderStuff = 107644;
 
 			// GameState
-			uintptr_t IsOverEncumbered = 0x607410;
+			uintptr_t IsOverEncumbered = 37453;
 
 			// Raycast
-			uintptr_t CameraCaster = 0x50d640;
-			uintptr_t GetNiAVObject = 0xdecf20;
+			uintptr_t CameraCaster = 33007;
+			uintptr_t GetNiAVObject = 77988;
 
 			// Thirdperson
-			uintptr_t FOVOffset = 0x32cd208;
-			uintptr_t SwitchToFPV = 0x876e60;
-			uintptr_t UpdateFreeCamTransform = 0x874200;
+			uintptr_t FOVOffset = 414942;
+			uintptr_t SwitchToFPV = 50790;
+			uintptr_t UpdateFreeCamTransform = 50746;
 
 			// Render
-			uintptr_t FOV = 0x1e9b420;
-			uintptr_t D3DObjects = 0x30C0C08;
+			uintptr_t FOV = 388785;
+			uintptr_t D3DObjects = 411347;
 			uintptr_t CameraSwap = 0;
 			uintptr_t UpdateGPUCameraData = 0;
 			uintptr_t CBuffer12 = 0;
-			uintptr_t GBuffer = 0x30c6d90;
+			uintptr_t GBuffer = 411479;
 		} AE;
 
 		// Detours

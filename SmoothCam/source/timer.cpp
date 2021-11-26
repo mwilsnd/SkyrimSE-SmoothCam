@@ -5,6 +5,10 @@ static double lastFrame = 0.0;
 static double curQPC = 0.0;
 static double lastQPC = 0.0;
 
+constexpr const size_t DTAccumBufferSize = 40;
+static eastl::fixed_ring_buffer<double, DTAccumBufferSize> deltaHistory(DTAccumBufferSize);
+static double deltaSmooth = 0.0;
+
 double GameTime::GetTime() noexcept {
 	return GetQPC();
 }
@@ -29,6 +33,17 @@ void GameTime::StepFrameTime() noexcept {
 
 	lastQPC = curQPC;
 	curQPC = GetQPC();
+
+	deltaHistory.push_back(GetFrameDelta());
+	if (lastFrame <= 0.00001) {
+		deltaSmooth = 0.00001;
+	} else {
+		deltaSmooth = 0.0000001;
+		for (auto v : deltaHistory) {
+			deltaSmooth += v;
+		}
+		deltaSmooth /= static_cast<double>(deltaHistory.size());
+	}
 }
 
 double GameTime::CurTime() noexcept {
@@ -45,4 +60,8 @@ double GameTime::GetFrameDelta() noexcept {
 
 double GameTime::GetQPCDelta() noexcept {
 	return curQPC - lastQPC;
+}
+
+double GameTime::GetSmoothFrameDelta() noexcept {
+	return deltaSmooth;
 }

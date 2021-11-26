@@ -504,7 +504,7 @@ namespace mmath {
 
 			if (withDT) {
 				constexpr const T minZero = (T)0.000000000001;
-				const T delta = glm::max(static_cast<T>(GameTime::GetFrameDelta()), minZero);
+				const T delta = glm::max(static_cast<T>(GameTime::GetSmoothFrameDelta()), minZero);
 				const T lambda = (T)1.0 - glm::pow((T)1.0 - result, delta * (T)60.0);
 				return glm::clamp(lambda, (T)0.0, (T)1.0);
 			}

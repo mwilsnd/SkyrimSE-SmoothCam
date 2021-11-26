@@ -47,7 +47,10 @@ endif (BUILD_SKYRIM_AE)
 
 add_subdirectory("Deps/EASTL" EASTL)
 add_subdirectory("Deps/PolyHook_2_0" PolyHook_2)
-find_package(spdlog REQUIRED CONFIG)
+
+find_package(fmt CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(binary_io CONFIG REQUIRED)
 
 include(cmake/headers.cmake)
 include(cmake/source.cmake)

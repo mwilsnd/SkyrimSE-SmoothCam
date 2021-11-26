@@ -1,3 +1,13 @@
+# Beta 1.6.1
+* Bumped module and MCM version number to 16
+
+## AE Migration:
+* Now supporting the AE address library, updated for latest game runtime.
+
+**Fixes:**
+* Added frame smoothing accumulator to delta time to correct for motion jitter caused by inconsistent frame times.
+* Fixed 3D crosshair enabling the HUD crosshair even if bShowCrosshair:Interface was set to false.
+
 # Beta 1.6
 * Bumped module and MCM version number to 15
 

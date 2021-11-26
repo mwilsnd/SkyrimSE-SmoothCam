@@ -15,4 +15,6 @@ namespace GameTime {
 	double GetFrameDelta() noexcept;
 	// Get the current delta QPC time for the frame
 	double GetQPCDelta() noexcept;
+	// Get a smoothed out frame delta
+	double GetSmoothFrameDelta() noexcept;
 }
