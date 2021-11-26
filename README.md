@@ -23,7 +23,7 @@ The following mods are supported:
 * True Directional Movement
 
 ## Runtime Requirements
-SmoothCam requires SKSE64 and [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444) (For SSE, not AE). If you wish to use the MCM esp, SkyUI is also required. **SmoothCam only officially supports Skyrim Special Edition runtimes 1.5.97 and 1.6.318(anniversary edition)**, other versions are not tested for full functionality and are unsupported.
+SmoothCam requires SKSE64 and [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444). If you wish to use the MCM esp, SkyUI is also required. **SmoothCam only officially supports Skyrim Special Edition runtimes 1.5.97 and 1.6.318(anniversary edition)**, other versions are not tested for full functionality and are unsupported.
 
 ## Installing
 If using one of the pre-compiled releases, use a mod manager and follow the prompts to select the DLL and plugin types you want. If doing a manual install, install either the SSE or AE version of the DLL and the contents of the `ExtraData` folder to `Data/SKSE/Plugins`. Copy the pex script to `Data/Scripts` and copy either the esp or esl variant of the plugin into `Data`.
