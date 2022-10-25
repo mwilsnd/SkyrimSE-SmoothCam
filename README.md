@@ -16,7 +16,7 @@ Notable features include:
 SmoothCam is going to have issues with any other mod that tries to position the third-person camera (Other third-person mods, likely some lock-on mods, etc).
 
 The following mods are supported:
-* Improved Camera (Only with the reddit release build of Improved Camera beta 4)
+* Improved Camera (Only with the reddit release build of Improved Camera beta 4) (Unsupported in AE)
 * Immersive First Person View (Requires the optional file `IFPV Detector Plugin` on the download page)
 * Alternate Conversation Camera Plus (Pending an approved pull-request)
 * Archery Gameplay Overhaul
@@ -31,12 +31,35 @@ If using one of the pre-compiled releases, use a mod manager and follow the prom
 If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins` (along with the address library database file and `ExtraData/SmoothCam_FollowBones_Default.txt`), `SmoothCam.esp/esl` to `Data/` and `SmoothCamMCM.pex` to `Data/Scripts`. Enable the esp file if you wish to use the MCM, otherwise the module will generate a json file in the plugins folder you can edit to manually configure the camera.
 
 ## Building
-### Module:
-Before building, ensure you have updated copies of Visual Studio 2019 and CMake. CommonLibSSE requires spdlog and Boost, refer to that repo for configuring it's dependencies.
+Requisites:
+* [buck](https://buck.build/)
+* [7zip](https://www.7-zip.org/)
+* [LDC](https://github.com/ldc-developers/ldc/releases)
+* A Skyrim install with the Creation Kit and requisite scripts for MCM creation
 
-Once you have cloned the repo, you should first run the batch script `build_detours.bat`. This will compile Microsoft Detours.
+Run the complete release packager by running `./package` from the root of the repository. For individual components, read on.
 
-Next, open a terminal window in the repository root and run `cmake -B build -S .` which will generate a visual studio solution in the newly-created `build` folder (You can also use CMake-GUI if you wish). Open `SmoothCam.sln`, select either `Debug` or `Release` and select `Build Solution` from the build dropdown. Enable the cmake option `BUILD_SKYRIM_AE` to compile a version compatible with anniversary edition.
+### Module
+### Option 1: BUCK
+```
+cd SkyrimSE-SmoothCam
+buck build :SmoothCam[AE|SE][Debug|Release]#windows-x86_64
+```
+The buck build will perform a full build, including MCM code generation, in one shot. You'll need Visual Studio 2022 Community, dub and DMD/LDC installed, along with buck and watchman.
+
+### Option 2: CMake
+```
+cd SkyrimSE-SmoothCam
+cmake -B build -S . [-DSKYRIM_SUPPORT_AE=1]
+cmake --build build -j16 --config Release
+```
+
+### Option 2.a: + Visual Studio
+```
+cd SkyrimSE-SmoothCam
+cmake -B build -S . [-DSKYRIM_SUPPORT_AE=1]
+```
+Then navigate to the build directory and open the `.sln` to build/debug using Visual Studio.
 
 ### MCM:
 To build the MCM code generator (`paper`), you will need a D language compiler (DMD, LDC) and optionally VSCode with the code-d extension installed. If using code-d, build targets have already been created for you.

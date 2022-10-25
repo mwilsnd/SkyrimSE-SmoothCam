@@ -36,7 +36,7 @@ static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 #ifdef SKYRIM_SUPPORT_AE
 extern "C" __declspec(dllexport) constexpr auto SKSEPlugin_Version = []() {
 	SKSE::PluginVersionData v{};
-	v.pluginVersion = 16;
+	v.pluginVersion = 17;
 	v.PluginName("SmoothCam"sv);
 	v.AuthorName("mwilsnd"sv);
 #ifdef SKYRIM_IS_PRE629
@@ -84,7 +84,7 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::Query
 
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
 	a_info->name = "SmoothCam";
-	a_info->version = 16;
+	a_info->version = 17;
 
 	if (a_skse->IsEditor()) {
 		logger::critical("Loaded in editor, marking as incompatible"sv);

@@ -1,3 +1,17 @@
+# Neta 1.7
+* Bumped module and MCM version number to 17
+
+**Fixes:**
+* Fixed world-space crosshair drawing during the Skyrim style dialogue camera.
+* Hand-to-hand is now correctly recognized as melee combat.
+* Migrated to po3's CommonLib fork to support newer versions of AE
+* Support for breaking changes made in recent AE update
+
+**New Stuff:**
+* "3D Activator Crosshair Enabled" option: Raycasting activator/interaction crosshair, thanks to meh321.
+* "Only Show Crosshair On Hit" option: Hides the crosshair during normal play and only reveals if the crosshair activator ray hits something. Overrides non-combat/melee hide options.
+* "Activate Radius" option: Controls the collision size of the crosshair when looking at items and other interact-ables.
+
 # Beta 1.6.1
 * Bumped module and MCM version number to 16
 
