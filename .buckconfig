@@ -1,0 +1,55 @@
+[cxx#windows-x86_64]
+  cc="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/cl.exe"
+  cc_type=windows
+  cpp="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/cl.exe"
+  cppflags = \
+    /I"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/include" \
+    /I"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/atlmfc/include" \
+    /I"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/include" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/shared" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/ucrt" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/um" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/winrt" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/cppwinrt"
+  cpp_type=windows
+  cxx="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/cl.exe"
+  cxx_type=windows
+  cxxpp="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/cl.exe"
+  cxxppflags = \
+    /I"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/include" \
+    /I"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/atlmfc/include" \
+    /I"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/include" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/shared" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/ucrt" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/um" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/winrt" \
+    /I"C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/cppwinrt"
+  cxxpp_type=windows
+  ld="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/link.exe"
+  ldflags = \
+    /LIBPATH:"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/lib/x64" \
+    /LIBPATH:"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/atlmfc/lib/x64" \
+    /LIBPATH:"C:/Program Files (x86)/Windows Kits/10/lib/10.0.19041.0/ucrt/x64" \
+    /LIBPATH:"C:/Program Files (x86)/Windows Kits/10/lib/10.0.19041.0/um/x64/"
+  linker_platform=windows
+  ar="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/lib.exe"
+  archiver_platform=windows
+  asm="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/ml64.exe"
+  asm_type=windows_ml64
+  asmpp="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.32.31326/bin/HostX64/x64/ml64.exe"
+  asmpp_type=windows
+  untracked_headers=warn
+
+[d]
+  base_compiler_flags = -boundscheck=off -O3
+  compiler = ldc2
+  library_path = "C:/Program Files/LDC 1.30/lib64"
+  linker_flags = \
+    /LIBPATH:"C:/Program Files/LDC 1.30/lib64" \
+    druntime-ldc.lib \
+    phobos2-ldc.lib \
+    libcmt.lib
+  default_cxx_platform = windows-x86_64
+
+[parser]
+  default_build_file_syntax = SKYLARK

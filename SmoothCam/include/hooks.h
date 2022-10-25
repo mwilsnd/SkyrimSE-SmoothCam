@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Detours {
+namespace Hooks {
 	// Attach primary game-object hooks
 	bool DeferredAttach();
 

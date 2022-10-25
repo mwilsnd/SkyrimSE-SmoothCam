@@ -71,18 +71,18 @@ struct ArenaDecl {
     ArenaPage* getPage()(auto ref const(string) pageName) {
         auto it = pageName in pages;
         if (it !is null) return it;
-
-        writeln("Allocating arena page '" ~ pageName ~ "'");
         pages[pageName] = ArenaPage(size);
         return pageName in pages;
     }
 
     /// Report allocation metrics to console
-    void report() const {
+    void report(bool verbose=false) const {
         writeln(to!string(pages.length) ~ " pages allocated");
-        writeln("Allocation Pressure:");
-        foreach (ref const(string) k, ref const(ArenaPage) v; pages) {
-            writeln(to!string(k) ~ " - alloc: " ~ to!string(v.allocCount) ~ " maxAlloc: " ~ to!string(v.maxSlots));
+        if (verbose) {
+            writeln("Allocation Pressure:");
+            foreach (ref const(string) k, ref const(ArenaPage) v; pages) {
+                writeln(to!string(k) ~ " - alloc: " ~ to!string(v.allocCount) ~ " maxAlloc: " ~ to!string(v.maxSlots));
+            }
         }
     }
 }

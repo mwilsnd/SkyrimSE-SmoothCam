@@ -2,6 +2,59 @@
 
 extern Offsets* g_Offsets;
 
+Raycast::RayCollector::RayCollector() {}
+
+void Raycast::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpShapeRayCastCollectorOutput& hitInfo) {
+	HitResult hit;
+	hit.hitFraction = hitInfo.hitFraction;
+	hit.normal = {
+		hitInfo.normal.quad.m128_f32[0],
+		hitInfo.normal.quad.m128_f32[1],
+		hitInfo.normal.quad.m128_f32[2] 
+	};
+	
+	const RE::hkpCdBody* obj = &body;
+	while (obj) {
+		if (!obj->parent) break;
+		obj = obj->parent;
+	}
+
+	hit.body = obj;
+	if (!hit.body) return;
+
+	const auto collisionObj = static_cast<const RE::hkpCollidable*>(hit.body);
+	const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
+
+	const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
+	constexpr uint64_t filter = 0x40122716; //@TODO
+	if ((m & filter) != 0) {
+		if (objectFilter.size() > 0) {
+			for (const auto filteredObj : objectFilter) {
+				if (hit.getAVObject() == filteredObj) return;
+			}
+		}
+
+		earlyOutHitFraction = hit.hitFraction;
+		hits.push_back(eastl::move(hit));
+	}
+}
+
+const eastl::vector<Raycast::RayCollector::HitResult>& Raycast::RayCollector::GetHits() {
+	return hits;
+}
+
+void Raycast::RayCollector::Reset() {
+	earlyOutHitFraction = 1.0f;
+	hits.clear();
+	objectFilter.clear();
+}
+
+RE::NiAVObject* Raycast::RayCollector::HitResult::getAVObject() {
+	typedef RE::NiAVObject* (*_GetUserData)(const RE::hkpCdBody*);
+	static auto getAVObject = REL::Relocation<_GetUserData>(g_Offsets->GetNiAVObject);
+	return body ? getAVObject(body) : nullptr;
+}
+
 Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceHullSize)
 	noexcept
 {
@@ -41,8 +94,8 @@ Raycast::RayResult Raycast::CastRay(glm::vec4 start, glm::vec4 end, float traceH
 	return res;
 }
 
-SkyrimSE::bhkLinearCastCollector* getCastCollector() noexcept {
-	static SkyrimSE::bhkLinearCastCollector collector = SkyrimSE::bhkLinearCastCollector();
+Raycast::RayCollector* getCastCollector() noexcept {
+	static Raycast::RayCollector collector = Raycast::RayCollector();
 	return &collector;
 }
 
@@ -57,31 +110,40 @@ Raycast::RayResult Raycast::hkpCastRay(const glm::vec4& start, const glm::vec4& 
 	constexpr auto hkpScale = 0.0142875f;
 	const auto dif = end - start;
 
-	SkyrimSE::bhkRayCastInfo info;
-	info.start = start * hkpScale;
-	info.end = dif * hkpScale;
-	info.collector = getCastCollector();
-	info.collector->reset();
+	constexpr auto one = 1.0f;
+	const auto from = start * hkpScale;
+	const auto to = dif * hkpScale;
+
+	RE::hkpWorldRayCastInput pickRayInput{};
+	pickRayInput.from = RE::hkVector4(from.x, from.y, from.z, one);
+	pickRayInput.to = RE::hkVector4(0.0, 0.0, 0.0, 0.0);
+
+	auto collector = getCastCollector();
+	collector->Reset();
+
+	RE::bhkPickData pickData{};
+	pickData.rayInput = pickRayInput;
+	pickData.ray = RE::hkVector4(to.x, to.y, to.z, one);
+	pickData.rayHitCollectorA8 = reinterpret_cast<RE::hkpClosestRayHitCollector*>(collector);
 
 	const auto ply = RE::PlayerCharacter::GetSingleton();
 	if (!ply->parentCell) return {};
 
 	if (ply->loadedData && ply->loadedData->data3D)
-		info.collector->addFilter(ply->loadedData->data3D.get());
+		collector->AddFilter(ply->loadedData->data3D.get());
 
 	auto physicsWorld = ply->parentCell->GetbhkWorld();
 	if (physicsWorld) {
-		typedef void(__thiscall RE::bhkWorld::*CastRay)(SkyrimSE::hkpRayCastInfo*) const;
-		(physicsWorld->*reinterpret_cast<CastRay>(&RE::bhkWorld::Unk_33))(&info);
+		physicsWorld->PickObject(pickData);
 	}
 	
-	SkyrimSE::bhkRayHitResult best = {};
+	Raycast::RayCollector::HitResult best{};
 	best.hitFraction = 1.0f;
 	glm::vec4 bestPos = {};
 
-	for (auto& hit : info.collector->results) {
+	for (auto& hit : collector->GetHits()) {
 		const auto pos = (dif * hit.hitFraction) + start;
-		if (best.hit == nullptr) {
+		if (best.body == nullptr) {
 			best = hit;
 			bestPos = pos;
 			continue;
@@ -97,10 +159,8 @@ Raycast::RayResult Raycast::hkpCastRay(const glm::vec4& start, const glm::vec4& 
 	result.hitPos = bestPos;
 	result.rayLength = glm::length(bestPos - start);
 
-	if (!best.hit) return result;
-	typedef RE::NiAVObject*(*_GetUserData)(SkyrimSE::bhkShapeList*);
-	auto getAVObject = REL::Relocation<_GetUserData>(g_Offsets->GetNiAVObject);
-	auto av = getAVObject(best.hit);
+	if (!best.body) return result;
+	auto av = best.getAVObject();
 	result.hit = av != nullptr;
 
 	if (result.hit) {

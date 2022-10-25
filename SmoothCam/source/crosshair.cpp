@@ -142,8 +142,8 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const RE::Actor* player, cons
 	const auto config = Config::GetCurrentConfig();
 	const auto gravityScale = ammo->data.projectile->data.gravity;
 	auto gravity = glm::vec4{ 0.0f, 0.0f, -9.8f, 0.0f };
-	if (player->parentCell && player->parentCell->GetbhkWorld() && player->parentCell->GetbhkWorld()->GetWorld())
-		gravity = *reinterpret_cast<glm::vec4*>(&player->parentCell->GetbhkWorld()->GetWorld()->gravity);
+	if (player->parentCell && player->parentCell->GetbhkWorld() && player->parentCell->GetbhkWorld()->GetWorld1())
+		gravity = *reinterpret_cast<glm::vec4*>(&player->parentCell->GetbhkWorld()->GetWorld1()->gravity);
 
 	// Compute impulse
 	glm::vec3 velocityVector = ComputeProjectileVelocityVector(player, ammo, aimRotation);
@@ -607,7 +607,7 @@ void Crosshair::Manager::Update(RE::Actor* player) noexcept {
 		ResetStealthMeter();
 		Messaging::SmoothCamInterface::GetInstance()->ClearStealthMeterDirtyFlag();
 	}
-
+	
 	// Stealth meter offset
 	const auto config = Config::GetCurrentConfig();
 

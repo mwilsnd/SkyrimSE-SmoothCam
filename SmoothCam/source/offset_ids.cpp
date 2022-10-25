@@ -1,14 +1,14 @@
 #include "offset_ids.h"
 
 Offsets::Offsets() noexcept {
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 		populateAE();
 #else
 		populateSE();
 #endif
 }
 
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 void Offsets::populateAE() noexcept {
 	RenderShutdown = REL::ID(AE.RenderShutdown).address();
 	RenderStartup = REL::ID(AE.RenderStartup).address();

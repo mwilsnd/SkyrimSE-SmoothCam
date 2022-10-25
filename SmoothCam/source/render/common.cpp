@@ -3,7 +3,7 @@
 extern Offsets* g_Offsets;
 
 float Render::GetFOV() noexcept {
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 	static const auto fov = REL::Relocation<float*>(g_Offsets->FOV);
 	const auto deg = *fov + *REL::Relocation<float*>(g_Offsets->FOVOffset);
 	return glm::radians(deg);

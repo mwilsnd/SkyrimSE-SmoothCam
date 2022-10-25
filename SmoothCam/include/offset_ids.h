@@ -9,7 +9,7 @@ class Offsets {
 
 	private:
 		Offsets() noexcept;
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 		void populateAE() noexcept;
 #else
 		void populateSE() noexcept;

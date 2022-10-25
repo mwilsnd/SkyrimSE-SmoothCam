@@ -1,6 +1,6 @@
 #pragma once
 #include "camera.h"
-#include "detours.h"
+#include "hooks.h"
 #include "papyrus.h"
 #include "compat.h"
 #include "debug/eh.h"

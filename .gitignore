@@ -16,16 +16,22 @@
 *.tlog
 *.lastbuildstate
 
+.buckd
+buck-out/
+.vscode
+
 x64/
 build/
 temp/
 enc_temp_folder/
+Release_Package/
 
 SmoothCamMCM.psc
 /blend
 *.blend
 *.blend1
 *.bin
+*.zip
 
 .dub
 docs.json

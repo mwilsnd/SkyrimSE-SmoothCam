@@ -1,4 +1,4 @@
-#include "detours.h"
+#include "hooks.h"
 
 #pragma warning(push)
 #pragma warning(disable : 5103)
@@ -945,7 +945,7 @@ void Config::Initialize() {
 	LoadEyeBonePriorities();
 #endif
 
-	Detours::RegisterGameShutdownEvent(Config::Shutdown);
+	Hooks::RegisterGameShutdownEvent(Config::Shutdown);
 }
 
 void Config::Shutdown() {

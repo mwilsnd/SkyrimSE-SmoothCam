@@ -1,7 +1,7 @@
 #include "arrow_fixes.h"
 #include "camera.h"
 #include "thirdperson.h"
-#include "detours.h"
+#include "hooks.h"
 #ifdef DEBUG
 #include "render/line_drawer.h"
 #endif
@@ -142,8 +142,7 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	const auto projectileForm = reinterpret_cast<const RE::BGSProjectile*>(arrow->GetBaseObject());
 	const auto speed = projectileForm->data.speed;
 	const auto arrowFireSpeed = speed * power;
-	const auto alwaysOne = arrow->unk18C; // At least, as far as I've seen
-	const auto velScalar = s2 * arrowFireSpeed * alwaysOne;
+	const auto velScalar = s2 * arrowFireSpeed * arrow->speedMult;
 
 	rot.x *= -1.0f;
 	const auto pitchCos = glm::cos(rot.x);
@@ -154,8 +153,7 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	const auto pitchCosVel = pitchCos * velScalar;
 	const auto pitchSinVel = pitchSin * velScalar;
 
-	// projectile->velocityVector
-	*reinterpret_cast<RE::NiPoint3*>(&arrow->unk0FC) = {
+	arrow->linearVelocity = {
 		pitchCosVel * yawSin,
 		pitchCosVel * yawCos,
 		pitchSinVel
@@ -175,9 +173,8 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	{
 		RE::NiPoint3 shooterVelocity;
 		ply->GetLinearVelocity(shooterVelocity);
-		// projectile->velocityVector
-		arrow->unk0FC = shooterVelocity.x + arrow->unk0FC;
-		arrow->unk100 = shooterVelocity.y + arrow->unk100;
+		arrow->linearVelocity.x = shooterVelocity.x + arrow->linearVelocity.x;
+		arrow->linearVelocity.y = shooterVelocity.y + arrow->linearVelocity.y;
 	}
 
 	// Like other handle refcounters, arg1 = 0, release rc if arg2 != nullptr
@@ -202,7 +199,7 @@ bool ArrowFixes::Attach() {
 	if (Render::HasContext())
 		segmentDrawer = eastl::make_unique<Render::LineDrawer>(Render::GetContext());
 
-	Detours::RegisterGameShutdownEvent([] {
+	Hooks::RegisterGameShutdownEvent([] {
 		std::lock_guard<std::mutex> lock(segmentLock);
 		segmentDrawer.reset();
 	});

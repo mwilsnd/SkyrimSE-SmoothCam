@@ -1,4 +1,4 @@
-﻿#include "detours.h"
+﻿#include "hooks.h"
 #include "camera.h"
 #include "thirdperson.h"
 #include "crosshair.h"
@@ -267,8 +267,8 @@ static void mFactorCameraOffset(RE::PlayerCamera* camera, RE::NiPoint3& pos, boo
 }
 
 // Render tear-down, before CoUninitialize
-static eastl::vector<Detours::ShutdownCallback> shutdownEVs;
-void Detours::RegisterGameShutdownEvent(ShutdownCallback&& cb) noexcept {
+static eastl::vector<Hooks::ShutdownCallback> shutdownEVs;
+void Hooks::RegisterGameShutdownEvent(ShutdownCallback&& cb) noexcept {
 	shutdownEVs.push_back(eastl::move(cb));
 }
 
@@ -341,7 +341,7 @@ static void mCalledDuringRenderStartup() {
 	detCalledDuringRenderStartup->GetBase()();
 }
 
-bool Detours::DeferredAttach() {
+bool Hooks::DeferredAttach() {
 	playerInputHook = eastl::make_unique<VTableDetour<RE::PlayerInputHandler>>(RE::PlayerControls::GetSingleton()->togglePOVHandler);
 	playerInputHook->Add(1, mOnInput);
 	if (!playerInputHook->Attach())
@@ -349,7 +349,7 @@ bool Detours::DeferredAttach() {
 
 	menuOpenCloseHook = eastl::make_unique<VTableDetour<PlayerMenuOpenCloseEvent>>(
 		reinterpret_cast<PlayerMenuOpenCloseEvent*>(
-			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2B0
+			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2B8
 		)
 	);
 	menuOpenCloseHook->Add(1, mMenuOpenCloseHandler);
@@ -358,7 +358,7 @@ bool Detours::DeferredAttach() {
 
 	menuModeChangeHook = eastl::make_unique<VTableDetour<PlayerMenuModeChangeEvent>>(
 		reinterpret_cast<PlayerMenuModeChangeEvent*>(
-			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2B8
+			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2C0
 		)
 	);
 	menuModeChangeHook->Add(1, mMenuModeChangeHandler);
@@ -421,7 +421,7 @@ bool Detours::DeferredAttach() {
 	// FactorCameraOffset
 	detFactorCameraOffset = eastl::make_unique<FactorCameraOffsetDetour>(g_Offsets->FactorCameraOffset, mFactorCameraOffset);
 	if (!detFactorCameraOffset->Attach())
-		FatalError(L"Failed to place detour on target function(Detours::FactorCameraOffset), this error is fatal.");
+		FatalError(L"Failed to place detour on target function(Hooks::FactorCameraOffset), this error is fatal.");
 
 	// Crosshair UI
 	detGFxInvoke = eastl::make_unique<TypedDetour<GFxInvoke>>(g_Offsets->GFxInvoke, mGFxInvoke);
@@ -435,7 +435,7 @@ bool Detours::DeferredAttach() {
 	return ArrowFixes::Attach();
 }
 
-bool Detours::AttachD3D() {
+bool Hooks::AttachD3D() {
 	logger::info("Hooking render startup method");
 	detCalledDuringRenderStartup = eastl::make_unique<TypedDetour<CalledDuringRenderStartup>>(
 		g_Offsets->RenderStartup,

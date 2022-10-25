@@ -4,7 +4,7 @@
 
 #ifdef DEBUG
 #include "render/line_drawer.h"
-#include "detours.h"
+#include "hooks.h"
 #include "camera.h"
 #include "thirdperson.h"
 
@@ -76,7 +76,7 @@ void Util::InitializeDebugDrawing(Render::D3DContext& context) noexcept {
 		lines.clear();
 	});
 
-	Detours::RegisterGameShutdownEvent([]() {
+	Hooks::RegisterGameShutdownEvent([]() {
 		lineDrawer.reset();
 		cbufPerFrame.reset();
 	});

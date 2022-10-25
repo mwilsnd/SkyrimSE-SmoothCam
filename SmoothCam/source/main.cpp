@@ -18,7 +18,7 @@ static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 				logger::info("Creating the camera");
 				g_theCamera = eastl::make_unique<Camera::Camera>();
 				logger::info("Attaching deferred detours");
-				if (!Detours::DeferredAttach())
+				if (!Hooks::DeferredAttach())
 					logger::critical("Failed to attach deferred detours.");
 			}
 
@@ -33,14 +33,20 @@ static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 	}
 }
 
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 extern "C" __declspec(dllexport) constexpr auto SKSEPlugin_Version = []() {
 	SKSE::PluginVersionData v{};
 	v.pluginVersion = 16;
 	v.PluginName("SmoothCam"sv);
 	v.AuthorName("mwilsnd"sv);
+#ifdef SKYRIM_IS_PRE629
 	v.CompatibleVersions({ SKSE::RUNTIME_1_6_318 });
 	v.UsesAddressLibrary(true);
+#else
+	v.CompatibleVersions({ SKSE::RUNTIME_1_6_640 });
+	v.UsesUpdatedStructs();
+	v.UsesAddressLibrary();
+#endif
 	return v;
 }();
 #endif
@@ -96,7 +102,7 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::Query
 
 extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) {
 #ifdef DEBUG
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 	Debug::StartREPL();
 #endif
 	while (!IsDebuggerPresent()) {}
@@ -133,9 +139,9 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadIn
 	g_messaging->RegisterListener("SKSE", SKSEMessageHandler);
 
 	logger::info("Attaching render subsystem hooks");
-	if (!Detours::AttachD3D()) return false;
+	if (!Hooks::AttachD3D()) return false;
 
-	Detours::RegisterGameShutdownEvent([] {
+	Hooks::RegisterGameShutdownEvent([] {
 		if (g_theCamera) {
 			DebugPrint("Freeing the camera\n");
 			g_theCamera.reset();

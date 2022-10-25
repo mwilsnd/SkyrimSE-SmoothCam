@@ -14,7 +14,7 @@ namespace Compat {
 		VERSION_MISMATCH = 2
 	};
 
-#ifdef IS_SKYRIM_AE
+#ifdef SKYRIM_SUPPORT_AE
 	namespace ICSignatures {
 		constexpr const DWORD SizeOfImage = 0xFFFFFFFF;
 		constexpr const DWORD Signature = 0xFFFFFFFF;

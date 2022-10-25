@@ -50,7 +50,7 @@
 		}
 	],
 	"dependencies": {
-		"bindbc-assimp": "~>0.0.1",
+		"bindbc-assimp": { "path": "../../Deps/bindbc-assimp" },
 		"gfm": "~>8.0.3"
 	},
 	"name": "ModelBaker",

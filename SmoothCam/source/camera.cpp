@@ -375,9 +375,9 @@ void Camera::Camera::UpdateCamera(RE::PlayerCharacter* player, RE::PlayerCamera*
 	}
 
 	// Update states
-	const auto state = UpdateCurrentCameraState(player, currentFocusObject, camera);
+	[[maybe_unused]] const auto state = UpdateCurrentCameraState(player, currentFocusObject, camera);
 	const auto pov = UpdateCameraPOVState(camera);
-	const auto actionState = UpdateCurrentCameraActionState(player, currentFocusObject, camera);
+	[[maybe_unused]] const auto actionState = UpdateCurrentCameraActionState(player, currentFocusObject, camera);
 
 	// Set our frustum
 	frustum = cameraNi->viewFrustum;

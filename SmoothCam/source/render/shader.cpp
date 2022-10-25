@@ -61,8 +61,9 @@ bool Render::Shader::Compile(const eastl::string& source, const eastl::string& e
 	);
 
 	if (!SUCCEEDED(result)) {
-		if (errorBlob)
-			logger::error(static_cast<LPCSTR>(errorBlob->GetBufferPointer()));
+		if (errorBlob) {
+			logger::warn("{}", static_cast<const char*>(errorBlob->GetBufferPointer()));
+		}
 		return false;
 	}
 

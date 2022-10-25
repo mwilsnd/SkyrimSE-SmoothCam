@@ -13,9 +13,10 @@ extern "C" {
 SILENCE_CODE_ANALYSIS;
 SILENCE_EXTERNAL;
 #pragma warning(push)
-#   pragma warning(disable : 4201)
+#   pragma warning(disable : 4201 28020 26439 6011 6294)
 #   include "RE/Skyrim.h"
 #   include "SKSE/SKSE.h"
+#   include <xbyak/xbyak.h>
 #pragma warning(pop)
 
 #   include <shlobj.h>	
@@ -27,6 +28,7 @@ SILENCE_EXTERNAL;
 #   include <thread>
 #   include <xmmintrin.h>
 #   include <stdint.h>
+#   include <utility>
 #   undef CreateFont
 #   undef NO_DATA
 
@@ -56,7 +58,11 @@ SILENCE_EXTERNAL;
 #   include <EASTL/fixed_list.h>
 #   include <EASTL/bonus/fixed_ring_buffer.h>
 
-#   include "include/detours.h"
+#   ifdef BUCK
+#       include <detours/detours.h>
+#   else
+#       include "include/detours.h"
+#   endif
 #   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 #   include <polyhook2/CapstoneDisassembler.hpp>
 #   include <polyhook2/ZydisDisassembler.hpp>
@@ -79,6 +85,7 @@ SILENCE_EXTERNAL;
 #   include <glm/gtx/spline.hpp>
 #   include <glm/gtx/norm.hpp>
 #   include <glm/gtx/hash.hpp>
+#   include <glm/gtx/type_trait.hpp>
 
 using vec2u = glm::vec<2, float, glm::highp>;
 using vec3u = glm::vec<3, float, glm::highp>;
@@ -125,7 +132,6 @@ RESTORE_CODE_ANALYSIS;
 #include "skyrimSE/FreeCameraState.h"
 #include "skyrimSE/DragonCameraState.h"
 #include "skyrimSE/IMovementInterface.h"
-#include "skyrimSE/bhkLinearCastCollector.h"
 
 #include "offset_ids.h"
 #include "modapi.h"

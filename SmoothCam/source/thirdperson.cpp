@@ -731,7 +731,7 @@ Crosshair::Manager* Camera::Thirdperson::GetCrosshairManager() noexcept {
 void Camera::Thirdperson::MoveToGoalPosition(const RE::PlayerCharacter* player, const RE::Actor* forRef,
 	const RE::PlayerCamera* camera) noexcept
 {
-	const auto pov = m_camera->UpdateCameraPOVState(camera);
+	[[maybe_unused]] const auto pov = m_camera->UpdateCameraPOVState(camera);
 	const auto actionState = m_camera->UpdateCurrentCameraActionState(player, forRef, camera);
 	offsetState.currentGroup = GetOffsetForState(actionState);
 
@@ -786,7 +786,7 @@ void Camera::Thirdperson::UpdateInternalRotation(const RE::PlayerCamera* camera)
 			break;
 		}
 		default: {
-			logger::warn(FMT_STRING("Unhandled camera state during rotation update '{}'"), camera->currentState->id);
+			logger::warn("Unhandled camera state during rotation update '{}'", std::to_underlying(camera->currentState->id));
 			break;
 		}
 	}
