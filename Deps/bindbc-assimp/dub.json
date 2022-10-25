@@ -1,0 +1,63 @@
+{
+	"authors": [
+		"Sobaya"
+	],
+	"configurations": [
+		{
+			"dependencies": {
+				"bindbc-loader": "~>0.2.1"
+			},
+			"name": "dynamic",
+			"targetType": "staticLibrary"
+		},
+		{
+			"dependencies": {
+				"bindbc-loader": "~>0.2.1"
+			},
+			"dflags": [
+				"-betterC"
+			],
+			"name": "dynamicBC",
+			"subConfigurations": {
+				"bindbc-loader": "yesBC"
+			},
+			"targetType": "staticLibrary"
+		},
+		{
+			"excludedSourceFiles": [
+				"source/bindbc/assimp/binddynamic.d"
+			],
+			"name": "static",
+			"targetType": "staticLibrary",
+			"versions": [
+				"BindAssimp_Static"
+			]
+		},
+		{
+			"dflags": [
+				"-betterC"
+			],
+			"excludedSourceFiles": [
+				"source/bindbc/assimp/binddynamic.d"
+			],
+			"name": "staticBC",
+			"targetType": "staticLibrary",
+			"versions": [
+				"BindAssimp_Static"
+			]
+		}
+	],
+	"description": "Dynamic and static bindings to Assimp, compatible with -betterC, @nogc, and nothrow.",
+	"importPaths": [
+		"source/"
+	],
+	"license": "Boost",
+	"name": "bindbc-assimp",
+	"sourcePaths": [
+		"source/"
+	],
+	"targetName": "BindBC_Assimp",
+	"targetPath": "lib",
+	"targetType": "staticLibrary",
+	"version": "0.0.1"
+}

@@ -21,7 +21,37 @@
 	url = https://github.com/electronicarts/EABase.git
 [submodule "Deps/CommonLibSSE"]
 	path = Deps/CommonLibSSE
-	url = https://github.com/Ryan-rsm-McKenzie/CommonLibSSE.git
-[submodule "Deps/CommonLibAE"]
-	path = Deps/CommonLibAE
-	url = https://github.com/Ryan-rsm-McKenzie/CommonLibSSE.git
+	url = https://github.com/powerof3/CommonLibSSE.git
+[submodule "Deps/fmt"]
+	path = Deps/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "Deps/spdlog"]
+	path = Deps/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "Deps/xbyak"]
+	path = Deps/xbyak
+	url = https://github.com/herumi/xbyak.git
+[submodule "Deps/binary_io"]
+	path = Deps/binary_io
+	url = https://github.com/Ryan-rsm-McKenzie/binary_io.git
+[submodule "Deps/stl_interfaces"]
+	path = Deps/stl_interfaces
+	url = https://github.com/boostorg/stl_interfaces.git
+[submodule "Deps/assimp"]
+	path = Deps/assimp
+	url = https://github.com/assimp/assimp.git
+[submodule "Deps/gfm"]
+	path = Deps/gfm
+	url = https://github.com/d-gamedev-team/gfm.git
+[submodule "Deps/intel-intrinsics"]
+	path = Deps/intel-intrinsics
+	url = https://github.com/AuburnSounds/intel-intrinsics.git
+[submodule "Deps/bindbc-loader"]
+	path = Deps/bindbc-loader
+	url = https://github.com/BindBC/bindbc-loader.git
+[submodule "Deps/CommonLibSSEPre629"]
+	path = Deps/CommonLibSSEPre629
+	url = https://github.com/powerof3/CommonLibSSE.git
+[submodule "Deps/skylib"]
+	path = Deps/skylib
+	url = https://github.com/bazelbuild/bazel-skylib.git
