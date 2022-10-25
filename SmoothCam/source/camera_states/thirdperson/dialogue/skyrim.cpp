@@ -32,7 +32,7 @@ void State::SkyrimDialogue::Update(RE::PlayerCharacter* player, RE::Actor* camer
 	if (parentState->IsLocalInterpAllowed()) {
 		// Handle separate local-space interpolation
 		const auto loc = parentState->UpdateInterpolatedLocalPosition(transformedLocalPos);
-
+		
 		const auto& last = parentState->GetLastCameraPosition();
 		// Last offset position from ref
 		const auto lastWorld = last.world - last.local;
@@ -103,8 +103,6 @@ void State::SkyrimDialogue::Update(RE::PlayerCharacter* player, RE::Actor* camer
 	parentState->SetCameraPosition(finalPos, player, playerCamera);
 	// And store our world position BEFORE collision
 	parentState->GetCameraPosition().SetWorldPosition(preFinalPos);
-	// Update crosshair visibility
-	parentState->UpdateCrosshair(player, playerCamera);
 }
 
 void State::SkyrimDialogue::ExitPoll(RE::PlayerCharacter*, RE::Actor*,

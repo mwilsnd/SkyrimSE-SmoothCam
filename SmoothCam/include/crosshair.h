@@ -3,9 +3,68 @@
 #include "render/mesh_drawer.h"
 #include "render/model.h"
 #include "crosshair/base.h"
+#ifdef DEBUG
+#include "profile.h"
+#endif
 
 namespace Crosshair {
 	class Manager;
+
+	struct CrossHairPickData {
+		uint32_t pad0;
+		uint32_t TargetRefHandle;
+		uint32_t TargetActorRefHandle;
+		uint32_t pad1;
+		RE::NiPoint3 CollisionPoint;
+		RE::bhkRigidBody* TargetCollider;
+		RE::bhkSimpleShapePhantom* PickCollider;
+
+		static void SetHullSize(float radius) noexcept {
+			auto setting = RE::INISettingCollection::GetSingleton()->GetSetting("fActivatePickRadius:Interface");
+			if (!setting) return;
+			auto loc = Get();
+
+			uint32_t copy[4] = {
+				loc->pad0, loc->TargetRefHandle,
+				loc->TargetActorRefHandle, loc->pad1
+			};
+
+			typedef void(*fn)(CrossHairPickData*);
+			REL::Relocation<fn>{ Offsets::Get().CrosshairData_dtor }(loc);
+
+			const auto savedValue = setting->data.f;
+			setting->data.f = radius;
+
+			REL::Relocation<fn>{ Offsets::Get().CrosshairData_ctor }(loc);
+			setting->data.f = savedValue;
+
+			loc->pad0 = copy[0];
+			loc->TargetRefHandle = copy[1];
+			loc->TargetActorRefHandle = copy[2];
+			loc->pad1 = copy[3];
+		}
+
+		static CrossHairPickData* Get() noexcept {
+			return *REL::Relocation<CrossHairPickData**>{ Offsets::Get().CrosshairPickerData };
+		}
+
+		static void Update(RE::PlayerCharacter* player) noexcept {
+			typedef void(*PickCrosshairRef)(RE::PlayerCharacter*);
+			(REL::Relocation<PickCrosshairRef>{ Offsets::Get().UpdateCrosshairReference })(player);
+		}
+
+		static bool Hit(const glm::vec3& refPos, glm::vec3& hitPos, float& hitLength, const float maxRange = 50000.0f) noexcept {
+			const auto picker = Get();
+			const auto pos = glm::vec3{ picker->CollisionPoint.x, picker->CollisionPoint.y, picker->CollisionPoint.z };
+			const auto dist = glm::distance(pos, refPos);
+			if (mmath::IsValid(pos) && dist < maxRange) {
+				hitPos = pos;
+				hitLength = dist;
+				return true;
+			}
+			return false;
+		}
+	};
 
 	class Manager {
 		public:
@@ -83,6 +142,11 @@ namespace Crosshair {
 			// Called by the game, we need to re-apply mutations here
 			void ValidateCrosshair() noexcept;
 
+			// Set the radius of the game's object picker hull trace
+			void SetObjectPickerRadius(float radius) noexcept;
+			// Get the radius of the game's object picker hull trace
+			float GetObjectPickerRadius() const noexcept;
+
 		private:
 			// Returns true if the manager has captured the base crosshair data correctly
 			// If returning false, the manager is not allowed to modify the crosshair
@@ -137,6 +201,15 @@ namespace Crosshair {
 
 			// The last state we left the crosshair in
 			CurrentCrosshairData currentCrosshairData;
+
+			// Last set radius, invalid if pickRadiusSet is false
+			float lastPickRadius;
+			// The current crosshair picker size
+			float pickRadius;
+			// The inital configured picker size
+			float gamePickRadius;
+			// Have we mutated the picker size
+			bool pickRadiusSet = false;
 
 			// Renderable objects
 			struct {

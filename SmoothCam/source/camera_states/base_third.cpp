@@ -129,30 +129,41 @@ glm::vec3 Camera::State::BaseThird::ComputeOffsetClamping(const RE::TESObjectREF
 void Camera::State::BaseThird::UpdateCrosshair(const RE::Actor* player, const RE::PlayerCamera* playerCamera) const {
 	if (camera->m_camera->InLoadingScreen()) return;
 
+	static auto disableHUDCrosshair = RE::INISettingCollection::GetSingleton()->GetSetting("bShowCrosshair:Interface");
+	const auto userDisabled = !disableHUDCrosshair->GetBool();
+	const auto onHitMode = GetConfig()->onlyShowCrosshairOnHit;
+	const auto hideMelee = GetConfig()->hideCrosshairMeleeCombat;
+	const auto hideNC = GetConfig()->hideNonCombatCrosshair;
+	const auto use3DPicker = GetConfig()->use3DPicker;
+
+	// Should we even be using the 3d mode?
 	auto use3D = false;
 	if (GameState::IsRangedWeaponDrawn(player)) {
-		use3D = GameState::IsBowDrawn(player) && GetConfig()->use3DBowAimCrosshair;
+		use3D = (GameState::IsBowDrawn(player) && GetConfig()->use3DBowAimCrosshair) || use3DPicker;
 	} else if (GameState::IsMagicDrawn(player)) {
 		use3D = GetConfig()->use3DMagicCrosshair;
+	} else if (use3DPicker) {
+		use3D = true;
 	}
 
-	if (GameState::IsWeaponDrawn(player)) {
-		if (GetConfig()->hideCrosshairMeleeCombat && GameState::IsMeleeWeaponDrawn(player) && !GameState::IsMagicDrawn(player)) {
-			camera->crosshair->SetCrosshairEnabled(false);
-		} else {
-			if (use3D) {
-				UpdateCrosshairPosition(player, playerCamera);
-			} else {
-				camera->crosshair->SetCrosshairEnabled(true);
-				camera->crosshair->CenterCrosshair();
-				camera->crosshair->SetDefaultSize();
-			}
-		}
-	} else {
-		static auto disableHUDCrosshair = RE::INISettingCollection::GetSingleton()->GetSetting("bShowCrosshair:Interface");
-		if (!disableHUDCrosshair->GetBool()) return;
+	// If not in on hit mode, check if we need to hide or not
+	bool hide = false;
+	if (!onHitMode) {
+		if (hideMelee && GameState::IsMeleeWeaponDrawn(player))
+			hide = true;
+		else if (hideNC && !GameState::IsWeaponDrawn(player))
+			hide = true;
+	}
 
-		if (GetConfig()->hideNonCombatCrosshair) {
+	if (use3D) {
+		if (!hide)
+			UpdateCrosshairPosition(player, playerCamera);
+		else
+			camera->crosshair->SetCrosshairEnabled(false);
+
+	} else {
+		// Not in 3d mode, hide in non-combat
+		if (hideNC || userDisabled) {
 			camera->crosshair->SetCrosshairEnabled(false);
 		} else {
 			camera->crosshair->SetCrosshairEnabled(true);

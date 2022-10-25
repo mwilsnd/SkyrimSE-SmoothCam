@@ -152,6 +152,8 @@ constexpr auto boolGetters = mapbox::eternal::hash_map<mapbox::eternal::string, 
 	IMPL_GETTER("HideCrosshairMeleeCombat",			  hideCrosshairMeleeCombat),
 	IMPL_GETTER("OffsetStealthMeter",				  offsetStealthMeter),
 	IMPL_GETTER("AlwaysOffsetStealthMeter",			  alwaysOffsetStealthMeter),
+	IMPL_GETTER("Use3DPicker",						  use3DPicker),
+	IMPL_GETTER("ShowCrosshairOnHtOnly",			  onlyShowCrosshairOnHit),
 	// Primary interpolation
 	IMPL_GETTER("InterpolationEnabled",				  enableInterp),
 	IMPL_GETTER("DisableDeltaTime",					  disableDeltaTime),
@@ -232,6 +234,7 @@ const auto floatGetters = eastl::unordered_map<eastl::string_view, float*>({
 	IMPL_GETTER("MaxArrowPredictionRange",				maxArrowPredictionRange),
 	IMPL_GETTER("StealthMeterOffsetX",					stealthMeterXOffset),
 	IMPL_GETTER("StealthMeterOffsetY",					stealthMeterYOffset),
+	IMPL_GETTER("ObjectPickRadius",						crosshairPickRadius),
 	// Separate local interpolation
 	IMPL_GETTER("MinSepLocalFollowRate",				localMinFollowRate),
 	IMPL_GETTER("MaxSepLocalFollowRate",				localMaxFollowRate),

@@ -245,6 +245,9 @@ namespace Config {
 		float stealthMeterYOffset = 250.0f;
 		bool offsetStealthMeter = false;
 		bool alwaysOffsetStealthMeter = false;
+		bool use3DPicker = false;
+		bool onlyShowCrosshairOnHit = false;
+		float crosshairPickRadius = 16.0f;
 
 		// Arrow prediction
 		bool useArrowPrediction = true;
@@ -398,4 +401,8 @@ namespace Config {
 	// And the bone list for firstperson
 	BoneList& GetEyeBonePriorities() noexcept;
 #endif
+
+	using ConfigChanged = std::function<void(UserConfig*)>;
+	// Add a callback for when the config is mutated
+	void RegisterConfigChangedEvent(ConfigChanged&& ev) noexcept;
 }

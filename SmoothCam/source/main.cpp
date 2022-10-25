@@ -140,6 +140,7 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadIn
 
 	logger::info("Attaching render subsystem hooks");
 	if (!Hooks::AttachD3D()) return false;
+	Hooks::ApplyPatches();
 
 	Hooks::RegisterGameShutdownEvent([] {
 		if (g_theCamera) {

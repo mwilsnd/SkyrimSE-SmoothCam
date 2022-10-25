@@ -10,8 +10,21 @@ extern Offsets* g_Offsets;
 static Crosshair::Manager::CurrentCrosshairData g_crosshairData;
 
 Crosshair::Manager::Manager() noexcept {
-	ReadInitialCrosshairInfo();
 	Messaging::SmoothCamInterface::GetInstance()->SetCrosshairManager(this);
+
+	// Read the object picker size
+	const auto v = RE::INISettingCollection::GetSingleton()->GetSetting("fActivatePickRadius:Interface");
+	lastPickRadius = gamePickRadius = v ? v->GetFloat() : 0.0f;
+	// Set from config
+	pickRadius = Config::GetCurrentConfig()->crosshairPickRadius;
+
+	// Listen for config change events to update picker size
+	Config::RegisterConfigChangedEvent([this](Config::UserConfig* cfg) {
+		SetObjectPickerRadius(cfg->crosshairPickRadius);
+	});
+
+	// Try reading initial hud data
+	ReadInitialCrosshairInfo();
 
 	if (!Render::HasContext()) return;
 	auto& ctx = Render::GetContext();
@@ -350,6 +363,13 @@ void Crosshair::Manager::UpdateCrosshairPosition(const RE::Actor* player, const 
 		hitPos = result.hitPos;
 		rayLength = result.rayLength;
 		hitCharacter = result.hitCharacter != nullptr;
+	} else if (config->use3DPicker) {
+		const auto playerPos = glm::vec3{ player->GetPositionX(), player->GetPositionY(), player->GetPositionZ() };
+		CrossHairPickData::Update(RE::PlayerCharacter::GetSingleton());
+		if (CrossHairPickData::Hit(playerPos, hitPos, rayLength)) {
+			hit = true;
+			hitCharacter = false;
+		}
 	}
 
 	// Now set the crosshair
@@ -407,9 +427,13 @@ void Crosshair::Manager::UpdateCrosshairPosition(const RE::Actor* player, const 
 		SetCrosshairPosition(crosshairPos);
 		SetCrosshairSize(crosshairSize);
 	} else {
-		SetCrosshairEnabled(true);
-		CenterCrosshair();
-		SetDefaultSize();
+		if (config->onlyShowCrosshairOnHit)
+			SetCrosshairEnabled(false);
+		else {
+			SetCrosshairEnabled(true);
+			CenterCrosshair();
+			SetDefaultSize();
+		}
 	}
 }
 
@@ -608,6 +632,13 @@ void Crosshair::Manager::Update(RE::Actor* player) noexcept {
 		Messaging::SmoothCamInterface::GetInstance()->ClearStealthMeterDirtyFlag();
 	}
 	
+	// Update object picker size
+	if (pickRadius != lastPickRadius) {
+		pickRadiusSet = true;
+		CrossHairPickData::SetHullSize(pickRadius);
+		lastPickRadius = pickRadius;
+	}
+
 	// Stealth meter offset
 	const auto config = Config::GetCurrentConfig();
 
@@ -742,6 +773,13 @@ void Crosshair::Manager::ResetCrosshair() noexcept {
 	SetCrosshairEnabled(true);
 	SetDefaultSize();
 	CenterCrosshair();
+
+	// Restore the game pick radius
+	if (pickRadiusSet) {
+		CrossHairPickData::SetHullSize(gamePickRadius);
+		pickRadiusSet = false;
+		lastPickRadius = gamePickRadius;
+	}
 }
 
 void Crosshair::Manager::ResetStealthMeter(bool hard) noexcept {
@@ -781,4 +819,16 @@ void Crosshair::Manager::ValidateCrosshair() noexcept {
 		if (var.IsDisplayObject())
 			var.SetDisplayInfo(loc);
 	}
+}
+
+// Set the radius of the game's object picker hull trace
+void Crosshair::Manager::SetObjectPickerRadius(float radius) noexcept {
+	lastPickRadius = pickRadiusSet ? pickRadius : gamePickRadius;
+	pickRadius = radius;
+	pickRadiusSet = false; // Invalidate
+}
+
+// Get the radius of the game's object picker hull trace
+float Crosshair::Manager::GetObjectPickerRadius() const noexcept {
+	return pickRadius;
 }

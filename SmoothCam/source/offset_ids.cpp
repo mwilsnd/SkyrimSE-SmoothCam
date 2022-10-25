@@ -43,6 +43,11 @@ void Offsets::populateAE() noexcept {
 	DAT_142f01438 = REL::ID(AE.DAT_142f01438).address();
 	DAT_141de0df0 = REL::ID(AE.DAT_141de0df0).address();
 	DAT_141de0e08 = REL::ID(AE.DAT_141de0e08).address();
+	CrosshairPickerData = REL::ID(AE.CrosshairPickerData).address();
+	UpdateCrosshairReference = REL::ID(AE.UpdateCrosshairReference).address();
+	CrosshairData_ctor = REL::ID(AE.CrosshairData_ctor).address();
+	CrosshairData_dtor = REL::ID(AE.CrosshairData_dtor).address();
+	CrosshairData_pick = REL::ID(AE.CrosshairData_pick).address();
 
 	SwitchSkeleton = REL::ID(AE.SwitchSkeleton).address();
 	RenderStuff = REL::ID(AE.RenderStuff).address();
@@ -98,6 +103,11 @@ void Offsets::populateSE() noexcept {
 	DAT_142f01438 = REL::ID(SE.DAT_142f01438).address();
 	DAT_141de0df0 = REL::ID(SE.DAT_141de0df0).address();
 	DAT_141de0e08 = REL::ID(SE.DAT_141de0e08).address();
+	CrosshairPickerData = REL::ID(SE.CrosshairPickerData).address();
+	UpdateCrosshairReference = REL::ID(SE.UpdateCrosshairReference).address();
+	CrosshairData_ctor = REL::ID(SE.CrosshairData_ctor).address();
+	CrosshairData_dtor = REL::ID(SE.CrosshairData_dtor).address();
+	CrosshairData_pick = REL::ID(SE.CrosshairData_pick).address();
 
 	SwitchSkeleton = REL::ID(SE.SwitchSkeleton).address();
 	RenderStuff = REL::ID(SE.RenderStuff).address();

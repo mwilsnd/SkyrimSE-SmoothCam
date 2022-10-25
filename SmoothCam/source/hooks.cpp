@@ -458,3 +458,211 @@ bool Hooks::AttachD3D() {
 
 	return true;
 }
+
+#ifdef SKYRIM_SUPPORT_AE
+void Hooks::ApplyPatches() {
+	SKSE::AllocTrampoline(512);
+
+	auto hundered = 100.0f;
+	auto hunderedK = 100000.0f;
+	auto one = 1.0f;
+
+	static auto initBestDistance = *reinterpret_cast<uint32_t*>(&hundered);
+	static auto bestDistance = *reinterpret_cast<uint32_t*>(&hundered);
+	static auto badDistance = *reinterpret_cast<uint32_t*>(&hunderedK);
+	static auto okDistance = *reinterpret_cast<uint32_t*>(&one);
+
+	struct CrosshairPickerTerrain_Patch0 : public Xbyak::CodeGenerator {	
+		CrosshairPickerTerrain_Patch0(uintptr_t target) {
+			Xbyak::Label returnL;
+			Xbyak::Label initBestL;
+			Xbyak::Label bestDistanceL;
+
+			mov(rax, ptr[rip + bestDistanceL]);
+			movss(xmm0, ptr[rip + initBestL]);
+			movss(ptr[rax], xmm0);
+			mov(rax, rsp);
+			mov(ptr[rax + 0x20], r9);
+			jmp(ptr[rip + returnL]);
+			L(returnL);
+			dq(target);
+
+			L(initBestL);
+			dd(initBestDistance);
+			L(bestDistanceL);
+			dq(reinterpret_cast<uintptr_t>(&bestDistance));
+		}
+	};
+
+	struct CrosshairPickerTerrain_Patch1 : public Xbyak::CodeGenerator {
+		CrosshairPickerTerrain_Patch1(uintptr_t target) {
+			Xbyak::Label returnL;
+			Xbyak::Label compEnd;
+			Xbyak::Label bestDistanceL;
+
+			mov(r15, ptr[rip + bestDistanceL]);
+			add(rax, ptr[rbp + 0x5B0]);
+			movss(xmm0, ptr[rax + 0x1C]);
+			comiss(xmm0, ptr[r15]);
+			ja(compEnd);
+			movss(ptr[r15], xmm0);
+			L(compEnd);
+			jmp(ptr[rip + returnL]);
+
+			L(returnL);
+			dq(target);
+			L(bestDistanceL);
+			dq(reinterpret_cast<uintptr_t>(&bestDistance));
+		}
+	};
+
+	struct CrosshairPickerTerrain_Patch2 : public Xbyak::CodeGenerator {
+		CrosshairPickerTerrain_Patch2(uintptr_t target) {
+			Xbyak::Label returnL;
+			Xbyak::Label compEnd2;
+			Xbyak::Label bestDistanceL;
+			Xbyak::Label badDistanceL;
+			Xbyak::Label okDistanceL;
+
+			mov(rax, ptr[rip + bestDistanceL]);
+			comiss(xmm10, ptr[rip + badDistanceL]);
+			jb(compEnd2);
+			movss(xmm1, ptr[rax]);
+			comiss(xmm1, ptr[rip + okDistanceL]);
+			ja(compEnd2);
+			movss(xmm10, ptr[rax]);
+			mulss(xmm10, xmm15);
+			L(compEnd2);
+			movaps(xmm1, xmm10);
+			mov(rax, ptr[rbp + 0x8C8]);
+			jmp(ptr[rip + returnL]);
+
+			L(returnL);
+			dq(target);
+			L(bestDistanceL);
+			dq(reinterpret_cast<uintptr_t>(&bestDistance));
+			L(badDistanceL);
+			dd(badDistance);
+			L(okDistanceL);
+			dd(okDistance);
+		}
+	};
+
+
+	auto targetFunc = g_Offsets->CrosshairData_pick;
+	const auto returnTarget0 = targetFunc + 7;
+	const auto returnTarget1 = targetFunc + 0x3B4 + 7;
+	const auto returnTarget2 = targetFunc + 0xEAC + 11;
+	CrosshairPickerTerrain_Patch0 code0(returnTarget0); code0.ready();
+	CrosshairPickerTerrain_Patch1 code1(returnTarget1); code1.ready();
+	CrosshairPickerTerrain_Patch2 code2(returnTarget2); code2.ready();
+
+	auto& trampoline = SKSE::GetTrampoline();
+	trampoline.write_branch<6>(targetFunc, trampoline.allocate(code0));
+	trampoline.write_branch<6>(targetFunc + 0x3B4, trampoline.allocate(code1));
+	trampoline.write_branch<6>(targetFunc + 0xEAC, trampoline.allocate(code2));
+}
+#else
+void Hooks::ApplyPatches() {
+	SKSE::AllocTrampoline(512);
+
+	auto hundered = 100.0f;
+	auto hunderedK = 100000.0f;
+	auto one = 1.0f;
+
+	static auto initBestDistance = *reinterpret_cast<uint32_t*>(&hundered);
+	static auto bestDistance = *reinterpret_cast<uint32_t*>(&hundered);
+	static auto badDistance = *reinterpret_cast<uint32_t*>(&hunderedK);
+	static auto okDistance = *reinterpret_cast<uint32_t*>(&one);
+
+	struct CrosshairPickerTerrain_Patch0 : public Xbyak::CodeGenerator {	
+		CrosshairPickerTerrain_Patch0(uintptr_t target) {
+			Xbyak::Label returnL;
+			Xbyak::Label initBestL;
+			Xbyak::Label bestDistanceL;
+
+			mov(rax, ptr[rip + bestDistanceL]);
+			movss(xmm0, ptr[rip + initBestL]);
+			movss(ptr[rax], xmm0);
+			mov(rax, rsp);
+			mov(ptr[rax + 0x20], r9);
+			jmp(ptr[rip + returnL]);
+			L(returnL);
+			dq(target);
+
+			L(initBestL);
+			dd(initBestDistance);
+			L(bestDistanceL);
+			dq(reinterpret_cast<uintptr_t>(&bestDistance));
+		}
+	};
+
+	struct CrosshairPickerTerrain_Patch1 : public Xbyak::CodeGenerator {
+		CrosshairPickerTerrain_Patch1(uintptr_t target) {
+			Xbyak::Label returnL;
+			Xbyak::Label compEnd;
+			Xbyak::Label bestDistanceL;
+
+			mov(r14, ptr[rip + bestDistanceL]);
+			add(rax, ptr[rbp + 0x290]);
+			movss(xmm0, ptr[rax + 0x1C]);
+			comiss(xmm0, ptr[r14]);
+			ja(compEnd);
+			movss(ptr[r14], xmm0);
+			L(compEnd);
+			jmp(ptr[rip + returnL]);
+
+			L(returnL);
+			dq(target);
+			L(bestDistanceL);
+			dq(reinterpret_cast<uintptr_t>(&bestDistance));
+		}
+	};
+
+	struct CrosshairPickerTerrain_Patch2 : public Xbyak::CodeGenerator {
+		CrosshairPickerTerrain_Patch2(uintptr_t target) {
+			Xbyak::Label returnL;
+			Xbyak::Label compEnd2;
+			Xbyak::Label bestDistanceL;
+			Xbyak::Label badDistanceL;
+			Xbyak::Label okDistanceL;
+			
+			mov(rax, ptr[rip + bestDistanceL]);
+			comiss(xmm10, ptr[rip + badDistanceL]);
+			jb(compEnd2);
+			movss(xmm1, ptr[rax]);
+			comiss(xmm1, ptr[rip + okDistanceL]);
+			ja(compEnd2);
+			movss(xmm10, ptr[rax]);
+			mulss(xmm10, xmm14);
+			L(compEnd2);
+			movaps(xmm1, xmm10);
+			mov(rax, ptr[rbp + 0x8C8]);
+			jmp(ptr[rip + returnL]);
+
+			L(returnL);
+			dq(target);
+			L(bestDistanceL);
+			dq(reinterpret_cast<uintptr_t>(&bestDistance));
+			L(badDistanceL);
+			dd(badDistance);
+			L(okDistanceL);
+			dd(okDistance);
+		}
+	};
+
+
+	auto targetFunc = g_Offsets->CrosshairData_pick;
+	const auto returnTarget0 = targetFunc + 7;
+	const auto returnTarget1 = targetFunc + 0x3B4 + 7;
+	const auto returnTarget2 = targetFunc + 0xD37 + 11;
+	CrosshairPickerTerrain_Patch0 code0(returnTarget0); code0.ready();
+	CrosshairPickerTerrain_Patch1 code1(returnTarget1); code1.ready();
+	CrosshairPickerTerrain_Patch2 code2(returnTarget2); code2.ready();
+	
+	auto& trampoline = SKSE::GetTrampoline();
+	trampoline.write_branch<6>(targetFunc, trampoline.allocate(code0));
+	trampoline.write_branch<6>(targetFunc + 0x3B4, trampoline.allocate(code1));
+	trampoline.write_branch<6>(targetFunc + 0xD37, trampoline.allocate(code2));
+}
+#endif

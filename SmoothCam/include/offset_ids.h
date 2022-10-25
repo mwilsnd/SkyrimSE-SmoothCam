@@ -55,6 +55,12 @@ class Offsets {
 			uintptr_t DAT_141de0df0 = 505070;
 			uintptr_t DAT_141de0e08 = 505072;
 
+			uintptr_t CrosshairPickerData = 515446;
+			uintptr_t UpdateCrosshairReference = 39534;
+			uintptr_t CrosshairData_ctor = 25589;
+			uintptr_t CrosshairData_dtor = 25590;
+			uintptr_t CrosshairData_pick = 25591;
+
 			// Firstperson
 			uintptr_t SwitchSkeleton = 39401;
 			uintptr_t RenderStuff = 100854;
@@ -119,6 +125,12 @@ class Offsets {
 			uintptr_t DAT_141de0df0 = 374232;
 			uintptr_t DAT_141de0e08 = 374235;
 
+			uintptr_t CrosshairPickerData = 401585;			// 401585    142F9B8F0
+			uintptr_t UpdateCrosshairReference = 40620;		// 40620     1406D8600 PlayerCharacter::PickCrosshairReference
+			uintptr_t CrosshairData_ctor = 26125;			// 26125	 1403c0c00 CrossHairPickData::ctor
+			uintptr_t CrosshairData_dtor = 26126;			// 26126     1403C0EF0 CrossHairPickData::dtor
+			uintptr_t CrosshairData_pick = 26127;
+
 			// Firstperson
 			uintptr_t SwitchSkeleton = 40476;
 			uintptr_t RenderStuff = 107644;
@@ -181,6 +193,11 @@ class Offsets {
 		uintptr_t DAT_142f01438 = 0;
 		uintptr_t DAT_141de0df0 = 0;
 		uintptr_t DAT_141de0e08 = 0;
+		uintptr_t CrosshairPickerData = 0;
+		uintptr_t UpdateCrosshairReference = 0;
+		uintptr_t CrosshairData_ctor;
+		uintptr_t CrosshairData_dtor;
+		uintptr_t CrosshairData_pick;
 
 		// Firstperson
 		uintptr_t SwitchSkeleton = 0;

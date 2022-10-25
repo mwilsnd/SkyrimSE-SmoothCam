@@ -16,6 +16,12 @@ ToggleSetting crosshair3DWorldEnabled -> [
 	desc: "When your crosshair ray has hit something, use a crosshair mesh rendered in-world, not on the HUD."
 	page: " Crosshair"
 ]
+ToggleSetting use3DPicker -> [
+	settingName: "Use3DPicker"
+	displayName: "3D Activator Crosshair Enabled"
+	desc: "Use the 3D crosshair when looking at items in the world."
+	page: " Crosshair"
+]
 ListSetting worldCrosshairType -> [
 	settingName: "WorldCrosshairType"
 	displayName: "Crosshair Type"
@@ -41,10 +47,27 @@ ToggleSetting hideCrosshairMeleeCombat -> [
 	desc: "Hide the crosshair when in melee combat."
 	page: " Crosshair"
 ]
+ToggleSetting onlyShowCrosshairOnHit -> [
+	settingName: "ShowCrosshairOnHtOnly"
+	displayName: "Only Show Crosshair On Hit"
+	desc: "Hide the crosshair at all times, unless the crosshair has hit something in the world. Overrides hide melee and hide non-combat options."
+	page: " Crosshair"
+]
 ToggleSetting enableCrosshairSizeManip -> [
 	settingName: "EnableCrosshairSizeManip"
 	displayName: "Enable Size Manipulation"
 	desc: "Changes the size of the crosshair, based on 'Min/Max Size' and 'NPC Hit Size'. Disable if this causes conflicts with other mods. May require a game restart."
+	page: " Crosshair"
+]
+SliderSetting crosshairPickRadius -> [
+	settingName: "ObjectPickRadius"
+	displayName: "Activate Radius"
+	desc: "Controls the activation distance between the crosshair and an object that can be interacted with."
+	defaultValue: 16
+	interval: 0.1
+	min: 1
+	max: 16
+	displayFormat: "{1}"
 	page: " Crosshair"
 ]
 SliderSetting crosshairNPCGrowSize -> [

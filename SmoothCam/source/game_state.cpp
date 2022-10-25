@@ -251,7 +251,7 @@ const bool GameState::IsMeleeWeaponDrawn(const RE::Actor* player) noexcept {
 		}
 	}
 
-	return false;
+	return !right && !left; // hand-to-hand
 }
 
 // Returns true if the player has magic drawn

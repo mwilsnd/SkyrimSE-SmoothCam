@@ -168,15 +168,16 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Crosshair")
 		AddHeaderOption("3D Crosshair Settings")
 		#StructInvokeOn(implControl, [
-			crosshair3DBowEnabled, crosshair3DMagicEnabled,
+			crosshair3DBowEnabled, crosshair3DMagicEnabled, use3DPicker,
 			crosshair3DWorldEnabled, worldCrosshairType, worldCrosshairDepthTest,
 			enableCrosshairSizeManip, crosshairMinDistSize,
-			crosshairMaxDistSize, crosshairNPCGrowSize
+			crosshairMaxDistSize, crosshairNPCGrowSize,
+			crosshairPickRadius
 		])
 
 		AddHeaderOption("Crosshair Hiding")
 		#StructInvokeOn(implControl, [
-			hideCrosshairOutOfCombat, hideCrosshairMeleeCombat,
+			hideCrosshairOutOfCombat, hideCrosshairMeleeCombat, onlyShowCrosshairOnHit
 		])
 
 		SetCursorPosition(1)
