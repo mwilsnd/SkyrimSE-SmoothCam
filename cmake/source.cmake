@@ -48,7 +48,7 @@ SmoothCam/source/camera.cpp
 SmoothCam/source/compat.cpp
 SmoothCam/source/config.cpp
 SmoothCam/source/crosshair.cpp
-SmoothCam/source/detours.cpp
+SmoothCam/source/hooks.cpp
 SmoothCam/source/firstperson.cpp
 SmoothCam/source/game_state.cpp
 SmoothCam/source/main.cpp

@@ -14,7 +14,6 @@ SmoothCam/include/skyrimSE/PlayerCameraTransitionState.h
 SmoothCam/include/skyrimSE/FreeCameraState.h
 SmoothCam/include/skyrimSE/DragonCameraState.h
 SmoothCam/include/skyrimSE/IMovementInterface.h
-SmoothCam/include/skyrimSE/bhkLinearCastCollector.h
 
 SmoothCam/include/crosshair/base.h
 SmoothCam/include/crosshair/dot.h
@@ -65,7 +64,7 @@ SmoothCam/include/code_analysis.h
 SmoothCam/include/compat.h
 SmoothCam/include/config.h
 SmoothCam/include/crosshair.h
-SmoothCam/include/detours.h
+SmoothCam/include/hooks.h
 SmoothCam/include/firstperson.h
 SmoothCam/include/game_state.h
 SmoothCam/include/main.h

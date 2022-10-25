@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21.0)
 
-option(BUILD_SKYRIM_AE "Build for Skyrim AE instead of SSE" OFF)
+set(VCPKG_OVERLAY_PORTS "" CACHE STRING "")
 
 macro(set_from_environment VARIABLE)
 	if (NOT DEFINED ${VARIABLE} AND DEFINED ENV{${VARIABLE}})
@@ -20,37 +20,34 @@ else ()
 	)
 endif ()
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-set(POLYHOOK_BUILD_STATIC_RUNTIME ON)
-set(POLYHOOK_BUILD_DLL ON)
-set(POLYHOOK_DISASM_CAPSTONE ON)
-set(POLYHOOK_DISASM_ZYDIS ON)
-set(POLYHOOK_FEATURE_EXCEPTION OFF)
-set(POLYHOOK_FEATURE_DETOURS ON)
-set(POLYHOOK_FEATURE_INLINENTD OFF)
-set(POLYHOOK_FEATURE_PE ON)
-set(POLYHOOK_FEATURE_VIRTUALS ON)
-set(WITH_TESTS OFF)
+set(SKSE_SUPPORT_XBYAK ON CACHE BOOL "")
+set(Boost_USE_STATIC_LIBS ON CACHE BOOL "")
+set(Boost_USE_STATIC_RUNTIME ON CACHE BOOL "")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
+set(POLYHOOK_BUILD_STATIC_RUNTIME ON CACHE BOOL "")
+set(POLYHOOK_BUILD_DLL ON CACHE BOOL "")
+set(POLYHOOK_DISASM_CAPSTONE ON CACHE BOOL "")
+set(POLYHOOK_DISASM_ZYDIS ON CACHE BOOL "")
+set(POLYHOOK_FEATURE_EXCEPTION OFF CACHE BOOL "")
+set(POLYHOOK_FEATURE_DETOURS ON CACHE BOOL "")
+set(POLYHOOK_FEATURE_INLINENTD OFF CACHE BOOL "")
+set(POLYHOOK_FEATURE_PE ON CACHE BOOL "")
+set(POLYHOOK_FEATURE_VIRTUALS ON CACHE BOOL "")
+set(WITH_TESTS OFF CACHE BOOL "")
 
 project(
 	SmoothCam
 	LANGUAGES CXX
 )
 
-if (BUILD_SKYRIM_AE)
-	add_subdirectory("Deps/CommonLibAE" CommonLibSSE)
-else ()
-	add_subdirectory("Deps/CommonLibSSE" CommonLibSSE)
-endif (BUILD_SKYRIM_AE)
-
+add_subdirectory("Deps/CommonLibSSE" CommonLibSSE)
 add_subdirectory("Deps/EASTL" EASTL)
 add_subdirectory("Deps/PolyHook_2_0" PolyHook_2)
 
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(binary_io CONFIG REQUIRED)
+find_package(xbyak CONFIG REQUIRED)
 
 include(cmake/headers.cmake)
 include(cmake/source.cmake)
@@ -91,6 +88,7 @@ target_link_libraries(
 		spdlog::spdlog
 		EASTL
 		PolyHook_2
+		xbyak::xbyak
 		"${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64/detours.lib"
 )
 
@@ -103,20 +101,16 @@ target_precompile_headers(
 target_compile_features(
 	${PROJECT_NAME}
 	PRIVATE
-		cxx_std_20
+		cxx_std_23
 )
 
 if (MSVC)
 	add_compile_definitions(_UNICODE)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE "$<$<CONFIG:DEBUG>:DEBUG>")
 
-	if (BUILD_SKYRIM_AE)
-		add_compile_definitions(IS_SKYRIM_AE)
-	endif (BUILD_SKYRIM_AE)
-
+	add_compile_definitions(SKSE_SUPPORT_XBYAK)
+	
 	add_definitions(/FI"pch.h")
-
-	set(SC_RELEASE_OPTS "/Zi;/fp:fast;/GL;/Gy-;/Gm-;/Gw;/sdl-;/GS-;/guard:cf-;/O2;/Ob2;/Oi;/Ot;/Oy;/fp:except-")
 
 	target_compile_options(
 		${PROJECT_NAME}
@@ -126,31 +120,18 @@ if (MSVC)
 			/W4
 			/WX
 			/permissive-
-			/Zc:alignedNew
-			/Zc:auto
 			/Zc:__cplusplus
-			/Zc:externC
 			/Zc:externConstexpr
-			/Zc:forScope
-			/Zc:hiddenFriend
-			/Zc:implicitNoexcept
+			/Zc:inline
 			/Zc:lambda
-			/Zc:noexceptTypes
-			/Zc:preprocessor
 			/Zc:referenceBinding
 			/Zc:rvalueCast
-			/Zc:sizedDealloc
 			/Zc:strictStrings
 			/Zc:ternary
-			/Zc:threadSafeInit
-			/Zc:trigraphs
 			/Zc:wchar_t
 	)
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/fp:strict>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/ZI>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/Od>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/Gy>")
-	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:RELEASE>:${SC_RELEASE_OPTS}>")
+	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:/Gy;/Od;/ZI;/fp:strict>")
+	target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:RELEASE>:/Zi;/fp:fast;/GL;/Gy-;/Gw;/sdl-;/GS-;/guard:cf-;/O2;/Ob2;/Oi;/Ot;/Oy;/fp:except->")
 
 	target_link_options(
 		${PROJECT_NAME}
