@@ -9,7 +9,6 @@ DEFINES = [
     "/DFMT_USE_WINDOWS_H=0",
     "/DBOOST_STL_INTERFACES_DISABLE_CONCEPTS",
     "/DASMJIT_STATIC",
-    "/DCAPSTONE_HAS_X86",
     "/DAPSTONE_ARM_SUPPORT=0",
     "/DAPSTONE_ARM64_SUPPORT=0",
     "/DAPSTONE_M680X_SUPPORT=0",
@@ -146,16 +145,6 @@ def define_xtarget(name, srcs=[], headers=[], exported_headers=[],
 
 def define_polyhook():
     define_xtarget(
-        name = "capstone",
-        headers = subdir_glob([("Deps/PolyHook_2_0/capstone/include", "**/*.h")]),
-        exported_headers = subdir_glob([("Deps/PolyHook_2_0/capstone/include", "**/*.h")]),
-        linker_flags = WINDOWS_BASE_LIBS,
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES,
-        force_static = True,
-    )
-
-    define_xtarget(
         name = "asmtk",
         headers = subdir_glob([("Deps/PolyHook_2_0/asmtk/src", "**/*.h")]),
         exported_headers = subdir_glob([("Deps/PolyHook_2_0/asmtk/src", "**/*.h")]),
@@ -243,8 +232,8 @@ def define_polyhook():
             prefix = "polyhook2"
         ),
         srcs = native.glob(["Deps/PolyHook_2_0/sources/**/*.cpp"]),
-        deps = [":capstone$(flavor)", ":zydis$(flavor)", ":asmjit$(flavor)", ":asmtk$(flavor)"],
-        exported_deps = [":capstone$(flavor)", ":zydis$(flavor)"],
+        deps = [":zydis$(flavor)", ":asmjit$(flavor)", ":asmtk$(flavor)"],
+        exported_deps = [":zydis$(flavor)"],
         linker_flags = WINDOWS_BASE_LIBS,
         visibility = ["PUBLIC"],
         compiler_flags = DEFINES,

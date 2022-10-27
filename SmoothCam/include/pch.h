@@ -64,7 +64,6 @@ SILENCE_EXTERNAL;
 #       include "include/detours.h"
 #   endif
 #   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
-#   include <polyhook2/CapstoneDisassembler.hpp>
 #   include <polyhook2/ZydisDisassembler.hpp>
 #   include <polyhook2/Detour/x64Detour.hpp>
 #   include <mapbox/eternal.hpp>
