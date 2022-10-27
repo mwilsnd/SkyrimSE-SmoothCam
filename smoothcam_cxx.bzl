@@ -156,6 +156,18 @@ def define_polyhook():
     )
 
     define_xtarget(
+        name = "asmtk",
+        headers = subdir_glob([("Deps/PolyHook_2_0/asmtk/src", "**/*.h")]),
+        exported_headers = subdir_glob([("Deps/PolyHook_2_0/asmtk/src", "**/*.h")]),
+        srcs = native.glob(["Deps/PolyHook_2_0/asmtk/src/**/*.cpp"]),
+        linker_flags = WINDOWS_BASE_LIBS,
+        visibility = ["PUBLIC"],
+        compiler_flags = DEFINES,
+        deps = [":asmjit$(flavor)"],
+        force_static = True,
+    )
+
+    define_xtarget(
         name = "asmjit",
         headers = subdir_glob([("Deps/PolyHook_2_0/asmjit/src", "**/*.h")]),
         exported_headers = subdir_glob([("Deps/PolyHook_2_0/asmjit/src", "**/*.h")]),
@@ -231,7 +243,7 @@ def define_polyhook():
             prefix = "polyhook2"
         ),
         srcs = native.glob(["Deps/PolyHook_2_0/sources/**/*.cpp"]),
-        deps = [":capstone$(flavor)", ":zydis$(flavor)", ":asmjit$(flavor)"],
+        deps = [":capstone$(flavor)", ":zydis$(flavor)", ":asmjit$(flavor)", ":asmtk$(flavor)"],
         exported_deps = [":capstone$(flavor)", ":zydis$(flavor)"],
         linker_flags = WINDOWS_BASE_LIBS,
         visibility = ["PUBLIC"],
