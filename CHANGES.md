@@ -1,4 +1,4 @@
-# Neta 1.7
+# Beta 1.7
 * Bumped module and MCM version number to 17
 
 **Fixes:**
