@@ -39,7 +39,7 @@ __pragma(warning( pop ))
 // 5220 a non-static data memeber with a volatile qualified type no longer implies
 #define SILENCE_EXTERNAL
 __pragma(warning( push )) \
-__pragma(warning( disable : 4324 4061 4200 4265 4266 4365 4371 4388 4514 4582 4583 4619 4623 4625 4626 4668 4710 4820 5026 5027 5031 5032 5039 5105 5204 5220 ))
+__pragma(warning( disable : 4201 4324 4061 4200 4265 4266 4365 4371 4388 4514 4582 4583 4619 4623 4625 4626 4668 4710 4820 5026 5027 5031 5032 5039 5105 5204 5220 ))
 
 #define RESTORE_EXTERNAL \
 __pragma(warning( pop ))

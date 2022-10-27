@@ -26,7 +26,6 @@ set(Boost_USE_STATIC_RUNTIME ON CACHE BOOL "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 set(POLYHOOK_BUILD_STATIC_RUNTIME ON CACHE BOOL "")
 set(POLYHOOK_BUILD_DLL ON CACHE BOOL "")
-set(POLYHOOK_DISASM_CAPSTONE ON CACHE BOOL "")
 set(POLYHOOK_DISASM_ZYDIS ON CACHE BOOL "")
 set(POLYHOOK_FEATURE_EXCEPTION OFF CACHE BOOL "")
 set(POLYHOOK_FEATURE_DETOURS ON CACHE BOOL "")
@@ -70,7 +69,6 @@ add_library(
 target_include_directories(${PROJECT_NAME} PRIVATE "SmoothCam/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/glm")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0")
-target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0/capstone/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0/zydis/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0/zydis/dependencies/zycore/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/eternal/include")
@@ -89,7 +87,8 @@ target_link_libraries(
 		EASTL
 		PolyHook_2
 		xbyak::xbyak
-		"${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64/detours.lib"
+		"$<$<CONFIG:RELEASE>:${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64/detours.lib>"
+		"$<$<CONFIG:DEBUG>:${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64Debug/detours.lib>"
 )
 
 target_precompile_headers(
@@ -138,6 +137,6 @@ if (MSVC)
 		PRIVATE
 			/WX
 			"$<$<CONFIG:DEBUG>:/INCREMENTAL;/OPT:NOREF;/OPT:NOICF>"
-			"$<$<CONFIG:RELEASE>:/LTCG;/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL>"
+			"$<$<CONFIG:RELEASE>:/LTCG;/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL;/IGNORE:4099>"
 	)
 endif ()
