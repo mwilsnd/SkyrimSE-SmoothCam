@@ -512,14 +512,14 @@ def define_targets(targets):
         headers = {
             "detours.h": "Deps/Detours/src/detours.h",
             "detver.h": "Deps/Detours/src/detver.h",
-            "syelog.h": "Deps/Detours/include/syelog.h",
+            "syelog.h": "Deps/Detours/samples/syelog/syelog.h",
             "disasm.cpp": "Deps/Detours/src/disasm.cpp",
             "uimports.cpp": "Deps/Detours/src/uimports.cpp",
         },
         exported_headers = {
-            "detours/detours.h": "Deps/Detours/include/detours.h",
-            "detours/detver.h": "Deps/Detours/include/detver.h",
-            "detours/syelog.h": "Deps/Detours/include/syelog.h",
+            "detours/detours.h": "Deps/Detours/src/detours.h",
+            "detours/detver.h": "Deps/Detours/src/detver.h",
+            "detours/syelog.h": "Deps/Detours/samples/syelog/syelog.h",
         },
         srcs = [
             "Deps/Detours/src/creatwth.cpp",
