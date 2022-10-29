@@ -232,13 +232,17 @@ static bool mGFxInvoke(void* pThis, void* obj, RE::GFxValue* result, const char*
 		if (GameState::IsFirstPerson(camera))
 			return ret;
 
-		if (g_theCamera && !Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken()
-			&& name && strcmp(name, "ValidateCrosshair") == 0)
-		{
-			// Getting spammed on by conjuration magic mode - (ノಠ益ಠ)ノ彡┻━┻
-			// @Note: I really don't like these more invasive detours - finding a way around this should be a priority
-			// We need this currently because ValidateCrosshair will desync our crosshair state and mess things up
-			g_theCamera->GetThirdpersonCamera()->GetCrosshairManager()->ValidateCrosshair();
+		if (g_theCamera && !Messaging::SmoothCamInterface::GetInstance()->IsCrosshairTaken() && name) {
+			if (strcmp(name, "SetCrosshairEnabled") == 0) {
+				// Ensure we never get out of sync with the HUD crosshair
+				g_theCamera->GetThirdpersonCamera()->GetCrosshairManager()->OnUICrosshairEnableStateChanged();
+
+			} else if (strcmp(name, "ValidateCrosshair") == 0) {
+				// Getting spammed on by conjuration magic mode - (ノಠ益ಠ)ノ彡┻━┻
+				// @Note: I really don't like these more invasive detours - finding a way around this should be a priority
+				// We need this currently because ValidateCrosshair will desync our crosshair state and mess things up
+				g_theCamera->GetThirdpersonCamera()->GetCrosshairManager()->ValidateCrosshair();
+			}
 		}
 	}
 

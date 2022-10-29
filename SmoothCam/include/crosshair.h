@@ -147,6 +147,9 @@ namespace Crosshair {
 			// Get the radius of the game's object picker hull trace
 			float GetObjectPickerRadius() const noexcept;
 
+			// Callback when anything calls SetCrosshairEnabled on the HUD
+			void OnUICrosshairEnableStateChanged() noexcept;
+
 		private:
 			// Returns true if the manager has captured the base crosshair data correctly
 			// If returning false, the manager is not allowed to modify the crosshair
@@ -210,6 +213,8 @@ namespace Crosshair {
 			float gamePickRadius;
 			// Have we mutated the picker size
 			bool pickRadiusSet = false;
+			// Set while the crosshair visibility is being mutated
+			bool inCrosshairMutation = false;
 
 			// Renderable objects
 			struct {

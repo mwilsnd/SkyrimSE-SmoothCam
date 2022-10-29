@@ -579,6 +579,7 @@ void Crosshair::Manager::SetDefaultSize() noexcept {
 void Crosshair::Manager::SetCrosshairEnabled(bool enabled) noexcept {
 	if (!IsCrosshairDataValid()) return;
 	if (currentCrosshairData.enabled == enabled && !currentCrosshairData.invalidated) return;
+	inCrosshairMutation = true;
 
 	auto menu = RE::UI::GetSingleton()->GetMenu(RE::InterfaceStrings::GetSingleton()->hudMenu);
 	if (menu && menu->uiMovie && menu->fxDelegate) {
@@ -590,6 +591,8 @@ void Crosshair::Manager::SetCrosshairEnabled(bool enabled) noexcept {
 		currentCrosshairData.invalidated = false;
 		g_crosshairData.enabled = enabled;
 	}
+
+	inCrosshairMutation = false;
 }
 
 void Crosshair::Manager::Set3DCrosshairType(Config::CrosshairType type) noexcept {
@@ -831,4 +834,9 @@ void Crosshair::Manager::SetObjectPickerRadius(float radius) noexcept {
 // Get the radius of the game's object picker hull trace
 float Crosshair::Manager::GetObjectPickerRadius() const noexcept {
 	return pickRadius;
+}
+
+void Crosshair::Manager::OnUICrosshairEnableStateChanged() noexcept {
+	if (inCrosshairMutation) return; // We don't care about our own mutation events
+	InvalidateEnablementCache();
 }
