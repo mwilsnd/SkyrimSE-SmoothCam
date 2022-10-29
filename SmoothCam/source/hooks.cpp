@@ -25,7 +25,7 @@ static void mCameraUpdate(RE::TESCameraState* state, RE::BSTSmartPointer<RE::TES
 	auto ply = RE::PlayerCharacter::GetSingleton();
 	auto cam = RE::PlayerCamera::GetSingleton();
 
-	{
+	if (!RE::UI::GetSingleton()->GameIsPaused()) {
 		const auto mdmp = Debug::MiniDumpScope();
 		GameTime::StepFrameTime();
 
@@ -50,7 +50,7 @@ static void mCameraUpdate(RE::TESCameraState* state, RE::BSTSmartPointer<RE::TES
 
 	cameraUpdateHooks->GetBase<CameraOnUpdate>(selector, 3)(state, nextState);
 
-	{
+	if (!RE::UI::GetSingleton()->GameIsPaused()) {
 		const auto mdmp = Debug::MiniDumpScope();
 		if (g_theCamera)
 			g_theCamera->UpdateCamera(ply, cam, nextState);

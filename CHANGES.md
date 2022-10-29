@@ -6,6 +6,7 @@
 * Hand-to-hand is now correctly recognized as melee combat.
 * Migrated to po3's CommonLib fork to support newer versions of AE
 * Support for breaking changes made in recent AE update
+* Only updates the camera while the game is not paused, fixes jumping camera when exiting menus
 
 **New Stuff:**
 * "3D Activator Crosshair Enabled" option: Raycasting activator/interaction crosshair, thanks to meh321.
