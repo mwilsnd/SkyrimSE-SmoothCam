@@ -11,11 +11,6 @@ DEFINES = [
     "/DASMJIT_STATIC",
 ]
 
-PCH = [
-    "/FIpch.h",
-    "/FpSmoothCam/include/pch.h",
-]
-
 TARGET_FLAVORS = [
     {
         "name": "Debug",
@@ -307,6 +302,14 @@ def define_commonlib_deps():
     )
 
 def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant=False):
+    common_deps = [
+        ":fmt$(flavor)",
+        ":spdlog$(flavor)",
+        ":binary_io$(flavor)",
+        ":xbyak$(flavor)",
+        ":stl_interfaces$(flavor)",
+    ]
+
     if pre629Variant:
         define_xtarget(
             name = "CommonLib" + target,
@@ -321,25 +324,14 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
                 ("Deps/CommonLibSSEPre629/include", "SKSE/**/*.h"),
             ]),
             srcs = native.glob(["Deps/CommonLibSSEPre629/src/**/*.cpp"]),
-            deps = [
-                ":fmt$(flavor)",
-                ":spdlog$(flavor)",
-                ":binary_io$(flavor)",
-                ":xbyak$(flavor)",
-                ":stl_interfaces$(flavor)",
-            ],
-            exported_deps = [
-                ":fmt$(flavor)",
-                ":spdlog$(flavor)",
-                ":binary_io$(flavor)",
-                ":xbyak$(flavor)",
-                ":stl_interfaces$(flavor)",
-            ],
+            deps = common_deps,
+            exported_deps = common_deps,
             linker_flags = WINDOWS_BASE_LIBS,
             visibility = [visibility],
             compiler_flags = DEFINES + [
                 "/DWINVER=0x0601",
                 "/D_WIN32_WINNT=0x0601",
+                "/FISKSE/Impl/PCH.h",
 
                 # warnings -> errors
                 "/we4715",	# 'function' : not all control paths return a value
@@ -367,10 +359,6 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
                 "/wd5053", # support for 'explicit(<expr>)' in C++17 and earlier is a vendor extension
                 "/wd5204", # 'type-name': class has virtual functions, but its trivial destructor is not virtual; instances of objects derived from this class may not be destructed correctly
                 "/wd5220", # 'member': a non-static data member with a volatile qualified type no longer implies that compiler generated copy / move constructors and copy / move assignment operators are not trivial
-
-                # PCH
-                "/FISKSE/Impl/PCH.h",
-                "/FpDeps/CommonLibSSEPreStruct/include/SKSE/Impl/PCH.h",
             ] + extra_compiler_opts,
             force_static = True,
         )
@@ -389,25 +377,14 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
                 ("Deps/CommonLibSSE/include", "SKSE/**/*.h"),
             ]),
             srcs = native.glob(["Deps/CommonLibSSE/src/**/*.cpp"]),
-            deps = [
-                ":fmt$(flavor)",
-                ":spdlog$(flavor)",
-                ":binary_io$(flavor)",
-                ":xbyak$(flavor)",
-                ":stl_interfaces$(flavor)",
-            ],
-            exported_deps = [
-                ":fmt$(flavor)",
-                ":spdlog$(flavor)",
-                ":binary_io$(flavor)",
-                ":xbyak$(flavor)",
-                ":stl_interfaces$(flavor)",
-            ],
+            deps = common_deps,
+            exported_deps = common_deps,
             linker_flags = WINDOWS_BASE_LIBS,
             visibility = [visibility],
             compiler_flags = DEFINES + [
                 "/DWINVER=0x0601",
                 "/D_WIN32_WINNT=0x0601",
+                "/FISKSE/Impl/PCH.h",
 
                 # warnings -> errors
                 "/we4715",	# 'function' : not all control paths return a value
@@ -435,10 +412,6 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
                 "/wd5053", # support for 'explicit(<expr>)' in C++17 and earlier is a vendor extension
                 "/wd5204", # 'type-name': class has virtual functions, but its trivial destructor is not virtual; instances of objects derived from this class may not be destructed correctly
                 "/wd5220", # 'member': a non-static data member with a volatile qualified type no longer implies that compiler generated copy / move constructors and copy / move assignment operators are not trivial
-
-                # PCH
-                "/FISKSE/Impl/PCH.h",
-                "/FpDeps/CommonLibSSE/include/SKSE/Impl/PCH.h",
             ] + extra_compiler_opts,
             force_static = True,
         )
@@ -611,7 +584,7 @@ def define_targets(targets):
                 "SmoothCam/source/util.cpp",
             ],
             headers = subdir_glob([("SmoothCam/include", "**/*.h")]),
-            compiler_flags = DEFINES + PCH + target["extra_compiler_opts"],
+            compiler_flags = DEFINES + target["extra_compiler_opts"] + ["/FIpch.h"],
             link_style = "static",
             is_binary = False,
             soname = "SmoothCam" + target["name"] + ".dll",
