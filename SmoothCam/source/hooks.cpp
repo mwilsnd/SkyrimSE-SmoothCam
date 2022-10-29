@@ -41,6 +41,13 @@ static void mCameraUpdate(RE::TESCameraState* state, RE::BSTSmartPointer<RE::TES
 	else
 		selector = state;
 
+	// Make sure we have a valid selector
+	if (!selector) return;
+
+	// And a valid base
+	const auto base = cameraUpdateHooks->GetBase<CameraOnUpdate>(selector, 3);
+	if (!base) return;
+
 	cameraUpdateHooks->GetBase<CameraOnUpdate>(selector, 3)(state, nextState);
 
 	{
