@@ -247,6 +247,7 @@ namespace Camera {
 			eastl::unique_ptr<Render::LineGraph> graph_rotation = nullptr;
 			eastl::unique_ptr<Render::LineGraph> graph_tpsRotation = nullptr;
 			eastl::unique_ptr<Render::LineGraph> graph_computeTime = nullptr;
+			eastl::unique_ptr<Render::LineGraph> graph_fov = nullptr;
 
 			eastl::unique_ptr<Render::NiNodeTreeDisplay> focusTargetNodeTree = nullptr;
 			eastl::unique_ptr<Render::StateOverlay> stateOverlay = nullptr;
@@ -260,6 +261,7 @@ namespace Camera {
 			DisplayMode curDebugMode = DisplayMode::None;
 			bool dbgKeyDown = false;
 			float lastProfSnap = 0.0f;
+			float desiredFOV = 0.0f;
 			glm::mat4 orthoMatrix = {};
 
 			friend class Render::StateOverlay;

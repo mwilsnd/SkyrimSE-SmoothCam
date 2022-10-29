@@ -30,6 +30,7 @@ Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 		graph_rotation = eastl::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
 		graph_tpsRotation = eastl::make_unique<Render::LineGraph>(4, 128, 600, 128, Render::GetContext());
 		graph_computeTime = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
+		graph_fov = eastl::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
 
 		const auto xColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		const auto yColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
@@ -74,6 +75,11 @@ Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 		graph_computeTime->SetLineColor(2, { 1.0f, 0.0f, 0.0f, 1.0f });
 		graph_computeTime->SetName(L"Compute Time <pink> (Camera::Update()), Frame Time <orange>, seconds, Smooth Frame Time <red>");
 		graph_computeTime->SetPosition(0, 768);
+
+		graph_fov->SetLineColor(0, { 0.0f, 1.0f, 0.0f, 1.0f });
+		graph_fov->SetLineColor(1, { 1.0f, 0.0f, 0.0f, 1.0f });
+		graph_fov->SetName(L"FOV (Desired, Observed)");
+		graph_fov->SetPosition(0, 896);
 
 		Render::CBufferCreateInfo cbuf;
 		cbuf.bufferUsage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
@@ -420,6 +426,9 @@ void Camera::Thirdperson::Render(Render::D3DContext& ctx) noexcept {
 			graph_computeTime->AddPoint(1, static_cast<float>(GameTime::GetFrameDelta()));
 			graph_computeTime->AddPoint(2, static_cast<float>(GameTime::GetSmoothFrameDelta()));
 
+			graph_fov->AddPoint(0, desiredFOV);
+			graph_fov->AddPoint(1, *REL::Relocation<float*>(g_Offsets->FOVOffset));
+
 			graph_worldPosTarget->Draw(ctx);
 			graph_localSpace->Draw(ctx);
 			graph_offsetPos->Draw(ctx);
@@ -427,6 +436,7 @@ void Camera::Thirdperson::Render(Render::D3DContext& ctx) noexcept {
 			graph_rotation->Draw(ctx);
 			graph_tpsRotation->Draw(ctx);
 			graph_computeTime->Draw(ctx);
+			graph_fov->Draw(ctx);
 
 			break;
 		}
@@ -1338,6 +1348,10 @@ void Camera::Thirdperson::SetFOVOffset(float fov, bool force) noexcept {
 	auto adr = REL::Relocation<float*>(g_Offsets->FOVOffset);
 	const auto cam = RE::PlayerCamera::GetSingleton();
 	
+#ifdef WITH_CHARTS
+	desiredFOV = fov;
+#endif
+
 	if (force) {
 		// When in the map menu, this won't be reset, thus we have to force it.
 		// Opening the map menu when zoomed in with a bow does the same thing.
