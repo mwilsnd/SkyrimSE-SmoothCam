@@ -222,4 +222,6 @@ class Offsets {
 		uintptr_t UpdateGPUCameraData = 0;
 		uintptr_t CBuffer12 = 0;
 		uintptr_t GBuffer = 0;
+
+		uintptr_t menuHookOffset = 0;
 };

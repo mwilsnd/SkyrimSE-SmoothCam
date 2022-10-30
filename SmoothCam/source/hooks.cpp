@@ -154,7 +154,7 @@ typedef RE::BSEventNotifyControl(__thiscall* MenuOpenCloseHandler)(uintptr_t pTh
 static RE::BSEventNotifyControl mMenuOpenCloseHandler(uintptr_t pThis, RE::MenuOpenCloseEvent* ev,
 	RE::BSTEventSource<RE::MenuOpenCloseEvent>* dispatcher)
 {
-	const auto menuOpenCloseHandler = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2B0;
+	const auto menuOpenCloseHandler = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + g_Offsets->menuHookOffset;
 	if (pThis == menuOpenCloseHandler) {
 		const auto mdmp = Debug::MiniDumpScope();
 
@@ -191,7 +191,7 @@ typedef RE::BSEventNotifyControl(__thiscall* MenuModeChangeHandler)(uintptr_t pT
 static RE::BSEventNotifyControl mMenuModeChangeHandler(uintptr_t pThis, MenuModeChangeEvent* ev,
 	RE::BSTEventSource<MenuModeChangeEvent>* dispatcher)
 {
-	const auto menuModeChangeHandler = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2B8;
+	const auto menuModeChangeHandler = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + g_Offsets->menuHookOffset + 8;
 	if (pThis == menuModeChangeHandler) {
 		const auto mdmp = Debug::MiniDumpScope();
 		if (!ev->name.empty())
@@ -360,7 +360,7 @@ bool Hooks::DeferredAttach() {
 
 	menuOpenCloseHook = eastl::make_unique<VTableDetour<PlayerMenuOpenCloseEvent>>(
 		reinterpret_cast<PlayerMenuOpenCloseEvent*>(
-			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2B8
+			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + g_Offsets->menuHookOffset
 		)
 	);
 	menuOpenCloseHook->Add(1, mMenuOpenCloseHandler);
@@ -369,7 +369,7 @@ bool Hooks::DeferredAttach() {
 
 	menuModeChangeHook = eastl::make_unique<VTableDetour<PlayerMenuModeChangeEvent>>(
 		reinterpret_cast<PlayerMenuModeChangeEvent*>(
-			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + 0x2C0
+			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) +  g_Offsets->menuHookOffset + 8
 		)
 	);
 	menuModeChangeHook->Add(1, mMenuModeChangeHandler);

@@ -6,6 +6,12 @@ Offsets::Offsets() noexcept {
 #else
 		populateSE();
 #endif
+
+#if defined(SKYRIM_SUPPORT_AE) && !defined(SKYRIM_IS_PRE629)
+	menuHookOffset = 0x2B8;
+#else
+	menuHookOffset = 0x2B0;
+#endif
 }
 
 #ifdef SKYRIM_SUPPORT_AE
