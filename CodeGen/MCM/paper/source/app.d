@@ -1,6 +1,7 @@
 import tokenizer;
 import tokenizer.utils;
 
+import result;
 import constructs.include;
 import constructs.const_struct;
 import constructs.all_of_struct;
@@ -17,6 +18,118 @@ import std.stdio;
 import std.container.array;
 import std.path;
 import std.utf;
+
+bool transformPass(ref TokenStream tokens, ref Arena arena, ref ConstStructParser constStruct) {
+	const auto size = tokens.length();
+	Result!bool err;
+
+	{
+		scope auto inc = new Include();
+		err = inc.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+
+	scope auto declOfs = new DeclareOffsetGroup();
+	err = declOfs.apply(tokens);
+	if (!err.isOk()) {
+		writeln(err.msg);
+		return false;
+	}
+
+	{
+		scope auto implOfs = new ImplOffsetGroup();
+		implOfs.setOFSMgr(declOfs);
+		err = implOfs.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+
+	if (arena is null) {
+		arena = new Arena();
+		err = arena.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+
+	if (constStruct is null) {
+		constStruct = new ConstStructParser();
+		constStruct.setArena(arena);
+		err = constStruct.parse(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+
+	{
+		scope auto structAlias = new StructAlias();
+		structAlias.setConstStructTool(constStruct);
+		err = structAlias.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+
+	err = constStruct.parseImpls(tokens);
+	if (!err.isOk()) {
+		writeln(err.msg);
+		return false;
+	}
+
+	arena.report();
+
+	{
+		scope auto allOfStruct = new AllOfStruct();
+		allOfStruct.setConstStructTool(constStruct);
+		err = allOfStruct.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+	{
+		scope auto invokeOn = new StructInvokeOn();
+		invokeOn.setConstStructTool(constStruct);
+		err = invokeOn.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+	{
+		scope auto autoArray = new AutoArray();
+		err = autoArray.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+	{
+		scope auto invokeSwitch = new StructInvokeSwitchIfEq();
+		invokeSwitch.setConstStructTool(constStruct);
+		err = invokeSwitch.apply(tokens);
+		if (!err.isOk()) {
+			writeln(err.msg);
+			return false;
+		}
+	}
+
+	err = constStruct.apply(tokens);
+	if (!err.isOk()) {
+		writeln(err.msg);
+		return false;
+	}
+
+	return size != tokens.length();
+}
 
 void main(string[] args) {
 	writeln("paper - I probably over-engineered this");
@@ -50,106 +163,9 @@ void main(string[] args) {
 		return;
 	}
 
-	{
-		scope auto inc = new Include();
-		err = inc.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-
-	auto declOfs = new DeclareOffsetGroup();
-	err = declOfs.apply(tokens);
-	if (!err.isOk()) {
-		writeln(err.msg);
-		return;
-	}
-
-	{
-		scope auto implOfs = new ImplOffsetGroup();
-		implOfs.setOFSMgr(declOfs);
-		err = implOfs.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-
-	auto arena = new Arena();
-	err = arena.apply(tokens);
-	if (!err.isOk()) {
-		writeln(err.msg);
-		return;
-	}
-
-	auto constStruct = new ConstStructParser();
-	constStruct.setArena(arena);
-	err = constStruct.parse(tokens);
-	if (!err.isOk()) {
-		writeln(err.msg);
-		return;
-	}
-
-	{
-		scope auto structAlias = new StructAlias();
-		structAlias.setConstStructTool(constStruct);
-		err = structAlias.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-
-	err = constStruct.parseImpls(tokens);
-	if (!err.isOk()) {
-		writeln(err.msg);
-		return;
-	}
-
-	arena.report();
-
-	{
-		scope auto allOfStruct = new AllOfStruct();
-		allOfStruct.setConstStructTool(constStruct);
-		err = allOfStruct.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-	{
-		scope auto invokeOn = new StructInvokeOn();
-		invokeOn.setConstStructTool(constStruct);
-		err = invokeOn.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-	{
-		scope auto autoArray = new AutoArray();
-		err = autoArray.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-	{
-		scope auto invokeSwitch = new StructInvokeSwitchIfEq();
-		invokeSwitch.setConstStructTool(constStruct);
-		err = invokeSwitch.apply(tokens);
-		if (!err.isOk()) {
-			writeln(err.msg);
-			return;
-		}
-	}
-
-	err = constStruct.apply(tokens);
-	if (!err.isOk()) {
-		writeln(err.msg);
-		return;
-	}
+	Arena arena = null;
+	ConstStructParser constStruct = null;
+	while (transformPass(tokens, arena, constStruct)) {}
 
 	try {
 		if (fs.exists(args[2]))

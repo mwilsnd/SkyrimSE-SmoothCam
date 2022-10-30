@@ -335,6 +335,11 @@ struct ConstStructDecl {
                 mutated ~= post;
                 stream = mutated;
                 return Result!(Res).make(Res.BreakInner);
+            },
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.resetMemory();
+                state.gotoState(State.ExpectThis);
+                return Result!(Res).make(Res.Continue);
             }
         );
 
@@ -1282,7 +1287,7 @@ final class ConstStructParser : IConstruct {
             
             while (true) {
                 const auto res = state.exec(stream);
-                if (!res.isOk()) Result!(bool).failFrom(res);
+                if (!res.isOk()) return Result!(bool).failFrom(res);
                 if (res.unwrap() == Res.BreakOuter) break;
                 state.resetMemory();
                 state.gotoState(State.ExpectHash);
@@ -1403,7 +1408,7 @@ final class ConstStructParser : IConstruct {
             
             while (true) {
                 const auto res = state.exec(stream);
-                if (!res.isOk()) Result!(bool).failFrom(res);
+                if (!res.isOk()) return Result!(bool).failFrom(res);
                 if (res.unwrap() == Res.BreakOuter) break;
                 state.resetMemory();
                 state.gotoState(State.ExpectType);
@@ -1515,7 +1520,7 @@ final class ConstStructParser : IConstruct {
             
             while (true) {
                 const auto res = state.exec(stream);
-                if (!res.isOk()) Result!(bool).failFrom(res);
+                if (!res.isOk()) return Result!(bool).failFrom(res);
                 if (res.unwrap() == Res.BreakOuter) break;
                 state.resetMemory();
                 state.gotoState(State.ExpectImplName);
@@ -1604,7 +1609,7 @@ final class ConstStructParser : IConstruct {
             
             while (true) {
                 const auto res = state.exec(stream);
-                if (!res.isOk()) Result!(bool).failFrom(res);
+                if (!res.isOk()) return Result!(bool).failFrom(res);
                 if (res.unwrap() == Res.BreakOuter) break;
                 state.resetMemory();
                 state.gotoState(State.ExpectImpl);

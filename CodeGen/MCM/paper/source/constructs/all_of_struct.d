@@ -141,7 +141,7 @@ final class AllOfStruct : IConstruct {
 
             while (true) {
                 const auto res = state.exec(stream);
-                if (!res.isOk()) Result!(bool).failFrom(res);
+                if (!res.isOk()) return Result!(bool).failFrom(res);
                 if (res.unwrap() == Res.BreakOuter) break;
                 state.resetMemory();
                 state.gotoState(State.ExpectDeclType);

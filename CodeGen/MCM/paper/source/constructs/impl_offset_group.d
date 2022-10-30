@@ -113,7 +113,7 @@ final class ImplOffsetGroup : IConstruct {
                 (ref const(Token) tok, ref TokenStream stream, ulong position) {
                     auto vars = tok.value in ofsGroups.getVarIDs();
                     if (vars is null)
-                        Result!(Res).fail("Unknown offset group '" ~ tok.value ~ "'!");
+                        return Result!(Res).fail("Unknown offset group '" ~ tok.value ~ "'!");
 
                     state.mem.value = tok;
                     state.gotoState(State.ExpectCommaOrCloseParen);
