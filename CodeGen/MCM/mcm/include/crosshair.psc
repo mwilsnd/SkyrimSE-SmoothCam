@@ -20,6 +20,7 @@ ToggleSetting use3DPicker -> [
 	settingName: "Use3DPicker"
 	displayName: "3D Activator Crosshair Enabled"
 	desc: "Use the 3D crosshair when looking at items in the world."
+	resetPage: true
 	page: " Crosshair"
 ]
 ListSetting worldCrosshairType -> [
@@ -50,7 +51,9 @@ ToggleSetting hideCrosshairMeleeCombat -> [
 ToggleSetting onlyShowCrosshairOnHit -> [
 	settingName: "ShowCrosshairOnHtOnly"
 	displayName: "Only Show Crosshair On Hit"
-	desc: "Hide the crosshair at all times, unless the crosshair has hit something in the world. Overrides hide melee and hide non-combat options."
+	desc: "Hide the crosshair at all times, unless the crosshair has hit something in the world. Overrides hide melee and hide non-combat options. Does nothing unless the 3D activator crosshair is also enabled."
+	hasDependentControl: true
+	dependency: use3DPicker
 	page: " Crosshair"
 ]
 ToggleSetting enableCrosshairSizeManip -> [

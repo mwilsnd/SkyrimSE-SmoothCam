@@ -41,21 +41,41 @@
 	string desc = ""
 	string page = ""
 	string header = ""
+	bool hasDependentControl = false
+	bool resetPage = false
+	literal dependency = PLACEHOLDER
 
 	MACRO implControl = [
 		#if (header)
 		AddHeaderOption(this->header)
 		#endif
+
+		#if (hasDependentControl)
+		if (!this->dependency->!getConfValue)
+			this->ref = AddToggleOption(this->displayName, SmoothCam_GetBoolConfig(this->settingName), OPTION_FLAG_DISABLED)
+		else
+			this->ref = AddToggleOption(this->displayName, SmoothCam_GetBoolConfig(this->settingName))
+		endif
+		#else
 		this->ref = AddToggleOption(this->displayName, SmoothCam_GetBoolConfig(this->settingName))
+		#endif
 	]
 
 	MACRO implSelectHandler = [
 		SmoothCam_SetBoolConfig(this->settingName, !SmoothCam_GetBoolConfig(this->settingName))
 		SetToggleOptionValue(a_option, SmoothCam_GetBoolConfig(this->settingName))
+
+		#if (resetPage)
+		ForcePageReset()
+		#endif
 	]
 
 	MACRO implDesc = [
 		SetInfoText(this->desc)
+	]
+
+	MACRO getConfValue = [
+		SmoothCam_GetBoolConfig(this->settingName)
 	]
 ]
 #constexpr_struct ResetSetting [
