@@ -22,6 +22,7 @@ private void loadKeywords() @trusted nothrow {
     keywords["endevent"] = Tok.kEndEvent;
     keywords["if"] = Tok.kIf;
     keywords["elseif"] = Tok.kElseIf;
+    keywords["else"] = Tok.kElse;
     keywords["endif"] = Tok.kEndIf;
     keywords["property"] = Tok.kProperty;
     keywords["endproperty"] = Tok.kEndProperty;

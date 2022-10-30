@@ -112,7 +112,11 @@ struct ConstStructDecl {
             ulong startIndex = 0;
             ulong branchStartIndex = 0;
             ulong branchEndIndex = 0;
+            ulong elseStartBranchIndex = 0;
+            ulong elseEndBranchIndex = 0;
             Token condToken;
+            TokenStream ifBlk;
+            TokenStream elseBlk;
         }
 
         enum State {
@@ -121,6 +125,8 @@ struct ConstStructDecl {
             ExpectOpenParen,
             ExpectCond,
             ExpectCloseParen,
+            ExpectHashElseOrEnd,
+            ExpectElseOrEndif,
             ExpectEndHash,
             ExpectEndIf,
         }
@@ -136,6 +142,42 @@ struct ConstStructDecl {
             Res, Res.Continue,
             Memory
         ) state;
+
+        Result!TokenStream emitBranch()(
+            Token condIf,
+            ref const(TokenStream) ifBlk,
+            auto ref const(TokenStream) elseBlk = TokenStream.init)
+        {
+            import std.conv : to;
+
+            auto var = condIf.value in impl.memberVars;
+            if (var !is null) {
+                if (var.isReal) return Result!(TokenStream).fail("Cannot #if 'real' member var " ~ condIf.value);
+                bool cond = false;
+
+                switch (var.type) {
+                    case Tok.tBool:
+                        cond = var.defaultValue.boolValue; break;
+                    case Tok.tInt:
+                        cond = to!bool(var.defaultValue.intValue); break;
+                    case Tok.tFloat:
+                        cond = to!bool(var.defaultValue.floatValue); break;
+                    case Tok.tString:
+                        cond = var.defaultValue.stringValue.length > 0; break;
+                    default:
+                        return Result!(TokenStream).fail("Cannot #if member var " ~ condIf.value);
+                }
+
+                if (cond) {
+                    return Result!(TokenStream).make(ifBlk);
+                } else {
+                    return Result!(TokenStream).make(elseBlk);
+                }
+
+            } else {
+                return Result!(TokenStream).fail("Undefined member var " ~ state.mem.condToken.value);
+            }
+        }
 
         state.onState(State.ExpectHash, Tok.Hash,
             (ref const(Token) tok, ref TokenStream stream, ulong position) {
@@ -183,14 +225,55 @@ struct ConstStructDecl {
         state.onState(State.ExpectCloseParen, Tok.CloseParen,
             (ref const(Token) tok, ref TokenStream stream, ulong position) {
                 state.mem.branchStartIndex = position+1;
-                state.gotoState(State.ExpectEndHash);
+                state.gotoState(State.ExpectHashElseOrEnd);
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectHashElseOrEnd, Tok.Hash,
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.mem.branchEndIndex = position;
+                state.gotoState(State.ExpectElseOrEndif);
+                return Result!(Res).make(Res.Continue);
+            },
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                return Result!(Res).make(Res.Continue);
+            }
+        );
+
+        state.onState(State.ExpectElseOrEndif, [Tok.kEndIf, Tok.kElse],
+            (ref const(Token) tok, ref TokenStream stream, ulong position) {
+                state.mem.ifBlk = TokenStream(stream[state.mem.branchStartIndex..state.mem.branchEndIndex]);
+
+                if (tok.type == Tok.kEndIf) {    
+                    auto branch = emitBranch(state.mem.condToken, state.mem.ifBlk);
+                    if (branch.isOk()) { 
+                        stream = trim(
+                            TokenStream(stream[0..state.mem.startIndex]) ~
+                            branch.unwrap() ~
+                            TokenStream(stream[position+1..$])
+                        );
+                    } else {
+                        return Result!(Res).failFrom(branch);
+                    }
+
+                    state.resetMemory();
+                    return Result!(Res).make(Res.BreakInner);
+
+                } else {
+                    // else branch
+                    state.mem.elseStartBranchIndex = position + 1;
+                    state.gotoState(State.ExpectEndHash);
+                }
+
                 return Result!(Res).make(Res.Continue);
             }
         );
 
         state.onState(State.ExpectEndHash, Tok.Hash,
             (ref const(Token) tok, ref TokenStream stream, ulong position) {
-                state.mem.branchEndIndex = position;
+                // Else branch
+                state.mem.elseEndBranchIndex = position;
                 state.gotoState(State.ExpectEndIf);
                 return Result!(Res).make(Res.Continue);
             },
@@ -198,52 +281,23 @@ struct ConstStructDecl {
                 return Result!(Res).make(Res.Continue);
             }
         );
-        
+
         state.onState(State.ExpectEndIf, Tok.kEndIf,
             (ref const(Token) tok, ref TokenStream stream, ulong position) {
-                import std.conv : to;
-                if (tok.value != "endif") {
-                    state.gotoState(State.ExpectHash);
-                    return Result!(Res).make(Res.Continue);    
-                }
-
-                auto pre = TokenStream(stream[0..state.mem.startIndex]);
-                auto post = TokenStream(stream[position+1..$]);
-                TokenStream branch;
-
-                auto var = state.mem.condToken.value in impl.memberVars;
-                if (var !is null) {
-                    if (var.isReal) return Result!(Res).fail("Cannot #if 'real' member var " ~ state.mem.condToken.value);
-                    bool cond = false;
-
-                    switch (var.type) {
-                        case Tok.tBool:
-                            cond = var.defaultValue.boolValue; break;
-                        case Tok.tInt:
-                            cond = to!bool(var.defaultValue.intValue); break;
-                        case Tok.tFloat:
-                            cond = to!bool(var.defaultValue.floatValue); break;
-                        case Tok.tString:
-                            cond = var.defaultValue.stringValue.length > 0; break;
-                        default:
-                            return Result!(Res).fail("Cannot #if member var " ~ state.mem.condToken.value);
-                    }
-
-                    if (cond) {
-                        // Include the branch contents
-                        branch ~= stream[state.mem.branchStartIndex..state.mem.branchEndIndex];
-                    }
+                state.mem.elseBlk = TokenStream(stream[state.mem.elseStartBranchIndex..state.mem.elseEndBranchIndex]);
+                auto branch = emitBranch(state.mem.condToken, state.mem.ifBlk, state.mem.elseBlk);
+                if (branch.isOk()) { 
+                    stream = trim(
+                        TokenStream(stream[0..state.mem.startIndex]) ~
+                        branch.unwrap() ~
+                        TokenStream(stream[position+1..$])
+                    );
                 } else {
-                    return Result!(Res).fail("Undefined member var " ~ state.mem.condToken.value);
+                    return Result!(Res).failFrom(branch);
                 }
 
-                stream = trim(pre ~ branch ~ post);
                 state.resetMemory();
                 return Result!(Res).make(Res.BreakInner);
-            },
-            (ref const(Token) tok, ref TokenStream stream, ulong position) {
-                state.gotoState(State.ExpectHash);
-                return Result!(Res).make(Res.Continue);
             }
         );
 

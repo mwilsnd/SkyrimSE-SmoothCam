@@ -57,6 +57,7 @@ enum Tok {
     kEndEvent,
     kIf,
     kElseIf,
+    kElse,
     kEndIf,
     kProperty,
     kEndProperty,
