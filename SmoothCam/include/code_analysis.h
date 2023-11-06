@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <codeanalysis\warnings.h>
+//#include <codeanalysis\warnings.h>
 #define SILENCE_CODE_ANALYSIS                              \
 __pragma(warning( push ))                                  \
 __pragma(warning( disable : ALL_CODE_ANALYSIS_WARNINGS ))  \

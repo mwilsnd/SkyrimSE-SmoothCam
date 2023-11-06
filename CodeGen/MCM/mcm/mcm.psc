@@ -225,7 +225,13 @@ event OnPageReset(string a_page)
 			savePresetSlot3,
 			savePresetSlot4,
 			savePresetSlot5,
-			savePresetSlot6
+			savePresetSlot6,
+			savePresetSlot7,
+			savePresetSlot8,
+			savePresetSlot9,
+			savePresetSlot10,
+			savePresetSlot11,
+			savePresetSlot12
 		])
 
 		SetCursorPosition(1)
@@ -236,7 +242,13 @@ event OnPageReset(string a_page)
 			loadPresetSlot3,
 			loadPresetSlot4,
 			loadPresetSlot5,
-			loadPresetSlot6
+			loadPresetSlot6,
+			loadPresetSlot7,
+			loadPresetSlot8,
+			loadPresetSlot9,
+			loadPresetSlot10,
+			loadPresetSlot11,
+			loadPresetSlot12
 		])
 	
 	elseIf (a_page == " Thirdperson Offsets")

@@ -28,6 +28,36 @@ SavePresetSetting savePresetSlot6 -> [
 	displayName: "Slot 6:"
 	page: " Presets"
 ]
+SavePresetSetting savePresetSlot7 -> [
+	presetIndex: 6
+	displayName: "Slot 7:"
+	page: " Presets"
+]
+SavePresetSetting savePresetSlot8 -> [
+	presetIndex: 7
+	displayName: "Slot 8:"
+	page: " Presets"
+]
+SavePresetSetting savePresetSlot9 -> [
+	presetIndex: 8
+	displayName: "Slot 9:"
+	page: " Presets"
+]
+SavePresetSetting savePresetSlot10 -> [
+	presetIndex: 9
+	displayName: "Slot 10:"
+	page: " Presets"
+]
+SavePresetSetting savePresetSlot11 -> [
+	presetIndex: 10
+	displayName: "Slot 11:"
+	page: " Presets"
+]
+SavePresetSetting savePresetSlot12 -> [
+	presetIndex: 11
+	displayName: "Slot 12:"
+	page: " Presets"
+]
 
 LoadPresetSetting loadPresetSlot1 -> [
 	presetIndex: 0
@@ -57,5 +87,35 @@ LoadPresetSetting loadPresetSlot5 -> [
 LoadPresetSetting loadPresetSlot6 -> [
 	presetIndex: 5
 	displayName: "Slot 6:"
+	page: " Presets"
+]
+LoadPresetSetting loadPresetSlot7 -> [
+	presetIndex: 6
+	displayName: "Slot 7:"
+	page: " Presets"
+]
+LoadPresetSetting loadPresetSlot8 -> [
+	presetIndex: 7
+	displayName: "Slot 8:"
+	page: " Presets"
+]
+LoadPresetSetting loadPresetSlot9 -> [
+	presetIndex: 8
+	displayName: "Slot 9:"
+	page: " Presets"
+]
+LoadPresetSetting loadPresetSlot10 -> [
+	presetIndex: 9
+	displayName: "Slot 10:"
+	page: " Presets"
+]
+LoadPresetSetting loadPresetSlot11 -> [
+	presetIndex: 10
+	displayName: "Slot 11:"
+	page: " Presets"
+]
+LoadPresetSetting loadPresetSlot12 -> [
+	presetIndex: 11
+	displayName: "Slot 12:"
 	page: " Presets"
 ]

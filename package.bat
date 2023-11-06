@@ -1,8 +1,9 @@
 @echo off
 chcp 65001 > NUL
 if "%SKYRIM_DIR%"=="" set "SKYRIM_DIR=C:/git/SkyrimTools"
+echo "Using Skyrim dir %SKYRIM_DIR%"
 set "PAPYRUS_COMPILER=%SKYRIM_DIR%/Papyrus Compiler/PapyrusCompiler.exe"
-set "SCRIPTS_FOLDER=%SKYRIM_DIR%/Data/Source/Scripts"
+set "SCRIPTS_FOLDER=%SKYRIM_DIR%/Data/Scripts/Source"
 
 echo 📣 ^| This might take a while! Destination: ./SmoothCam.zip
 

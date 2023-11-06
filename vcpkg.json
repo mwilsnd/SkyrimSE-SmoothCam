@@ -1,0 +1,27 @@
+{
+  "name" : "skyrimse-smoothcam",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "d8079ecd674fe5632277d78d761333467955adb1",
+  "dependencies" : [ {
+    "name" : "rsm-binary-io",
+    "version>=" : "2.0.6"
+  }, {
+    "name" : "boost",
+    "version>=" : "1.83.0#1"
+  }, {
+    "name" : "spdlog",
+    "version>=" : "1.12.0"
+  }, {
+    "name" : "polyhook2",
+    "version>=" : "2023-08-11"
+  }, {
+    "name" : "xbyak",
+    "version>=" : "6.73"
+  }, {
+    "name" : "detours",
+    "version>=" : "4.0.1#8"
+  }, {
+    "name" : "cppwinrt",
+    "version>=" : "2.0.230207.1"
+  } ]
+}
