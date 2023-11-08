@@ -6,7 +6,7 @@ RESTORE_CODE_ANALYSIS;
 
 namespace Config {
 	using json = nlohmann::json;
-	constexpr auto MaxPresetSlots = 6;
+	constexpr auto MaxPresetSlots = 12;
 
 	enum class ScalarMethods : uint8_t {
 		LINEAR,

@@ -61,7 +61,7 @@ SILENCE_EXTERNAL;
 #   ifdef BUCK
 #       include <detours/detours.h>
 #   else
-#       include "include/detours.h"
+#       //include "include/detours.h"
 #   endif
 #   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
 #   include <polyhook2/ZydisDisassembler.hpp>

@@ -42,12 +42,12 @@ void Camera::Camera::OnKeyPress(const RE::ButtonEvent* ev) noexcept {
 		// Cycle next preset
 		if (config->nextPresetKey >= 0 && code == config->nextPresetKey && ev->heldDownSecs <= 0.000001f) {
 			// wrap to 0..5
-			if (++currentPresetIndex > 5) currentPresetIndex = 0;
+			if (++currentPresetIndex > (Config::MaxPresetSlots - 1)) currentPresetIndex = 0;
 
 			// Try and load from currentIndex, up to n slots wrapping back to startIndex
 			const auto startIndex = currentPresetIndex;
 			while (!Config::LoadPreset(currentPresetIndex)) {
-				if (++currentPresetIndex > 5) currentPresetIndex = 0;
+				if (++currentPresetIndex > (Config::MaxPresetSlots - 1)) currentPresetIndex = 0;
 				if (currentPresetIndex == startIndex) break; // No valid preset to load
 			}
 
