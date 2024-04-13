@@ -96,7 +96,7 @@ final class Include : IConstruct {
                 (ref const(Token) tok, ref TokenStream stream, ulong position) {
                     string fileContents;
                     try {
-                        fileContents = cast(string)fs.read("./" ~ tok.value);
+                        fileContents = (cast(string)fs.read("./" ~ tok.value)).stripStringCR;
                     } catch(fs.FileException e) {
                         return Result!(Res).fail(e.toString());
                     }

@@ -146,7 +146,7 @@ void main(string[] args) {
 
 	string data;
 	try {
-		data = cast(string)fs.read(args[1]);
+		data = (cast(string)fs.read(args[1])).stripStringCR;
 	} catch(fs.FileException e) {
 		writeln("Failed to read input file: ", e.toString());
 		return;

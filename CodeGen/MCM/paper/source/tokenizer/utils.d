@@ -2,6 +2,11 @@ module tokenizer.utils;
 import tokenizer : Token, TokenStream;
 import tokenizer.tokens : Tok;
 import result;
+import std.array;
+
+auto stripStringCR()(auto const ref string str) {
+    return replace(str, "\r\n", "\n");
+}
 
 /** 
  * Gets a subset of tokens from the input stream contained in a pair of matching outer tokens
