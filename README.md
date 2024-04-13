@@ -32,13 +32,15 @@ If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins` (along 
 
 ## Building
 Requisites:
-* [buck2](https://buck2.build/)
+* [buck2 (2024-03-15 release)](https://buck2.build/)
 * [7zip](https://www.7-zip.org/)
 * [LDC](https://github.com/ldc-developers/ldc/releases)
 * A Skyrim install with the Creation Kit and requisite scripts for MCM creation
 
 The release packager will perform a full build, including MCM code generation, in one shot. You'll need Visual Studio 2022 Community, dub and DMD/LDC installed, along with buck2 and 7zip available on your PATH.
-Run the complete release packager by running `./package` from the root of the repository. For individual components, read on.
+Run the complete release packager by running `python package.py` (python 3) from the root of the repository.
+
+**Note: You can use the bootstrap script to get up and running easily without manually installing anything mentioned in this section. (Highly recommended)**
 
 ### Module
 ### Option 1: BUCK2
