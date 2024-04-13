@@ -49,6 +49,9 @@ Start by cloning the repository:
 git clone https://github.com/mwilsnd/SkyrimSE-SmoothCam.git --recursive
 ```
 
+Make sure you've set your powershell execution policy before running the bootstrap:
+`Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process`
+
 From an admin-elevated powershell window, run the following to get a full build environment installed and ready to go:
 ```
 cd SkyrimSE-SmoothCam
@@ -56,10 +59,12 @@ cd SkyrimSE-SmoothCam
 ```
 *Note: This installs (via chocolatey) MSVC 2022 build tools, python, 7zip, dub, ldc, zstandard and fetches the correct version of buck2.*
 
-And then from a normal user-level powershell window:
+* Install the [Skyrim Creation Kit](https://store.steampowered.com/app/1946180/Skyrim_Special_Edition_Creation_Kit/) and the [SkyUI SDK](https://github.com/schlangster/skyui/wiki/)
+* Extract `Skyrim Special Edition/Data/Scripts.zip/Source/Scripts/*` into `Skyrim Special Edition/Data/Scripts/Source`
+* And from a normal user-level powershell window:
 ```
 cd SkyrimSE-SmoothCam
-python package.py
+python package.py --skyrim-tools-dir "C:/Program Files (x86)/Steam/steamapps/common/Skyrim Special Edition"
 ```
 Which will fully build and construct SmoothCam.zip in the repository root for distribution and installation with your mod manager of choice.
 

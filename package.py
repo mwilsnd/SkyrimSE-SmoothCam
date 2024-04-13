@@ -3,7 +3,6 @@ import os
 import shutil
 import subprocess
 import asyncio
-import uuid
 
 loop = asyncio.get_event_loop()
 
@@ -13,8 +12,8 @@ args.add_argument("--dont-clean", action="store_true", help="Don't clean build/p
 args.add_argument("--skip-buck-build", action="store_true", help="Skip buck2 build invocations")
 args = args.parse_args()
 
-papyrus_compiler = args.skyrim_tools_dir + "/Papyrus_Compiler/PapyrusCompiler.exe"
-papyrus_scripts_folder = args.skyrim_tools_dir + "/Data/Scripts/Source"
+papyrus_compiler = os.path.join(args.skyrim_tools_dir, "Papyrus Compiler/PapyrusCompiler.exe")
+papyrus_scripts_folder = os.path.join(args.skyrim_tools_dir, "Data/Scripts/Source")
 
 async def run_subcmd(icon, cmds, cwd=None, pipe=True):
     print(icon + " | " + cmds[0] + ":")
@@ -108,12 +107,12 @@ async def run():
     ])
 
     print("🚽 | Compiling generated papyrus...")
-    shutil.copyfile("Release_Package/00 Data/SmoothCamMCM.psc", papyrus_scripts_folder + "/SmoothCamMCM.psc")
+    shutil.copyfile("Release_Package/00 Data/SmoothCamMCM.psc", os.path.join(papyrus_scripts_folder, "SmoothCamMCM.psc"))
     await run_subcmd("💩", [
         "\"" + papyrus_compiler + "\"",
         "SmoothCamMCM.psc",
-        f"-f={papyrus_scripts_folder}/TESV_Papyrus_Flags.flg",
-        f"-i={papyrus_scripts_folder}",
+        f"-f=\"{os.path.join(papyrus_scripts_folder, "TESV_Papyrus_Flags.flg")}\"",
+        f"-i=\"{papyrus_scripts_folder}\"",
         "-o=\"Release_Package/00 Data\""
     ])
 
@@ -159,7 +158,6 @@ async def run():
     await run_subcmd("📗", ["7z", "a", "-tzip", "SmoothCam.zip", "Release_Package"])
 
     print("🍾 | Packaging completed!")
-
 
 loop.run_until_complete(asyncio.wait([
     loop.create_task(run()),

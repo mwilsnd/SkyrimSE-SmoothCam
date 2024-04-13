@@ -32,7 +32,7 @@ After installing something which mutates PATH, we have to restart
 to get the latest environment.
 """
 def restart(withArgs):
-    subprocess.run(["python", "scripts/check-install.py"] + withArgs)
+    subprocess.run([os.environ["user_python_cmd"], "scripts/check-install.py"] + withArgs)
     exit()
 
 def stop(msg):

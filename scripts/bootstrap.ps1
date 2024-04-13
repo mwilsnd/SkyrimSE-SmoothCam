@@ -11,7 +11,9 @@ if (!
     exit
 }
 
-powershell.exe -File "scripts/install-vsbuild-tools.ps1" -NoNewWindow -Wait
-powershell.exe -File "scripts/install-python3.ps1" -NoNewWindow -Wait
+. .\scripts/install-vsbuild-tools.ps1
+. .\scripts/install-python3.ps1
+. .\scripts/find-python3.ps1
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-python scripts/check-install.py
+Write-Host "Using python command: $Env:user_python_cmd"
+. "$Env:user_python_cmd" "scripts/check-install.py"
