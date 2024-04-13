@@ -55,3 +55,6 @@
 [submodule "Deps/skylib"]
 	path = Deps/skylib
 	url = https://github.com/bazelbuild/bazel-skylib.git
+[submodule "buck2/prelude"]
+	path = buck2/prelude
+	url = https://github.com/facebook/buck2-prelude.git

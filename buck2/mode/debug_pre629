@@ -1,0 +1,3 @@
+[build]
+mode=debug
+pre629=enabled

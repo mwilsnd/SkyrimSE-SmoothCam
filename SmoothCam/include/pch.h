@@ -1,4 +1,5 @@
 #pragma once
+#include <codeanalysis\warnings.h>
 #include "code_analysis.h"
 #include <new>
 void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line);
@@ -58,7 +59,7 @@ SILENCE_EXTERNAL;
 #   include <EASTL/fixed_list.h>
 #   include <EASTL/bonus/fixed_ring_buffer.h>
 
-#   ifdef BUCK
+#   ifdef BUCK_V2
 #       include <detours/detours.h>
 #   else
 #       //include "include/detours.h"

@@ -185,7 +185,7 @@ TokenStream trim(bool onlyExtraLines = false)(auto ref const(TokenStream) stream
                 }
             } else {
                 if (n) {
-                    output = TokenStream(output[0..lastN-1]);
+                    output = TokenStream(output[0..lastN]);
                     break;
                 }
             }

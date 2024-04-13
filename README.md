@@ -16,14 +16,14 @@ Notable features include:
 SmoothCam is going to have issues with any other mod that tries to position the third-person camera (Other third-person mods, likely some lock-on mods, etc).
 
 The following mods are supported:
-* Improved Camera (Only with the reddit release build of Improved Camera beta 4) (Unsupported in AE)
+* Improved Camera (Only with the reddit release build of Improved Camera beta 4) (Latest AE version claims compatibility)
 * Immersive First Person View (Requires the optional file `IFPV Detector Plugin` on the download page)
-* Alternate Conversation Camera Plus (Pending an approved pull-request)
+* Alternate Conversation Camera (sort of)
 * Archery Gameplay Overhaul
 * True Directional Movement
 
 ## Runtime Requirements
-SmoothCam requires SKSE64 and [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444). If you wish to use the MCM esp, SkyUI is also required. **SmoothCam only officially supports Skyrim Special Edition runtimes 1.5.97 and 1.6.318(anniversary edition)**, other versions are not tested for full functionality and are unsupported.
+SmoothCam requires SKSE64 and [Address Library](https://www.nexusmods.com/skyrimspecialedition/mods/32444). If you wish to use the MCM esp, SkyUI is also required. **SmoothCam only officially supports Skyrim Special Edition runtimes 1.5.97 and 1.6.x (anniversary edition, including 1.6.629)**, other versions are not tested for full functionality and are unsupported.
 
 ## Installing
 If using one of the pre-compiled releases, use a mod manager and follow the prompts to select the DLL and plugin types you want. If doing a manual install, install either the SSE or AE version of the DLL and the contents of the `ExtraData` folder to `Data/SKSE/Plugins`. Copy the pex script to `Data/Scripts` and copy either the esp or esl variant of the plugin into `Data`.
@@ -32,20 +32,46 @@ If installing after a build, copy `SmoothCam.dll` to `Data/SKSE/Plugins` (along 
 
 ## Building
 Requisites:
-* [buck](https://buck.build/)
+* [buck2](https://buck2.build/)
 * [7zip](https://www.7-zip.org/)
 * [LDC](https://github.com/ldc-developers/ldc/releases)
 * A Skyrim install with the Creation Kit and requisite scripts for MCM creation
 
+The release packager will perform a full build, including MCM code generation, in one shot. You'll need Visual Studio 2022 Community, dub and DMD/LDC installed, along with buck2 and 7zip available on your PATH.
 Run the complete release packager by running `./package` from the root of the repository. For individual components, read on.
 
 ### Module
-### Option 1: BUCK
+### Option 1: BUCK2
+Start by cloning the repository:
+```
+git clone https://github.com/mwilsnd/SkyrimSE-SmoothCam.git --recursive
+```
+
+From an admin-elevated powershell window, run the following to get a full build environment installed and ready to go:
 ```
 cd SkyrimSE-SmoothCam
-buck build :SmoothCam[AE|SE][Debug|Release]#windows-x86_64
+./scripts/bootstrap.ps1
 ```
-The buck build will perform a full build, including MCM code generation, in one shot. You'll need Visual Studio 2022 Community, dub and DMD/LDC installed, along with buck and watchman.
+*Note: This installs (via chocolatey) MSVC 2022 build tools, python, 7zip, dub, ldc, zstandard and fetches the correct version of buck2.*
+
+And then from a normal user-level powershell window:
+```
+cd SkyrimSE-SmoothCam
+python package.py
+```
+Which will fully build and construct SmoothCam.zip in the repository root for distribution and installation with your mod manager of choice.
+
+You can build just the DLL like so:
+```
+cd SkyrimSE-SmoothCam
+buck2 build --out build-out --config-file buck2/mode/[debug|release][_pre629] :SmoothCam[AE|SSE]
+```
+You'll find built artifacts in `./build-out`. You may (likely) need to invoke buck2 via `buck2/buck2.exe` from the repository root, if you relied on the bootstrap script to get up and running.
+
+Full Examples:
+* `buck2 build --out build-out --config-file buck2/mode/release :SmoothCamAE` produces `build-out/SmoothCamAE.dll`.
+* `buck2 build --out build-out --config-file buck2/mode/release_pre629 :SmoothCamAE` produces `build-out/SmoothCamAEPre629.dll`.
+* `buck2/buck2.exe build --out build-out --config-file buck2/mode/release :SmoothCamSSE` produces `build-out/SmoothCamSSE.dll`.
 
 ### Option 2: CMake
 ```
@@ -57,13 +83,15 @@ cmake --build build -j16 --config Release
 ### Option 2.a: + Visual Studio
 ```
 cd SkyrimSE-SmoothCam
-cmake -B build -S . [-DSKYRIM_SUPPORT_AE=1]
+cmake -B build -S . [-DSKYRIM_SUPPORT_AE=1] -G "Visual Studio 17 2022"
 ```
 Then navigate to the build directory and open the `.sln` to build/debug using Visual Studio.
 
 ### MCM:
 To build the MCM code generator (`paper`), you will need a D language compiler (DMD, LDC) and optionally VSCode with the code-d extension installed. If using code-d, build targets have already been created for you.
 Compile the code generation tool and then navigate to `CodeGen/MCM`, run `run_preprocess.bat` to generate the output file `SmoothCamMCM.psc`. From there just compile the generated code like any normal papyrus script.
+
+*Tip:* `package.py` builds `paper.exe` for you and generates the MCM script.
 
 ### Crosshair Models:
 To build the crosshair model converter tool (`ModelBaker`), you will need a D language compiler (DMD, LDC) and optionally VSCode with the code-d extension installed. If using code-d, build targets have already been created for you. You will also need a copy of assimp which you have compiled as a static library. Make a folder in `ModelBaker` named `compiled_libs` (or `compiled_libs_debug` if making a debug build) and copy all assimp libraries to that location. Compile the converter tool and then navigate to `CodeGen/ModelBaker` and run `ModelBaker "path/to/input.ply" "output_name".

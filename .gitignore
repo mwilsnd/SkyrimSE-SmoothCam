@@ -18,10 +18,12 @@
 
 .buckd
 buck-out/
-.vscode
+buck2/buck2.exe
+buck2/bootstrap
 
 x64/
 build/
+build-out/
 temp/
 enc_temp_folder/
 Release_Package/

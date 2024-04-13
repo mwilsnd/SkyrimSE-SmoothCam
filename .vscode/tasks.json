@@ -1,0 +1,90 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build SmoothCam (AE)",
+            "type": "shell",
+            "command": "buck2",
+            "args": [
+                "build",
+                "--console",
+                "simple",
+                "--no-interactive-console",
+                "--fail-fast",
+                "--show-full-output",
+                "--config",
+                "build.mode=debug",
+                ":SmoothCamAE",
+                "|",
+                "powershell",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "buck2/toolchains/install.ps1",
+                "buck-out"
+            ]
+        },
+        {
+            "label": "Build SmoothCam (SSE)",
+            "type": "shell",
+            "command": "buck2",
+            "args": [
+                "build",
+                "--console",
+                "simple",
+                "--no-interactive-console",
+                "--fail-fast",
+                "--show-full-output",
+                "--config",
+                "build.mode=debug",
+                ":SmoothCamSSE",
+                "|",
+                "powershell",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "buck2/toolchains/install.ps1",
+                "buck-out"
+            ]
+        },
+        {
+            "label": "Create compilation database",
+            "type": "shell",
+            "command": "buck2",
+            "args": [
+                "bxl",
+                "buck2/toolchains/create_compile_commands.bxl:gen_compilation_database",
+                "--",
+                "--directory",
+                "${workspaceFolder}",
+                "|",
+                "powershell",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "buck2/toolchains/copy.ps1"
+            ]
+        },
+        {
+            "label": "Build and create compilation database (AE)",
+            "dependsOn": [
+                "Create compilation database",
+                "Build SmoothCam (AE)"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build and create compilation database (SSE)",
+            "dependsOn": [
+                "Create compilation database",
+                "Build SmoothCam (SSE)"
+            ],
+            "group": {
+                "kind": "build",
+            }
+        }
+    ]
+}

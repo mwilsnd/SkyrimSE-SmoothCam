@@ -1,6 +1,6 @@
-load("//:common_flags.bzl", "WINDOWS_BASE_LIBS", "BASE_COMPILER_OPTS", "WARNINGS")
 load("//Deps/skylib/lib:dicts.bzl", "dicts")
-load("//:subdir_glob.bzl", "subdir_glob")
+load("//buck2/subdir_glob.bzl", "subdir_glob")
+load("@prelude//decls:d_rules.bzl", "d_rules")
 
 def define_tools():
     native.cxx_library(
@@ -15,10 +15,6 @@ def define_tools():
             "pugixml.hpp": "Deps/assimp/contrib/pugixml/src/pugixml.hpp",
             "pugixml.cpp": "Deps/assimp/contrib/pugixml/src/pugixml.cpp",
         },
-        compiler_flags = BASE_COMPILER_OPTS + [
-            "/DNDEBUG",
-        ] + WARNINGS,
-        linker_flags = WINDOWS_BASE_LIBS,
         link_style = "static",
         link_whole = False,
         visibility = ["PUBLIC"],
@@ -61,7 +57,7 @@ def define_tools():
             "zconf.h": "DepGenerated/zconf.h",
             "zlib.h": "Deps/assimp/contrib/zlib/zlib.h",
         },
-        compiler_flags = BASE_COMPILER_OPTS + [
+        compiler_flags = [
             "/D_CRT_SECURE_NO_DEPRECATE",
             "/D_CRT_NONSTDC_NO_DEPRECATE",
             "/DNO_FSEEKO",
@@ -69,8 +65,7 @@ def define_tools():
             "/wd4131",
             "/wd4127",
             "/wd4244",
-        ] + WARNINGS,
-        linker_flags = WINDOWS_BASE_LIBS,
+        ],
         link_style = "static",
         link_whole = False,
         visibility = ["PUBLIC"],
@@ -85,7 +80,7 @@ def define_tools():
             "ioapi.h": "Deps/assimp/contrib/unzip/ioapi.h",
             "unzip.h": "Deps/assimp/contrib/unzip/unzip.h",
         },
-        compiler_flags = BASE_COMPILER_OPTS + [
+        compiler_flags = [
             "/D_CRT_SECURE_NO_DEPRECATE",
             "/D_CRT_NONSTDC_NO_DEPRECATE",
             "/DNO_FSEEKO",
@@ -93,8 +88,7 @@ def define_tools():
             "/wd4131",
             "/wd4127",
             "/wd4244",
-        ] + WARNINGS,
-        linker_flags = WINDOWS_BASE_LIBS,
+        ],
         link_style = "static",
         link_whole = False,
         visibility = ["PUBLIC"],
@@ -178,7 +172,7 @@ def define_tools():
                 "revision.h": "DepGenerated/assimp/revision.h",
             }
         ),
-        compiler_flags = BASE_COMPILER_OPTS + [
+        compiler_flags = [
             "/DASSIMP_BUILD_NO_M3D_IMPORTER",
             "/DASSIMP_BUILD_NO_M3D_EXPORTER",
             "/D_CRT_SECURE_NO_WARNINGS",
@@ -189,8 +183,7 @@ def define_tools():
             "/bigobj",
             "/wd4244",
             "/DASSIMP_BUILD_NO_EXPORT",
-        ] + AInoImporters + WARNINGS,
-        linker_flags = WINDOWS_BASE_LIBS,
+        ] + AInoImporters,
         link_style = "static",
         link_whole = False,
         visibility = ["PUBLIC"],
@@ -203,7 +196,7 @@ def define_tools():
         ],
     )
 
-    native.d_library(
+    d_rules.d_library(
         name = "bindbc-loader",
         srcs = {
             "bindbc/loader/package.d": "Deps/bindbc-loader/source/bindbc/loader/package.d",
@@ -213,7 +206,7 @@ def define_tools():
         visibility = ["PUBLIC"],
     )
 
-    native.d_library(
+    d_rules.d_library(
         name = "bindbc-assimp",
         srcs = {
             "bindbc/assimp/binddynamic.d": "Deps/bindbc-assimp/source/bindbc/assimp/binddynamic.d",
@@ -225,7 +218,7 @@ def define_tools():
         deps = [":assimp", ":bindbc-loader"],
     )
 
-    native.d_library(
+    d_rules.d_library(
         name = "intel-intrinsics",
         srcs = {
             "inteli/avx2intrin.d": "Deps/intel-intrinsics/source/inteli/avx2intrin.d",
@@ -247,7 +240,7 @@ def define_tools():
         visibility = ["PUBLIC"],
     )
 
-    native.d_library(
+    d_rules.d_library(
         name = "gfm",
         srcs = {
             "gfm/math/box.d": "Deps/gfm/math/gfm/math/box.d",
@@ -263,18 +256,29 @@ def define_tools():
         deps = [":intel-intrinsics"],
     )
 
-    native.d_binary(
+    d_rules.d_binary(
         name = "ModelBaker.exe",
         srcs = {
             "mesh/basic_writer.d": "CodeGen/ModelBaker/source/mesh/basic_writer.d",
             "mesh/loader.d": "CodeGen/ModelBaker/source/mesh/loader.d",
             "app.d": "CodeGen/ModelBaker/source/app.d",
         },
-        linker_flags = WINDOWS_BASE_LIBS + ["/SUBSYSTEM:console"],
+        linker_flags = [
+            "kernel32.lib",
+            "user32.lib",
+            "shell32.lib",
+            "uuid.lib",
+            "ole32.lib",
+            "rpcrt4.lib",
+            "advapi32.lib",
+            "wsock32.lib",
+            "Version.lib",
+            "/SUBSYSTEM:console",
+        ],
         deps = [":assimp", ":bindbc-assimp", ":gfm"],
     )
 
-    native.d_binary(
+    d_rules.d_binary(
         name = "paper.exe",
         srcs = {
             "constructs/all_of_struct.d": "CodeGen/MCM/paper/source/constructs/all_of_struct.d",
@@ -297,5 +301,16 @@ def define_tools():
             "mangler.d": "CodeGen/MCM/paper/source/mangler.d",
             "result.d": "CodeGen/MCM/paper/source/result.d",
         },
-        linker_flags = WINDOWS_BASE_LIBS + ["/SUBSYSTEM:console"],
+        linker_flags = [
+            "kernel32.lib",
+            "user32.lib",
+            "shell32.lib",
+            "uuid.lib",
+            "ole32.lib",
+            "rpcrt4.lib",
+            "advapi32.lib",
+            "wsock32.lib",
+            "Version.lib",
+            "/SUBSYSTEM:console",
+        ],
     )

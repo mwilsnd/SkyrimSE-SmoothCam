@@ -1,0 +1,125 @@
+load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
+load("@prelude//platforms:defs.bzl", "execution_platform", "host_configuration")
+load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain")
+
+WINDOWS_BASE_LIBS = [
+    "kernel32.lib",
+    "user32.lib",
+    "shell32.lib",
+    "uuid.lib",
+    "ole32.lib",
+    "rpcrt4.lib",
+    "advapi32.lib",
+    "wsock32.lib",
+    "Version.lib",
+]
+
+BASE_MSVC_OPTS = [
+    "/GR-",
+    "/W4",
+    "/WX",
+    "/FS",
+    "/EHsc",
+    "/nologo",
+    "/permissive-",
+    "/Zc:__cplusplus",
+    "/Zc:externConstexpr",
+    "/Zc:inline",
+    "/Zc:lambda",
+    "/Zc:referenceBinding",
+    "/Zc:rvalueCast",
+    "/Zc:forScope",
+    "/Zc:strictStrings",
+    "/Zc:ternary",
+    "/Zc:wchar_t",
+    "/D_UNICODE",
+    "/DUNICODE",
+    "/D_CONSOLE",
+    "/DBUCK_V2",
+    "/diagnostics:column",
+    "/c",
+    "/TP",
+    "/fastfail",
+]
+
+DEBUG_MSVC_OPTS = [
+    "/sdl",
+    "/fp:strict",
+    "/MTd",
+    "/ZI",
+    "/Od",
+    "/Gy",
+    "/D_DEBUG",
+    "/RTC1",
+]
+
+REL_MSVC_OPTS = [
+    "/Zi",
+    "/fp:fast",
+    "/GL",
+    "/Gy-",
+    "/Gw",
+    "/sdl-",
+    "/GS-",
+    "/O2",
+    "/Ob3",
+    "/Oi",
+    "/Ot",
+    "/Oy",
+    "/MT",
+    "/guard:cf-",
+    "/fp:except-",
+    "/DNDEBUG",
+]
+
+system_python_bootstrap_toolchain(
+    name = "python_bootstrap",
+    visibility = ["PUBLIC"],
+)
+
+execution_platform(
+    name = "default_exec",
+    cpu_configuration = host_configuration.cpu,
+    os_configuration = host_configuration.os,
+    use_windows_path_separators = host_info().os.is_windows,
+    visibility = ["PUBLIC"],
+)
+
+platform(
+    name = "default",
+    deps = [":default_exec"],
+)
+
+build_mode = read_root_config("build", "mode", "debug")
+
+system_cxx_toolchain(
+    name = "cxx",
+    c_flags = select({
+        "config//os:windows": BASE_MSVC_OPTS + (REL_MSVC_OPTS if build_mode == "release" else DEBUG_MSVC_OPTS),
+    }),
+    cxx_flags = select({
+        "config//os:windows": ["/std:c++latest"] + BASE_MSVC_OPTS + (REL_MSVC_OPTS if build_mode == "release" else DEBUG_MSVC_OPTS),
+    }),
+    link_flags = select({
+        "config//os:linux": [],
+        "config//os:windows":
+        [
+            "/NOLOGO",
+            "/DEBUG:FULL",
+            "/INCREMENTAL:NO",
+        ] + WINDOWS_BASE_LIBS +
+        ([
+            # Release link
+            "/OPT:REF",
+            "/OPT:ICF=2",
+            "/LTCG",
+            "/CGTHREADS:8",
+        ] if build_mode == "release" else [
+            # Debug link
+            "/OPT:NOREF",
+            "/OPT:NOICF",
+        ]),
+    }),
+    link_style = "static",
+    visibility = ["PUBLIC"],
+)

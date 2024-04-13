@@ -1,4 +1,39 @@
-load("//Deps/skylib/lib:paths.bzl", "paths")
+# Copyright (c) 2017 LoopPerfect
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+"""Provides utility macros for working with globs."""
+
+def _paths_join(path, *others):
+    """Joins one or more path components."""
+    result = path
+
+    for p in others:
+        if p.startswith("/"):  # absolute
+            result = p
+        elif not result or result.endswith("/"):
+            result += p
+        else:
+            result += "/" + p
+
+    return result
 
 def subdir_glob(glob_specs, exclude = None, prefix = ""):
     """Returns a dict of sub-directory relative paths to full paths.
@@ -55,14 +90,14 @@ def _single_subdir_glob(dirpath, glob_pattern, exclude = None, prefix = None):
     if exclude == None:
         exclude = []
     results = {}
-    files = native.glob([paths.join(dirpath, glob_pattern)], exclude = exclude)
+    files = native.glob([_paths_join(dirpath, glob_pattern)], exclude = exclude)
     for f in files:
         if dirpath:
             key = f[len(dirpath) + 1:]
         else:
             key = f
         if prefix:
-            key = paths.join(prefix, key)
+            key = _paths_join(prefix, key)
         results[key] = f
 
     return results
