@@ -186,6 +186,7 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, drawArrowArc),
 		CREATE_JSON_VALUE(obj, arrowArcColor),
 		CREATE_JSON_VALUE(obj, maxArrowPredictionRange),
+		CREATE_JSON_VALUE(obj, useProjectileFixes),
 
 		// Misc
 		CREATE_JSON_VALUE(obj, disableDeltaTime),
@@ -312,6 +313,7 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, drawArrowArc)
 	VALUE_FROM_JSON(obj, arrowArcColor)
 	VALUE_FROM_JSON(obj, maxArrowPredictionRange)
+	VALUE_FROM_JSON(obj, useProjectileFixes)
 
 	// Misc
 	VALUE_FROM_JSON(obj, disableDeltaTime)
