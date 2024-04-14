@@ -1,6 +1,7 @@
 function Try-Command {
     Try {
-        return (& "$args" "--version")
+        return (& "$args" "--version") -Match "Python 3"
+
     } Catch {
         Write-Host $_
         return $false
