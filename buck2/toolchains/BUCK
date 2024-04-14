@@ -75,6 +75,7 @@ REL_MSVC_OPTS = [
 system_python_bootstrap_toolchain(
     name = "python_bootstrap",
     visibility = ["PUBLIC"],
+    interpreter = read_root_config("build", "python_interpreter", "python"),
 )
 
 execution_platform(

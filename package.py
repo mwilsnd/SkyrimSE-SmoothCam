@@ -3,9 +3,9 @@ import os
 import shutil
 import subprocess
 import asyncio
+import sys
 
 loop = asyncio.get_event_loop()
-
 args = argparse.ArgumentParser()
 args.add_argument("--skyrim-tools-dir", type=str, default="../SkyrimTools", help="Directory containing 'Papyrus Compiler/' and 'Data/'")
 args.add_argument("--dont-clean", action="store_true", help="Don't clean build/package artifacts")
@@ -14,6 +14,7 @@ args = args.parse_args()
 
 papyrus_compiler = os.path.join(args.skyrim_tools_dir, "Papyrus Compiler/PapyrusCompiler.exe")
 papyrus_scripts_folder = os.path.join(args.skyrim_tools_dir, "Data/Scripts/Source")
+python_bin = sys.executable
 
 async def run_subcmd(icon, cmds, cwd=None, pipe=True):
     print(icon + " | " + cmds[0] + ":")
@@ -120,6 +121,7 @@ async def run():
         print("🎥 | Building SmoothCam AE,Pre629")
         code = await run_subcmd("🦌", [
             buck2, "build",
+            "--config", f"build.python_interpreter={python_bin}",
             "--out", "build-out/",
             "--config-file", "buck2/mode/release_pre629",
             ":SmoothCamAE"
@@ -129,6 +131,7 @@ async def run():
         print("🎥 | Building SmoothCam AE")
         code = await run_subcmd("🦌", [
             buck2, "build",
+            "--config", f"build.python_interpreter={python_bin}",
             "--out", "build-out/",
             "--config-file", "buck2/mode/release",
             ":SmoothCamAE"
@@ -138,6 +141,7 @@ async def run():
         print("🎥 | Building SmoothCam SSE")
         code = await run_subcmd("🦌", [
             buck2, "build",
+            "--config", f"build.python_interpreter={python_bin}",
             "--out", "build-out/",
             "--config-file", "buck2/mode/release",
             ":SmoothCamSSE"
