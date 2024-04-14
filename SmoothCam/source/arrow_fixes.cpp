@@ -187,13 +187,10 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 }
 
 bool ArrowFixes::Attach() {
-	const auto config = Config::GetCurrentConfig();
 	detArrowFlightPath = eastl::make_unique<UpdateArrowFlightPathDetour>(g_Offsets->UpdateFlightPath, mUpdateArrowFlightPath);
 	
-	if (config->useProjectileFixes) {
-		if (!detArrowFlightPath->Attach())
-			FatalError(L"Failed to place detour on target function(ArrowFixes::UpdateFlightPath), this error is fatal.");
-	}
+	if (!detArrowFlightPath->Attach())
+		FatalError(L"Failed to place detour on target function(ArrowFixes::UpdateFlightPath), this error is fatal.");
 
 #ifdef DEBUG
 	detUpdateTraceArrowProjectile = eastl::make_unique<TickArrowFlightPath>(g_Offsets->DebugTraceProjectile, mUpdateTraceArrowProjectile);
