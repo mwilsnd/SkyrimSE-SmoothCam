@@ -50,7 +50,7 @@ static uint32_t mArrowSpawn(uint32_t* arrowHandle, ArrowFixes::LaunchData* launc
 		points.clear();
 	}
 
-	return ret;		
+	return ret;
 }
 
 static bool insertWasDown = false;
@@ -87,6 +87,10 @@ typedef void(*UpdateArrowFlightPath)(RE::Projectile* arrow);
 using UpdateArrowFlightPathDetour = TypedDetour<UpdateArrowFlightPath>;
 static eastl::unique_ptr<UpdateArrowFlightPathDetour> detArrowFlightPath;
 static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
+	const auto config = Config::GetCurrentConfig();
+	if (!config->useProjectileFixes) 
+		return detArrowFlightPath->GetBase()(arrow);
+
 	const auto mdmp = Debug::MiniDumpScope();
 	const auto ply = RE::PlayerCharacter::GetSingleton();
 
@@ -101,7 +105,7 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	// Check for a valid weapon and ammo source - easy way to check for arrows
 	if (!arrow->weaponSource || !arrow->ammoSource)
 		return detArrowFlightPath->GetBase()(arrow);
-	
+
 	// On horseback, our camera actually follows the horse and not the player
 	// Compare with the player directly
 	// @Note: Don't run our trajectory correction while in a kill move
@@ -120,7 +124,7 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	typedef float(__thiscall *GetAFloat)(RE::Projectile*);
 	const auto s2 = REL::Relocation<GetAFloat>(g_Offsets->S2)(arrow); // Does the same thing as equippedWeapon->gameData.speed
 	const auto power = REL::Relocation<GetAFloat>(g_Offsets->Power)(arrow); // Scalar, 0-1 how long you held back the arrow (arrow->unk188)
-	
+
 	// Not sure what this is looking for, but do it anyways
 	if ((~(byte)(arrow->flags >> 0x1f) & 1) != 0) {
 		// @Note: s2 being 1 does NOT mean this is magic
@@ -183,9 +187,13 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 }
 
 bool ArrowFixes::Attach() {
+	const auto config = Config::GetCurrentConfig();
 	detArrowFlightPath = eastl::make_unique<UpdateArrowFlightPathDetour>(g_Offsets->UpdateFlightPath, mUpdateArrowFlightPath);
-	if (!detArrowFlightPath->Attach())
-		FatalError(L"Failed to place detour on target function(ArrowFixes::UpdateFlightPath), this error is fatal.");
+	
+	if (config->useProjectileFixes) {
+		if (!detArrowFlightPath->Attach())
+			FatalError(L"Failed to place detour on target function(ArrowFixes::UpdateFlightPath), this error is fatal.");
+	}
 
 #ifdef DEBUG
 	detUpdateTraceArrowProjectile = eastl::make_unique<TickArrowFlightPath>(g_Offsets->DebugTraceProjectile, mUpdateTraceArrowProjectile);
@@ -198,7 +206,7 @@ bool ArrowFixes::Attach() {
 
 	if (Render::HasContext())
 		segmentDrawer = eastl::make_unique<Render::LineDrawer>(Render::GetContext());
-
+	
 	Hooks::RegisterGameShutdownEvent([] {
 		std::lock_guard<std::mutex> lock(segmentLock);
 		segmentDrawer.reset();
@@ -206,4 +214,5 @@ bool ArrowFixes::Attach() {
 #endif
 
 	return true;
+	
 }

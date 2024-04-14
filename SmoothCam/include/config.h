@@ -252,6 +252,7 @@ namespace Config {
 		// Arrow prediction
 		bool useArrowPrediction = true;
 		bool drawArrowArc = true;
+		bool useProjectileFixes = true;
 		Color arrowArcColor = Color(255.0f, 255.0f, 255.0f, 200.0f);
 		float maxArrowPredictionRange = 10000.0f;
 

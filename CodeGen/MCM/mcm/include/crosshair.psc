@@ -152,6 +152,12 @@ ToggleSetting drawArrowArc -> [
 	desc: "When the 3D crosshair is enabled for ranged combat and 'Enable Arrow Prediction' is selected, an arc will be drawn while aiming with bows which indicates the flight path your arrow will take."
 	page: " Crosshair"
 ]
+ToggleSetting enableProjectileFixes -> [
+	settingName: "EnableProjectileFixes"
+	displayName: "Enable Projectile Fixes"
+	desc: "When projectile fixes are enabled, projectile rotation will be modified to aim to where the crosshair points."
+	page: " Crosshair"
+]
 SliderSetting maxArrowPredictionRange -> [
 	settingName: "MaxArrowPredictionRange"
 	displayName: "Max Arrow Prediction Distance"

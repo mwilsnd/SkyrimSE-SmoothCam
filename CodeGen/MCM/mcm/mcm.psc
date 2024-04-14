@@ -183,7 +183,7 @@ event OnPageReset(string a_page)
 		SetCursorPosition(1)
 		AddHeaderOption("Archery Features")
 		#StructInvokeOn(implControl, [
-			enableArrowPrediction, drawArrowArc, maxArrowPredictionRange,
+			enableArrowPrediction, drawArrowArc, enableProjectileFixes, maxArrowPredictionRange,
 			arrowArcColorR, arrowArcColorG, arrowArcColorB,
 			arrowArcColorA,
 		])
