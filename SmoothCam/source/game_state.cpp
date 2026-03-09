@@ -433,14 +433,24 @@ const bool GameState::InPOVSlideMode() noexcept {
 
 // Returns true if the player is a vampire lord
 const bool GameState::IsVampireLord(const RE::Actor* player) noexcept {
-	if (!player->race) return false;
-	return strcmp(player->race->fullName.c_str(), "Vampire Lord") == 0;
+	auto race = player->race;
+	if (!race) {
+		const auto base = player->GetActorBase();
+		if (base) race = base->race;
+	}
+	if (!race) return false;
+	return stricmp(race->GetFormEditorID(), "DLC1VampireBeastRace") == 0;
 }
 
 // Returns true if the player is a werewolf
 const bool GameState::IsWerewolf(const RE::Actor* player) noexcept {
-	if (!player->race) return false;
-	return strcmp(player->race->fullName.c_str(), "Werewolf") == 0;
+	auto race = player->race;
+	if (!race) {
+		const auto base = player->GetActorBase();
+		if (base) race = base->race;
+	}
+	if (!race) return false;
+	return stricmp(race->GetFormEditorID(), "WerewolfBeastRace") == 0;
 }
 
 const bool GameState::IsOverEncumbered(const RE::Actor* player) noexcept {
