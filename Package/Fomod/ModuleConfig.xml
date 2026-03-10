@@ -9,6 +9,7 @@
 							<description>For use with Skyrim Anniversary Edition, 1.6.629+</description>
 							<files>
 								<file source="00 Data\AE\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\AE\SmoothCam.pdb" destination="SKSE\Plugins\SmoothCam.pdb" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FocusBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FocusBones_Default.txt" priority="0"/>
 								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>
@@ -21,6 +22,7 @@
 							<description>For use with Skyrim Anniversary Edition, versions prior to 1.6.629</description>
 							<files>
 								<file source="00 Data\AE-Pre629\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\AE-Pre629\SmoothCam.pdb" destination="SKSE\Plugins\SmoothCam.pdb" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FocusBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FocusBones_Default.txt" priority="0"/>
 								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>
@@ -33,6 +35,7 @@
 							<description>For use with Skyrim Special Edition, 1.5.97 and earlier</description>
 							<files>
 								<file source="00 Data\SSE\SmoothCam.dll" destination="SKSE\Plugins\SmoothCam.dll" priority="0"/>
+								<file source="00 Data\SSE\SmoothCam.pdb" destination="SKSE\Plugins\SmoothCam.pdb" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FollowBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FollowBones_Default.txt" priority="0"/>
 								<file source="00 Data\ExtraData\SmoothCam_FocusBones_Default.txt" destination="SKSE\Plugins\SmoothCam_FocusBones_Default.txt" priority="0"/>
 								<file source="00 Data\SmoothCamMCM.pex" destination="Scripts\SmoothCamMCM.pex" priority="0"/>

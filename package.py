@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import asyncio
 import sys
+from pathlib import WindowsPath
 
 loop = asyncio.get_event_loop()
 args = argparse.ArgumentParser()
@@ -16,16 +17,23 @@ papyrus_compiler = os.path.join(args.skyrim_tools_dir, "Papyrus Compiler/Papyrus
 papyrus_scripts_folder = os.path.join(args.skyrim_tools_dir, "Data/Scripts/Source")
 python_bin = sys.executable
 
-async def run_subcmd(icon, cmds, cwd=None, pipe=True):
+async def run_subcmd(icon, cmds, cwd=None, pipe=True, returnPipe=False):
     print(icon + " | " + cmds[0] + ":")
 
     if pipe == True:
         proc = await asyncio.create_subprocess_shell(" ".join(cmds), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, cwd=cwd)
+        output = []
+        
         while proc.returncode == None and not proc.stdout.at_eof():
             line = await asyncio.wait_for(proc.stdout.readline(), 100)
             if line:
-                print("   : ", line.decode("utf-8").strip())
+                if returnPipe:
+                    output.append(line.decode("utf-8").strip())
+                else:
+                    print("   : ", line.decode("utf-8").strip())
         check_fail_code(await proc.wait())
+        if returnPipe:
+            return output
     else:
         return subprocess.run(cmds, cwd=cwd)
 
@@ -54,6 +62,15 @@ def test_installed(nice_name, cmds, installScripts):
     
     if missing:
         stop(f"Unable to find {nice_name}, please install it or run the bootstrap script")
+
+async def getArtifactLocation(buck2, target):
+    buildPath = await run_subcmd("🦌", [
+        buck2, "targets "
+        "--config", f"build.python_interpreter={python_bin}",
+        "--config-file", "buck2/mode/release",
+        "--show-output", target
+    ],  returnPipe=True)
+    return WindowsPath(buildPath[-1].split()[1]).parents[0]
 
 async def run():
     print("📣 | This might take a while! Destination: ./SmoothCam.zip")
@@ -148,10 +165,18 @@ async def run():
         ], pipe=False)
         check_fail_code(code)
 
+    aeLocation = await getArtifactLocation(buck2, ":SmoothCamAE")
+    sseLocation = await getArtifactLocation(buck2, ":SmoothCamSSE")
+
     print("📑 | Copying artifacts to package...")
     shutil.copyfile("build-out/SmoothCamAE.dll", "Release_Package/00 Data/AE/SmoothCam.dll")
+    shutil.copyfile(aeLocation / "SmoothCamAE.pdb", "Release_Package/00 Data/AE/SmoothCam.pdb")
+
     shutil.copyfile("build-out/SmoothCamAEPre629.dll", "Release_Package/00 Data/AE-Pre629/SmoothCam.dll")
+    shutil.copyfile(aeLocation / "SmoothCamAEPre629.pdb", "Release_Package/00 Data/AE-Pre629/SmoothCam.pdb")
+
     shutil.copyfile("build-out/SmoothCamSSE.dll", "Release_Package/00 Data/SSE/SmoothCam.dll")
+    shutil.copyfile(sseLocation / "SmoothCamSSE.pdb", "Release_Package/00 Data/SSE/SmoothCam.pdb")
     
     os.remove("Release_Package/00 Data/AE/placeholder")
     os.remove("Release_Package/00 Data/AE-Pre629/placeholder")

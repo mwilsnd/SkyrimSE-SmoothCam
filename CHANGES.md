@@ -1,3 +1,14 @@
+# Beta 1.7.1
+* Bumped module and MCM version number to 18
+
+**Fixes:**
+* Improve beast races detection [#86](https://github.com/mwilsnd/SkyrimSE-SmoothCam/pull/86) - [Meridiano](https://github.com/Meridiano)
+
+**New Stuff:**
+* added MCM option to disable projectile changes from SmoothCam [#85](https://github.com/mwilsnd/SkyrimSE-SmoothCam/pull/85) - [ beefclot](https://github.com/beefclot)
+* Update dependencies and allow 12 presets [#81](https://github.com/mwilsnd/SkyrimSE-SmoothCam/pull/81) - [aglowinthefield](https://github.com/aglowinthefield)
+* PDBs now included in releases
+
 # Beta 1.7
 * Bumped module and MCM version number to 17
 
