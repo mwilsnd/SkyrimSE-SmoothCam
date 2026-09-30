@@ -1,9 +1,6 @@
 #include "camera.h"
 #include "crosshair.h"
 #include "compat.h"
-#ifdef DEVELOPER
-#include "trackir/trackir.h"
-#endif
 #include "firstperson.h"
 #include "thirdperson.h"
 #include "debug/eh.h"
@@ -386,11 +383,6 @@ void Camera::Camera::UpdateCamera(RE::PlayerCharacter* player, RE::PlayerCamera*
 	ICamera* nextCamera = nullptr;
 	if (GameState::IsFirstPerson(camera)) {
 		nextCamera = cameraFirst.get();
-		// Only query TrackIR in first person mode
-#ifdef DEVELOPER
-		if (TrackIR::IsRunning())
-			trackIRData = TrackIR::GetTrackingData();
-#endif
 	} else if (pov && (skyrim_cast<RE::ThirdPersonState*>(camera->currentState.get()) ||
 		camera->currentState->id == RE::CameraState::kAutoVanity))
 		nextCamera = cameraThird.get();

@@ -347,9 +347,6 @@
 #alias TPSOffsetListSetting = ListSetting
 #alias TPSOffsetToggleSetting = ToggleSetting
 
-#alias DialogueSliderSetting = SliderSetting
-#alias DialogueToggleSetting = ToggleSetting
-
 event OnOptionSelect(int a_option)
 	if (activePage == " Thirdperson Offsets")
 		#StructInvokeSwitchIfEquals(
@@ -357,15 +354,6 @@ event OnOptionSelect(int a_option)
 			activeOffsetGroup, page,
 			implSelectHandler,
 			[TPSOffsetToggleSetting # ImplsOf]
-		)
-	endIf
-
-	if (activePage == " Dialogue")
-		#StructInvokeSwitchIfEquals(
-			a_option, ref,
-			activeDialogueMode, page,
-			implSelectHandler,
-			[DialogueToggleSetting # ImplsOf]
 		)
 	endIf
 
@@ -393,15 +381,6 @@ event OnOptionSliderOpen(int a_option)
 		)
 	endIF
 
-	if (activePage == " Dialogue")
-		#StructInvokeSwitchIfEquals(
-			a_option, ref,
-			activeDialogueMode, page,
-			implOpenHandler,
-			[DialogueSliderSetting # ImplsOf]
-		)
-	endIf
-	
 	#StructInvokeSwitchIfEquals(
 		a_option, ref,
 		activePage, page,
@@ -417,15 +396,6 @@ event OnOptionSliderAccept(int a_option, float a_value)
 			activeOffsetGroup, page,
 			implAcceptHandler,
 			[TPSOffsetSliderSetting # ImplsOf]
-		)
-	endIf
-
-	if (activePage == " Dialogue")
-		#StructInvokeSwitchIfEquals(
-			a_option, ref,
-			activeDialogueMode, page,
-			implAcceptHandler,
-			[DialogueSliderSetting # ImplsOf]
 		)
 	endIf
 
@@ -518,18 +488,6 @@ event OnOptionHighlight(int a_option)
 				TPSOffsetSliderSetting # ImplsOf,
 				TPSOffsetListSetting # ImplsOf,
 				TPSOffsetToggleSetting # ImplsOf
-			]
-		)
-	endIf
-
-	if (activePage == " Dialogue")
-		#StructInvokeSwitchIfEquals(
-			a_option, ref,
-			activeDialogueMode, page,
-			implDesc,
-			[
-				DialogueSliderSetting # ImplsOf,
-				DialogueToggleSetting # ImplsOf
 			]
 		)
 	endIf

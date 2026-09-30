@@ -55,9 +55,6 @@ void Offsets::populateAE() noexcept {
 	CrosshairData_dtor = REL::ID(AE.CrosshairData_dtor).address();
 	CrosshairData_pick = REL::ID(AE.CrosshairData_pick).address();
 
-	SwitchSkeleton = REL::ID(AE.SwitchSkeleton).address();
-	RenderStuff = REL::ID(AE.RenderStuff).address();
-
 	IsOverEncumbered = REL::ID(AE.IsOverEncumbered).address();
 
 	CameraCaster = REL::ID(AE.CameraCaster).address();
@@ -111,9 +108,6 @@ void Offsets::populateSE() noexcept {
 	CrosshairData_ctor = REL::ID(SE.CrosshairData_ctor).address();
 	CrosshairData_dtor = REL::ID(SE.CrosshairData_dtor).address();
 	CrosshairData_pick = REL::ID(SE.CrosshairData_pick).address();
-
-	SwitchSkeleton = REL::ID(SE.SwitchSkeleton).address();
-	RenderStuff = REL::ID(SE.RenderStuff).address();
 
 	IsOverEncumbered = REL::ID(SE.IsOverEncumbered).address();
 

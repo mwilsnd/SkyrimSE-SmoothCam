@@ -54,34 +54,8 @@ namespace Config {
 	enum class DialogueMode : uint8_t {
 		Disabled,
 		Skyrim,
-		Oblivion,
-		FaceToFace,
 		MAX
 	};
-
-	typedef struct dialogueOblivion {
-		float fovOffset = -30.0f;
-		float zoomInDuration = 1.0f;
-		float zoomOutDuration = 1.0f;
-		bool runInFirstPerson = true;
-	} DialogueOblivion;
-	void to_json(json& j, const DialogueOblivion& obj);
-	void from_json(const json& j, DialogueOblivion& obj);
-
-	typedef struct dialogueFaceToFace {
-		float sideOffset = 30.0f;
-		float upOffset = 0.0f;
-		float zoomOffset = 0.0f;
-
-		float rotationDuration = 0.25f;
-		float zoomInDuration = 1.0f;
-		float zoomOutDuration = 1.0f;
-
-		bool faceToFaceNoSwitch = false;
-		bool forceThirdPerson = false;
-	} DialogueFaceToFace;
-	void to_json(json& j, const DialogueFaceToFace& obj);
-	void from_json(const json& j, DialogueFaceToFace& obj);
 
 	constexpr auto scalarMethods = mapbox::eternal::hash_map<mapbox::eternal::string, ScalarMethods>({
 		{ "LINEAR",					ScalarMethods::LINEAR },
@@ -145,16 +119,12 @@ namespace Config {
 
 	constexpr auto dialogueTypeLookup = mapbox::eternal::hash_map<mapbox::eternal::string, DialogueMode>({
 		{ "DISABLED", DialogueMode::Disabled },
-		{ "SKYRIM", DialogueMode::Skyrim },
-		{ "OBLIVION", DialogueMode::Oblivion },
-		{ "FACE TO FACE", DialogueMode::FaceToFace }
+		{ "SKYRIM", DialogueMode::Skyrim }
 	});
 
 	constexpr auto dialogueTypeRevLookup = mapbox::eternal::map<DialogueMode, mapbox::eternal::string>({
 		{ DialogueMode::Disabled, "DISABLED" },
-		{ DialogueMode::Skyrim, "SKYRIM" },
-		{ DialogueMode::Oblivion, "OBLIVION" },
-		{ DialogueMode::FaceToFace, "FACE TO FACE" }
+		{ DialogueMode::Skyrim, "SKYRIM" }
 	});
 
 	typedef struct OffsetGroupScalar {
@@ -336,8 +306,6 @@ namespace Config {
 
 		// Dialogue
 		DialogueMode dialogueMode = DialogueMode::Skyrim;
-		DialogueOblivion oblivionDialogue;
-		DialogueFaceToFace faceToFaceDialogue;
 
 		// Per state positions
 		OffsetGroup standing;
@@ -396,12 +364,6 @@ namespace Config {
 
 	void LoadFocusBonePriorities();
 	BoneList& GetFocusBonePriorities() noexcept;
-
-#ifdef DEVELOPER
-	void LoadEyeBonePriorities();
-	// And the bone list for firstperson
-	BoneList& GetEyeBonePriorities() noexcept;
-#endif
 
 	using ConfigChanged = std::function<void(UserConfig*)>;
 	// Add a callback for when the config is mutated

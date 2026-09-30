@@ -24,14 +24,6 @@ set(SKSE_SUPPORT_XBYAK ON CACHE BOOL "")
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "")
 set(Boost_USE_STATIC_RUNTIME ON CACHE BOOL "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
-set(POLYHOOK_BUILD_STATIC_RUNTIME ON CACHE BOOL "")
-set(POLYHOOK_BUILD_DLL ON CACHE BOOL "")
-set(POLYHOOK_DISASM_ZYDIS ON CACHE BOOL "")
-set(POLYHOOK_FEATURE_EXCEPTION OFF CACHE BOOL "")
-set(POLYHOOK_FEATURE_DETOURS ON CACHE BOOL "")
-set(POLYHOOK_FEATURE_INLINENTD OFF CACHE BOOL "")
-set(POLYHOOK_FEATURE_PE ON CACHE BOOL "")
-set(POLYHOOK_FEATURE_VIRTUALS ON CACHE BOOL "")
 set(WITH_TESTS OFF CACHE BOOL "")
 
 project(
@@ -40,7 +32,6 @@ project(
 )
 
 add_subdirectory("Deps/CommonLibSSE" CommonLibSSE)
-add_subdirectory("Deps/PolyHook_2_0" PolyHook_2)
 
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -67,23 +58,15 @@ add_library(
 
 target_include_directories(${PROJECT_NAME} PRIVATE "SmoothCam/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/glm")
-target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0")
-target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0/zydis/include")
-target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0/zydis/dependencies/zycore/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/eternal/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/json/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "Deps/detours")
-
-if (MSVC)
-	target_include_directories(${PROJECT_NAME} PRIVATE "Deps/PolyHook_2_0/zydis/msvc")
-endif ()
 
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		CommonLibSSE::CommonLibSSE
 		spdlog::spdlog
-		PolyHook_2
 		xbyak::xbyak
 		"$<$<CONFIG:RELEASE>:${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64/detours.lib>"
 		"$<$<CONFIG:DEBUG>:${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64Debug/detours.lib>"

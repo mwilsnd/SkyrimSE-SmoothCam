@@ -16,10 +16,6 @@
       "version>=": "1.12.0"
     },
     {
-      "name": "polyhook2",
-      "version>=": "2023-08-11"
-    },
-    {
       "name": "xbyak",
       "version>=": "6.73"
     },

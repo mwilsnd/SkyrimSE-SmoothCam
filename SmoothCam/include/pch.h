@@ -53,9 +53,6 @@ SILENCE_EXTERNAL;
 #   else
 #       //include "include/detours.h"
 #   endif
-#   include <polyhook2/Virtuals/VFuncSwapHook.hpp>
-#   include <polyhook2/ZydisDisassembler.hpp>
-#   include <polyhook2/Detour/x64Detour.hpp>
 #   include <mapbox/eternal.hpp>
 
 #   define GLM_FORCE_INLINE
@@ -98,9 +95,6 @@ RESTORE_CODE_ANALYSIS;
 #pragma warning( disable : 26426 ) // no global init calls - globals are initialized before use, turned off
 #pragma warning( disable : 26486 ) // invalid pointer passing - also busted?
 #pragma warning( disable : 4201 ) // i like doing this, fight me
-
-// Enable in-progress features
-//#define DEVELOPER
 
 // Enable an exception handler that writes minidumps when smoothcam code crashes
 #define EMIT_MINIDUMPS

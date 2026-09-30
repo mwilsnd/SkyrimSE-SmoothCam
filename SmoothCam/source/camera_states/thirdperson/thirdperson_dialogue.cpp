@@ -2,10 +2,6 @@
 #include "thirdperson.h"
 #include "camera_states/thirdperson/thirdperson_dialogue.h"
 #include "camera_states/thirdperson/dialogue/skyrim.h"
-#ifdef DEVELOPER
-#include "camera_states/thirdperson/dialogue/oblivion.h"
-#include "camera_states/thirdperson/dialogue/face_to_face.h"
-#endif
 Camera::State::IThirdPersonDialogue::IThirdPersonDialogue(ThirdpersonDialogueState* parentState) noexcept
 	: parentState(parentState) {}
 
@@ -17,21 +13,13 @@ Camera::State::ThirdpersonDialogueState::ThirdpersonDialogueState(Thirdperson* c
 	modes[static_cast<size_t>(Config::DialogueMode::Skyrim)] = std::move(
 		std::make_unique<State::SkyrimDialogue>(this)
 	);
-#ifdef DEVELOPER
-	modes[static_cast<size_t>(Config::DialogueMode::Oblivion)] = std::move(
-		std::make_unique<State::OblivionDialogue>(this)
-	);
-	modes[static_cast<size_t>(Config::DialogueMode::FaceToFace)] = std::move(
-		std::make_unique<State::FaceToFaceDialogue>(this)
-	);
-#endif
 }
 
 void Camera::State::ThirdpersonDialogueState::OnBegin(RE::PlayerCharacter* player, RE::Actor* cameraRef,
 	RE::PlayerCamera* playerCamera, BaseThird*) noexcept
 {
 	if (Config::GetCurrentConfig()->dialogueMode == Config::DialogueMode::Disabled ||
-		Config::GetCurrentConfig()->dialogueMode == Config::DialogueMode::MAX ||
+		Config::GetCurrentConfig()->dialogueMode >= Config::DialogueMode::MAX ||
 		Compat::IsConsumerPresent("Alternate Conversation Camera"))
 	{
 		activeMode = nullptr;

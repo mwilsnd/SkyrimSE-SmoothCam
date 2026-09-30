@@ -10,14 +10,24 @@ extern Offsets* g_Offsets;
 
 using PlayerMenuOpenCloseEvent = void; // RE::BSTEventSink<RE::MenuOpenCloseEvent>
 using PlayerMenuModeChangeEvent = void; // RE::BSTEventSink<MenuModeChangeEvent>
-static std::unique_ptr<PolymorphicVTableDetour<RE::TESCameraState, 13>> cameraUpdateHooks;
-static std::unique_ptr<VTableDetour<RE::PlayerInputHandler>> playerInputHook;
-static std::unique_ptr<VTableDetour<PlayerMenuOpenCloseEvent>> menuOpenCloseHook;
-static std::unique_ptr<VTableDetour<PlayerMenuModeChangeEvent>> menuModeChangeHook;
-static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_ThirdPersonState;
-static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_DragonState;
-static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_HorseState;
-static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_BleedoutState;
+static std::unordered_map<std::uintptr_t, std::uintptr_t> cameraVFuncOrigins;
+
+static void WriteCameraVFunc(RE::TESCameraState* instance, uint16_t idx, std::uintptr_t detour) {
+	const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(instance);
+	const auto key = (vtblAddr << 8) | idx;
+	if (cameraVFuncOrigins.count(key)) {
+		return;
+	}
+	auto vtbl = REL::Relocation<std::uintptr_t>(vtblAddr);
+	cameraVFuncOrigins[key] = vtbl.write_vfunc(idx, detour);
+}
+
+static std::uintptr_t GetCameraVFuncOrig(RE::TESCameraState* instance, uint16_t idx) {
+	const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(instance);
+	const auto key = (vtblAddr << 8) | idx;
+	auto it = cameraVFuncOrigins.find(key);
+	return (it != cameraVFuncOrigins.end()) ? it->second : 0;
+}
 
 // Camera update
 typedef void(__thiscall* CameraOnUpdate)(RE::TESCameraState*, RE::BSTSmartPointer<RE::TESCameraState>&);
@@ -29,31 +39,35 @@ static void mCameraUpdate(RE::TESCameraState* state, RE::BSTSmartPointer<RE::TES
 		const auto mdmp = Debug::MiniDumpScope();
 		GameTime::StepFrameTime();
 
-		if (g_theCamera)
-			if (g_theCamera->PreGameUpdate(ply, cam, nextState))
+		if (g_theCamera) {
+			if (g_theCamera->PreGameUpdate(ply, cam, nextState)) {
 				return;
+			}
+		}
 	}
 
 	// TPS1&2 share the same vtable
 	RE::TESCameraState* selector;
-	if (state->id == RE::CameraState::kAnimated)
+	if (state->id == RE::CameraState::kAnimated) {
 		selector = cam->cameraStates[RE::CameraState::kThirdPerson].get();
-	else
+	} else {
 		selector = state;
+	}
 
 	// Make sure we have a valid selector
 	if (!selector) return;
 
 	// And a valid base
-	const auto base = cameraUpdateHooks->GetBase<CameraOnUpdate>(selector, 3);
-	if (!base) return;
+	const auto orig = GetCameraVFuncOrig(selector, 3);
+	if (!orig) return;
 
-	cameraUpdateHooks->GetBase<CameraOnUpdate>(selector, 3)(state, nextState);
+	reinterpret_cast<CameraOnUpdate>(orig)(state, nextState);
 
 	if (!RE::UI::GetSingleton()->GameIsPaused()) {
 		const auto mdmp = Debug::MiniDumpScope();
-		if (g_theCamera)
+		if (g_theCamera) {
 			g_theCamera->UpdateCamera(ply, cam, nextState);
+		}
 	}
 }
 
@@ -68,69 +82,90 @@ static void mCameraHandleLookInput(RE::TESCameraState* state, const RE::NiPoint2
 
 	// TPS1&2 share the same vtable
 	RE::TESCameraState* selector;
-	if (state->id == RE::CameraState::kAnimated)
+	if (state->id == RE::CameraState::kAnimated) {
 		selector = RE::PlayerCamera::GetSingleton()->cameraStates[RE::CameraState::kThirdPerson].get();
-	else
+	} else {
 		selector = state;
-	cameraUpdateHooks->GetBase<CameraHandleLookInput>(selector, 0xF)(selector, input);
+	}
+
+	const auto orig = GetCameraVFuncOrig(selector, 0xF);
+	if (!orig) return;
+	reinterpret_cast<CameraHandleLookInput>(orig)(selector, input);
 }
 
 // POV Handler
 typedef void(__thiscall* ProcessButton)(RE::TESCameraState* state, RE::ButtonEvent* a_event, RE::PlayerControlsData* a_movementData);
+static ProcessButton origProcessButtonTPS = nullptr;
+static ProcessButton origProcessButtonDragon = nullptr;
+static ProcessButton origProcessButtonHorse = nullptr;
+static ProcessButton origProcessButtonBleedout = nullptr;
 static void mProcessButtonTPS(RE::TESCameraState* state, RE::ButtonEvent* a_event, RE::PlayerControlsData* a_movementData) {
 	{
 		const auto mdmp = Debug::MiniDumpScope();
 		const auto id = a_event->QUserEvent();
-		if (id.size() > 0)
-			if (strcmp(id.c_str(), "Toggle POV") == 0)
-				if (g_theCamera)
+		if (id.size() > 0) {
+			if (strcmp(id.c_str(), "Toggle POV") == 0) {
+				if (g_theCamera) {
 					g_theCamera->OnTogglePOV(a_event);
+				}
+			}
+		}
 	}
 
-	inputHandler_ThirdPersonState->GetBase<ProcessButton>(4)(state, a_event, a_movementData);
+	origProcessButtonTPS(state, a_event, a_movementData);
 }
 
 static void mProcessButtonDragon(RE::TESCameraState* state, RE::ButtonEvent* a_event, RE::PlayerControlsData* a_movementData) {
 	{
 		const auto mdmp = Debug::MiniDumpScope();
 		const auto id = a_event->QUserEvent();
-		if (id.size() > 0)
-			if (strcmp(id.c_str(), "Toggle POV") == 0)
-				if (g_theCamera)
+		if (id.size() > 0) {
+			if (strcmp(id.c_str(), "Toggle POV") == 0) {
+				if (g_theCamera) {
 					g_theCamera->OnTogglePOV(a_event);
+				}
+			}
+		}
 	}
 
-	inputHandler_DragonState->GetBase<ProcessButton>(4)(state, a_event, a_movementData);
+	origProcessButtonDragon(state, a_event, a_movementData);
 }
 
 static void mProcessButtonHorse(RE::TESCameraState* state, RE::ButtonEvent* a_event, RE::PlayerControlsData* a_movementData) {
 	{
 		const auto mdmp = Debug::MiniDumpScope();
 		const auto id = a_event->QUserEvent();
-		if (id.size() > 0)
-			if (strcmp(id.c_str(), "Toggle POV") == 0)
-				if (g_theCamera)
+		if (id.size() > 0) {
+			if (strcmp(id.c_str(), "Toggle POV") == 0) {
+				if (g_theCamera) {
 					g_theCamera->OnTogglePOV(a_event);
+				}
+			}
+		}
 	}
 
-	inputHandler_HorseState->GetBase<ProcessButton>(4)(state, a_event, a_movementData);
+	origProcessButtonHorse(state, a_event, a_movementData);
 }
 
 static void mProcessButtonBleedout(RE::TESCameraState* state, RE::ButtonEvent* a_event, RE::PlayerControlsData* a_movementData) {
 	{
 		const auto mdmp = Debug::MiniDumpScope();
 		const auto id = a_event->QUserEvent();
-		if (id.size() > 0)
-			if (strcmp(id.c_str(), "Toggle POV") == 0)
-				if (g_theCamera)
+		if (id.size() > 0) {
+			if (strcmp(id.c_str(), "Toggle POV") == 0) {
+				if (g_theCamera) {
 					g_theCamera->OnTogglePOV(a_event);
+				}
+			}
+		}
 	}
 
-	inputHandler_BleedoutState->GetBase<ProcessButton>(4)(state, a_event, a_movementData);
+	origProcessButtonBleedout(state, a_event, a_movementData);
 }
 
 // Key pressed
 typedef uintptr_t(__thiscall* OnInput)(RE::PlayerInputHandler*, RE::InputEvent*);
+static OnInput origOnInput = nullptr;
 static uintptr_t mOnInput(RE::PlayerInputHandler* pThis, RE::InputEvent* input) {
 	if (input) {
 		const auto mdmp = Debug::MiniDumpScope();
@@ -145,12 +180,13 @@ static uintptr_t mOnInput(RE::PlayerInputHandler* pThis, RE::InputEvent* input) 
 				break;
 		}
 	}
-	return playerInputHook->GetBase<OnInput>(1)(pThis, input);
+	return origOnInput(pThis, input);
 }
 
 // Menu open/close
 typedef RE::BSEventNotifyControl(__thiscall* MenuOpenCloseHandler)(uintptr_t pThis, RE::MenuOpenCloseEvent* ev,
 	RE::BSTEventSource<RE::MenuOpenCloseEvent>* dispatcher);
+static MenuOpenCloseHandler origMenuOpenClose = nullptr;
 static RE::BSEventNotifyControl mMenuOpenCloseHandler(uintptr_t pThis, RE::MenuOpenCloseEvent* ev,
 	RE::BSTEventSource<RE::MenuOpenCloseEvent>* dispatcher)
 {
@@ -162,42 +198,46 @@ static RE::BSEventNotifyControl mMenuOpenCloseHandler(uintptr_t pThis, RE::MenuO
 			DebugPrint("Menu %s is %s\n", ev->menuName.c_str(), ev->opening ? "opening" : "closing");
 			auto id = Camera::MenuID::None;
 
-			if (strcmp(ev->menuName.c_str(), "Dialogue Menu") == 0)
+			if (strcmp(ev->menuName.c_str(), "Dialogue Menu") == 0) {
 				id = Camera::MenuID::DialogMenu;
-			else if (strcmp(ev->menuName.c_str(), "Loading Menu") == 0)
+			} else if (strcmp(ev->menuName.c_str(), "Loading Menu") == 0) {
 				id = Camera::MenuID::LoadingMenu;
-			else if (strcmp(ev->menuName.c_str(), "Mist Menu") == 0)
+			} else if (strcmp(ev->menuName.c_str(), "Mist Menu") == 0) {
 				id = Camera::MenuID::MistMenu;
-			else if (strcmp(ev->menuName.c_str(), "Fader Menu") == 0)
+			} else if (strcmp(ev->menuName.c_str(), "Fader Menu") == 0) {
 				id = Camera::MenuID::FaderMenu;
-			else if (strcmp(ev->menuName.c_str(), "LoadWaitSpinner") == 0)
+			} else if (strcmp(ev->menuName.c_str(), "LoadWaitSpinner") == 0) {
 				id = Camera::MenuID::LoadWaitSpinner;
-			else if (strcmp(ev->menuName.c_str(), "MapMenu") == 0)
+			} else if (strcmp(ev->menuName.c_str(), "MapMenu") == 0) {
 				id = Camera::MenuID::MapMenu;
-			else if (strcmp(ev->menuName.c_str(), "InventoryMenu") == 0)
+			} else if (strcmp(ev->menuName.c_str(), "InventoryMenu") == 0) {
 				id = Camera::MenuID::InventoryMenu;
+			}
 
-			if (id != Camera::MenuID::None)
+			if (id != Camera::MenuID::None) {
 				g_theCamera->OnMenuOpenClose(id, ev);
+			}
 		}
 	}
-	return menuOpenCloseHook->GetBase<MenuOpenCloseHandler>(1)(pThis, ev, dispatcher);
+	return origMenuOpenClose(pThis, ev, dispatcher);
 }
 
 // MenuMode changed
 struct MenuModeChangeEvent { RE::BSFixedString name; };
 typedef RE::BSEventNotifyControl(__thiscall* MenuModeChangeHandler)(uintptr_t pThis, MenuModeChangeEvent* ev,
 	RE::BSTEventSource<MenuModeChangeEvent>* dispatcher);
+static MenuModeChangeHandler origMenuModeChange = nullptr;
 static RE::BSEventNotifyControl mMenuModeChangeHandler(uintptr_t pThis, MenuModeChangeEvent* ev,
 	RE::BSTEventSource<MenuModeChangeEvent>* dispatcher)
 {
 	const auto menuModeChangeHandler = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + g_Offsets->menuHookOffset + 8;
 	if (pThis == menuModeChangeHandler) {
 		const auto mdmp = Debug::MiniDumpScope();
-		if (!ev->name.empty())
+		if (!ev->name.empty()) {
 			g_theCamera->OnMenuModeChange(RE::UI::GetSingleton()->IsMenuOpen(ev->name));
+		}
 	}
-	return menuModeChangeHook->GetBase<MenuModeChangeHandler>(1)(pThis, ev, dispatcher);
+	return origMenuModeChange(pThis, ev, dispatcher);
 }
 
 
@@ -291,20 +331,14 @@ static uintptr_t mCalledDuringRenderShutdown() {
 	// Process shutdown callbacks first
 	{
 		const auto scope = Debug::MiniDumpScope();
-		for (const auto& ev : shutdownEVs)
+		for (const auto& ev : shutdownEVs) {
 			ev();
+		}
 	}
 
 #ifdef EMIT_MINIDUMPS
 	DebugPrint("Removing minidump handler\n");
 	Debug::RemoveMiniDumpHandler();
-#endif
-
-#ifdef DEVELOPER
-	if (TrackIR::IsRunning()) {
-		DebugPrint("Shutting down TrackIR\n");
-		TrackIR::Shutdown();
-	}
 #endif
 
 	DebugPrint("Shutting down the rendering subsystem\n");
@@ -323,12 +357,14 @@ static void mCalledDuringRenderStartup() {
 
 	logger::info("Hooking D3D11\n");
 	Render::InstallHooks();
-	if (!Render::HasContext())
+	if (!Render::HasContext()) {
 		WarningPopup(L"SmoothCam: Failed to hook DirectX, Rendering features will be disabled. Try running with overlay software disabled if this warning keeps occurring.");
+	}
 
 #ifdef DEBUG
-	if (Render::HasContext())
+	if (Render::HasContext()) {
 		Util::InitializeDebugDrawing(Render::GetContext());
+	}
 #endif
 
 #ifdef WITH_D2D
@@ -338,110 +374,114 @@ static void mCalledDuringRenderStartup() {
 	}
 #endif
 
-#ifdef DEVELOPER
-	if (Render::HasContext()) {
-		const auto mdmp = Debug::MiniDumpScope();
-		const auto result = TrackIR::Initialize(Render::GetContext().hWnd);
-		if (result != TrackIR::NPResult::OK)
-			logger::info("Failed to load TrackIR interface");
-		else
-			logger::info("TrackIR is running.");
-	}
-#endif
-
 	detCalledDuringRenderStartup->GetBase()();
 }
 
 bool Hooks::DeferredAttach() {
-	playerInputHook = std::make_unique<VTableDetour<RE::PlayerInputHandler>>(RE::PlayerControls::GetSingleton()->togglePOVHandler);
-	playerInputHook->Add(1, mOnInput);
-	if (!playerInputHook->Attach())
+	{
+		auto* handler = RE::PlayerControls::GetSingleton()->togglePOVHandler;
+		const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(handler);
+		auto vtbl = REL::Relocation<std::uintptr_t>(vtblAddr);
+		origOnInput = reinterpret_cast<OnInput>(
+			vtbl.write_vfunc(1, reinterpret_cast<std::uintptr_t>(mOnInput)));
+	}
+	if (!origOnInput) {
 		FatalError(L"Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
+	}
 
-	menuOpenCloseHook = std::make_unique<VTableDetour<PlayerMenuOpenCloseEvent>>(
-		reinterpret_cast<PlayerMenuOpenCloseEvent*>(
-			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + g_Offsets->menuHookOffset
-		)
-	);
-	menuOpenCloseHook->Add(1, mMenuOpenCloseHandler);
-	if (!menuOpenCloseHook->Attach())
+	{
+		const auto sinkAddr = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton())
+			+ g_Offsets->menuHookOffset;
+		const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(sinkAddr);
+		auto vtbl = REL::Relocation<std::uintptr_t>(vtblAddr);
+		origMenuOpenClose = reinterpret_cast<MenuOpenCloseHandler>(
+			vtbl.write_vfunc(1, reinterpret_cast<std::uintptr_t>(mMenuOpenCloseHandler)));
+	}
+	if (!origMenuOpenClose) {
 		FatalError(L"Failed to place detour on target virtual function(menuOpenCloseHandler), this error is fatal.");
+	}
 
-	menuModeChangeHook = std::make_unique<VTableDetour<PlayerMenuModeChangeEvent>>(
-		reinterpret_cast<PlayerMenuModeChangeEvent*>(
-			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) +  g_Offsets->menuHookOffset + 8
-		)
-	);
-	menuModeChangeHook->Add(1, mMenuModeChangeHandler);
-	if (!menuModeChangeHook->Attach())
+	{
+		const auto sinkAddr = reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton())
+			+ g_Offsets->menuHookOffset + 8;
+		const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(sinkAddr);
+		auto vtbl = REL::Relocation<std::uintptr_t>(vtblAddr);
+		origMenuModeChange = reinterpret_cast<MenuModeChangeHandler>(
+			vtbl.write_vfunc(1, reinterpret_cast<std::uintptr_t>(mMenuModeChangeHandler)));
+	}
+	if (!origMenuModeChange) {
 		FatalError(L"Failed to place detour on target virtual function(menuModeChangeHandler), this error is fatal.");
-
-	auto states = RE::PlayerCamera::GetSingleton()->cameraStates;
-	cameraUpdateHooks = std::make_unique<PolymorphicVTableDetour<RE::TESCameraState, 13>>();
-	cameraUpdateHooks->Add(states[RE::CameraState::kFirstPerson].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kThirdPerson].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kDragon].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kMount].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kTween].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kVATS].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kFree].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kAutoVanity].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kFurniture].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kBleedout].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kPCTransition].get(), 3, mCameraUpdate);
-	cameraUpdateHooks->Add(states[RE::CameraState::kIronSights].get(), 3, mCameraUpdate);
-
-	cameraUpdateHooks->Add(states[RE::CameraState::kThirdPerson].get(), 0xF, mCameraHandleLookInput);
-	cameraUpdateHooks->Add(states[RE::CameraState::kDragon].get(), 0xF, mCameraHandleLookInput);
-	cameraUpdateHooks->Add(states[RE::CameraState::kMount].get(), 0xF, mCameraHandleLookInput);
-	cameraUpdateHooks->Add(states[RE::CameraState::kBleedout].get(), 0xF, mCameraHandleLookInput);
+	}
 
 	DebugPrint("Hooking camera state update methods\n");
-	if (!cameraUpdateHooks->Attach())
+	{
+		auto states = RE::PlayerCamera::GetSingleton()->cameraStates;
+
+		for (auto id : {
+			RE::CameraState::kFirstPerson, RE::CameraState::kThirdPerson,
+			RE::CameraState::kDragon, RE::CameraState::kMount,
+			RE::CameraState::kTween, RE::CameraState::kVATS,
+			RE::CameraState::kFree, RE::CameraState::kAutoVanity,
+			RE::CameraState::kFurniture, RE::CameraState::kBleedout,
+			RE::CameraState::kPCTransition, RE::CameraState::kIronSights })
+		{
+			WriteCameraVFunc(states[id].get(), 3,
+				reinterpret_cast<std::uintptr_t>(mCameraUpdate));
+		}
+
+		for (auto id : {
+			RE::CameraState::kThirdPerson, RE::CameraState::kDragon,
+			RE::CameraState::kMount, RE::CameraState::kBleedout })
+		{
+			WriteCameraVFunc(states[id].get(), 0xF,
+				reinterpret_cast<std::uintptr_t>(mCameraHandleLookInput));
+		}
+	}
+
+	if (cameraVFuncOrigins.empty()) {
 		FatalError(L"Failed to place detour on target virtual function(TESCameraState::Update), this error is fatal.");
+	}
 
 	DebugPrint("Hooking camera state input methods\n");
-	auto tps_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_ThirdPersonState_1).get();
-	auto drag_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_DragonCameraState_1).get();
-	auto horse_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_HorseCameraState_1).get();
-	auto bleed_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_BleedoutCameraState_1).get();
-	inputHandler_ThirdPersonState = std::make_unique<VTableDetour<RE::TESCameraState>>(
-		reinterpret_cast<RE::TESCameraState*>(&tps_1)
-	);
-	inputHandler_ThirdPersonState->Add(4, mProcessButtonTPS);
+	{
+		auto vtblTPS = REL::Relocation<std::uintptr_t>(g_Offsets->vtable_ThirdPersonState_1);
+		origProcessButtonTPS = reinterpret_cast<ProcessButton>(
+			vtblTPS.write_vfunc(4, reinterpret_cast<std::uintptr_t>(mProcessButtonTPS)));
 
-	inputHandler_DragonState = std::make_unique<VTableDetour<RE::TESCameraState>>(
-		reinterpret_cast<RE::TESCameraState*>(&drag_1)
-	);
-	inputHandler_DragonState->Add(4, mProcessButtonDragon);
+		auto vtblDragon = REL::Relocation<std::uintptr_t>(g_Offsets->vtable_DragonCameraState_1);
+		origProcessButtonDragon = reinterpret_cast<ProcessButton>(
+			vtblDragon.write_vfunc(4, reinterpret_cast<std::uintptr_t>(mProcessButtonDragon)));
 
-	inputHandler_HorseState = std::make_unique<VTableDetour<RE::TESCameraState>>(
-		reinterpret_cast<RE::TESCameraState*>(&horse_1)
-	);
-	inputHandler_HorseState->Add(4, mProcessButtonHorse);
+		auto vtblHorse = REL::Relocation<std::uintptr_t>(g_Offsets->vtable_HorseCameraState_1);
+		origProcessButtonHorse = reinterpret_cast<ProcessButton>(
+			vtblHorse.write_vfunc(4, reinterpret_cast<std::uintptr_t>(mProcessButtonHorse)));
 
-	inputHandler_BleedoutState = std::make_unique<VTableDetour<RE::TESCameraState>>(
-		reinterpret_cast<RE::TESCameraState*>(&bleed_1)
-	);
-	inputHandler_BleedoutState->Add(4, mProcessButtonBleedout);
+		auto vtblBleedout = REL::Relocation<std::uintptr_t>(g_Offsets->vtable_BleedoutCameraState_1);
+		origProcessButtonBleedout = reinterpret_cast<ProcessButton>(
+			vtblBleedout.write_vfunc(4, reinterpret_cast<std::uintptr_t>(mProcessButtonBleedout)));
+	}
 
-	if (!inputHandler_ThirdPersonState->Attach() || !inputHandler_DragonState->Attach() ||
-		!inputHandler_HorseState->Attach() || !inputHandler_BleedoutState->Attach())
+	if (!origProcessButtonTPS || !origProcessButtonDragon ||
+		!origProcessButtonHorse || !origProcessButtonBleedout) {
 		FatalError(L"Failed to place detour on target functions(TESCameraState::ProcessButton), this error is fatal.");
+	}
 
 	// FactorCameraOffset
 	detFactorCameraOffset = std::make_unique<FactorCameraOffsetDetour>(g_Offsets->FactorCameraOffset, mFactorCameraOffset);
-	if (!detFactorCameraOffset->Attach())
+	if (!detFactorCameraOffset->Attach()) {
 		FatalError(L"Failed to place detour on target function(Hooks::FactorCameraOffset), this error is fatal.");
+	}
 
 	// Crosshair UI
 	detGFxInvoke = std::make_unique<TypedDetour<GFxInvoke>>(g_Offsets->GFxInvoke, mGFxInvoke);
-	if (!detGFxInvoke->Attach())
+	if (!detGFxInvoke->Attach()) {
 		FatalError(L"Failed to place detour on target function(80,233), this error is fatal.");
+	}
 
 	detCrosshairInvoke = std::make_unique<TypedDetour<CrosshairInvoke>>(g_Offsets->GFxGotoAndStop, mCrosshairInvoke);
-	if (!detCrosshairInvoke->Attach())
+	if (!detCrosshairInvoke->Attach()) {
 		FatalError(L"Failed to place detour on target function(80,230), this error is fatal.");
+	}
 
 	return ArrowFixes::Attach();
 }

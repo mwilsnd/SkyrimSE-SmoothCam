@@ -168,9 +168,6 @@ constexpr auto boolGetters = mapbox::eternal::hash_map<mapbox::eternal::string, 
 	IMPL_GETTER("ZoomTransitionEnabled",			  enableZoomInterpolation),
 	// FOV interpolation
 	IMPL_GETTER("FOVTransitionEnabled",				  enableFOVInterpolation),
-	// Dialogue
-	IMPL_GETTER("OblivionDialogueRunFPV",             oblivionDialogue.runInFirstPerson),
-	IMPL_GETTER("FaceToFaceDialogueForceThirdperson", faceToFaceDialogue.forceThirdPerson),
 	// Distance clamping
 	IMPL_GETTER("CameraDistanceClampXEnable",		  cameraDistanceClampXEnable),
 	IMPL_GETTER("CameraDistanceClampYEnable",		  cameraDistanceClampYEnable),
@@ -250,16 +247,6 @@ const auto floatGetters = std::unordered_map<std::string_view, float*>({
 	IMPL_GETTER("ZoomTransitionDuration",				zoomInterpDurationSecs),
 	// FOV interpolation
 	IMPL_GETTER("FOVTransitionDuration",				fovInterpDurationSecs),
-	// Dialogue
-	IMPL_GETTER("OblivionDialogueMaxFOV",               oblivionDialogue.fovOffset),
-	IMPL_GETTER("OblivionDialogueFOVDurationIn",        oblivionDialogue.zoomInDuration),
-	IMPL_GETTER("OblivionDialogueFOVDurationOut",       oblivionDialogue.zoomOutDuration),
-	IMPL_GETTER("FaceToFaceDialogueSideOffset",         faceToFaceDialogue.sideOffset),
-	IMPL_GETTER("FaceToFaceDialogueUpOffset",           faceToFaceDialogue.upOffset),
-	IMPL_GETTER("FaceToFaceDialogueZoomOffset",         faceToFaceDialogue.zoomOffset),
-	IMPL_GETTER("FaceToFaceDialogueRotationDuration",   faceToFaceDialogue.rotationDuration),
-	IMPL_GETTER("FaceToFaceDialogueDurationIn",         faceToFaceDialogue.zoomInDuration),
-	IMPL_GETTER("FaceToFaceDialogueDurationOut",        faceToFaceDialogue.zoomOutDuration),
 	// Pitch zoom
 	IMPL_GETTER("PitchZoomMaxRange",				    pitchZoomMax),
 	IMPL_GETTER("PitchZoomMaxAngle",				    pitchZoomMaxAngle),

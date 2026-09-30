@@ -1,6 +1,4 @@
 set(HEADERS
-SmoothCam/include/camera_states/thirdperson/dialogue/face_to_face.h
-SmoothCam/include/camera_states/thirdperson/dialogue/oblivion.h
 SmoothCam/include/camera_states/thirdperson/dialogue/skyrim.h
 SmoothCam/include/camera_states/thirdperson/thirdperson.h
 SmoothCam/include/camera_states/thirdperson/thirdperson_dialogue.h
@@ -54,8 +52,6 @@ SmoothCam/include/render/srv.h
 SmoothCam/include/render/state_overlay.h
 SmoothCam/include/render/texture2d.h
 SmoothCam/include/render/vertex_buffer.h
-
-SmoothCam/include/trackir/trackir.h
 
 SmoothCam/include/arrow_fixes.h
 SmoothCam/include/basicdetour.h

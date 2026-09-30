@@ -1,6 +1,4 @@
 set(SOURCES
-SmoothCam/source/camera_states/thirdperson/dialogue/face_to_face.cpp
-SmoothCam/source/camera_states/thirdperson/dialogue/oblivion.cpp
 SmoothCam/source/camera_states/thirdperson/dialogue/skyrim.cpp
 SmoothCam/source/camera_states/thirdperson/thirdperson.cpp
 SmoothCam/source/camera_states/thirdperson/thirdperson_dialogue.cpp
@@ -40,8 +38,6 @@ SmoothCam/source/render/srv.cpp
 SmoothCam/source/render/state_overlay.cpp
 SmoothCam/source/render/texture2d.cpp
 SmoothCam/source/render/vertex_buffer.cpp
-
-SmoothCam/source/trackir/trackir.cpp
 
 SmoothCam/source/arrow_fixes.cpp
 SmoothCam/source/camera.cpp

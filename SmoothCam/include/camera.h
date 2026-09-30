@@ -1,7 +1,6 @@
 #pragma once
 #include "camera_states/base_first.h"
 #include "camera_states/base_third.h"
-#include "trackir/trackir.h"
 
 namespace Camera {
 	class Thirdperson;
@@ -199,9 +198,6 @@ namespace Camera {
 			int8_t loadScreenDepth = 0;                         // If not 0, we are in a loading screen sequence
 			RE::NiFrustum frustum;                              // Our current view frustum
 			mmath::NiMatrix44 worldToScaleform;                 // Our current worldToScreen matrix for the hud
-#ifdef DEVELOPER
-			TrackIR::TrackingSnapshot trackIRData;              // If using TrackIR, the current data from the tracker
-#endif
 			// The last and current camera state
 			GameState::CameraState currentState = GameState::CameraState::Unknown;
 			GameState::CameraState lastState = GameState::CameraState::Unknown;

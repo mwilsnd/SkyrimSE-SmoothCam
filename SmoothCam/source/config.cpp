@@ -11,46 +11,6 @@ Config::UserConfig currentConfig;
 	obj.member = j.value(#member, def);	\
 }
 
-void Config::to_json(json& j, const DialogueOblivion& obj) {
-	j = json{
-		CREATE_JSON_VALUE(obj, fovOffset),
-		CREATE_JSON_VALUE(obj, zoomInDuration),
-		CREATE_JSON_VALUE(obj, zoomOutDuration),
-		CREATE_JSON_VALUE(obj, runInFirstPerson)
-	};
-}
-
-void Config::from_json(const json& j, DialogueOblivion& obj) {
-	VALUE_FROM_JSON(obj, fovOffset)
-	VALUE_FROM_JSON(obj, zoomInDuration)
-	VALUE_FROM_JSON(obj, zoomOutDuration)
-	VALUE_FROM_JSON(obj, runInFirstPerson)
-}
-
-void Config::to_json(json& j, const DialogueFaceToFace& obj) {
-	j = json{
-		CREATE_JSON_VALUE(obj, sideOffset),
-		CREATE_JSON_VALUE(obj, upOffset),
-		CREATE_JSON_VALUE(obj, zoomOffset),
-		CREATE_JSON_VALUE(obj, rotationDuration),
-		CREATE_JSON_VALUE(obj, zoomInDuration),
-		CREATE_JSON_VALUE(obj, zoomOutDuration),
-		CREATE_JSON_VALUE(obj, faceToFaceNoSwitch),
-		CREATE_JSON_VALUE(obj, forceThirdPerson)
-	};
-}
-
-void Config::from_json(const json& j, DialogueFaceToFace& obj) {
-	VALUE_FROM_JSON(obj, sideOffset)
-	VALUE_FROM_JSON(obj, upOffset)
-	VALUE_FROM_JSON(obj, zoomOffset)
-	VALUE_FROM_JSON(obj, rotationDuration)
-	VALUE_FROM_JSON(obj, zoomInDuration)
-	VALUE_FROM_JSON(obj, zoomOutDuration)
-	VALUE_FROM_JSON(obj, faceToFaceNoSwitch)
-	VALUE_FROM_JSON(obj, forceThirdPerson)
-}
-
 void Config::to_json(json& j, const OffsetGroupScalar& obj) {
 	j = json{
 		CREATE_JSON_VALUE(obj, overrideInterp),
@@ -255,8 +215,6 @@ void Config::to_json(json& j, const UserConfig& obj) {
 
 		// Dialogue
 		CREATE_JSON_VALUE(obj, dialogueMode),
-		CREATE_JSON_VALUE(obj, oblivionDialogue),
-		CREATE_JSON_VALUE(obj, faceToFaceDialogue),
 
 		// Distance clamping
 		CREATE_JSON_VALUE(obj, cameraDistanceClampXEnable),
@@ -382,8 +340,6 @@ void Config::from_json(const json& j, UserConfig& obj) {
 
 	// Dialogue
 	VALUE_FROM_JSON(obj, dialogueMode)
-	VALUE_FROM_JSON(obj, oblivionDialogue)
-	VALUE_FROM_JSON(obj, faceToFaceDialogue)
 
 	// Distance clamping
 	VALUE_FROM_JSON(obj, cameraDistanceClampXEnable)
@@ -938,7 +894,6 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 struct ConfigData {
 	Config::BoneList bonePriorities = {};
 	Config::BoneList focusBonePriorities = {};
-	Config::BoneList eyeBonePriorities = {};
 	std::vector<Config::ConfigChanged> changeEvents{};
 };
 static std::unique_ptr<ConfigData> configData = nullptr;
@@ -950,9 +905,6 @@ void Config::Initialize() {
 	configData = std::make_unique<ConfigData>();
 	LoadBonePriorities();
 	LoadFocusBonePriorities();
-#ifdef DEVELOPER
-	LoadEyeBonePriorities();
-#endif
 
 	Hooks::RegisterGameShutdownEvent(Config::Shutdown);
 }
@@ -1178,21 +1130,6 @@ To prevent this warning ensure a bone list file is present with at least 1 bone 
 Config::BoneList& Config::GetFocusBonePriorities() noexcept {
 	return configData->focusBonePriorities;
 }
-
-#ifdef DEVELOPER
-void Config::LoadEyeBonePriorities() {
-	if (!LoadBoneList(L"SmoothCam_EyeBones_*.txt", configData->eyeBonePriorities)) {
-		WarningPopup(LR"(SmoothCam: Did not find any bone names to follow while loading! Is SmoothCam_EyeBones_Default.txt present in the SKSE plugins directory?
-Will fall back to default first-person camera bone.
-To prevent this warning ensure a bone list file is present with at least 1 bone defined within and that SmoothCam is able to load it.)");
-		configData->eyeBonePriorities.emplace_back("NPCEyeBone");
-	}
-}
-
-Config::BoneList& Config::GetEyeBonePriorities() noexcept {
-	return configData->eyeBonePriorities;
-}
-#endif
 
 void Config::RegisterConfigChangedEvent(ConfigChanged&& ev) noexcept {
 	configData->changeEvents.push_back(std::move(ev));

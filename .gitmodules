@@ -4,9 +4,6 @@
 [submodule "Deps/glm"]
 	path = Deps/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "Deps/PolyHook_2_0"]
-	path = Deps/PolyHook_2_0
-	url = https://github.com/stevemk14ebr/PolyHook_2_0.git
 [submodule "Deps/Detours"]
 	path = Deps/Detours
 	url = https://github.com/microsoft/Detours.git

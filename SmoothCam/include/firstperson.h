@@ -43,34 +43,5 @@ namespace Camera {
 			// Triggers when the camera state changes
 			virtual bool OnCameraStateTransition(RE::PlayerCharacter* player, RE::PlayerCamera* camera,
 				const GameState::CameraState newState, const GameState::CameraState oldState) noexcept override;
-#ifdef DEVELOPER
-		private:
-			// Enables the thirdperson skeleton and hides the face gen head node
-			void ToggleThirdpersonSkeleton(bool show) noexcept;
-			// Hide the player's head
-			void HidePlayerHead(bool hide) noexcept;
-
-			// Discover nodes which we want to flip depth clipping for during render
-			void UpdateClipableWeaponNodes(RE::PlayerCharacter* player) noexcept;
-			// Discover nodes which we only want to render in the shadow cascades
-			void UpdateShadowOnlyNodes(RE::PlayerCharacter* player) noexcept;
-
-		private:
-			struct {
-				mutable RE::BSFixedString headPositionTarget = "NPCEyeBone";
-				mutable RE::BSFixedString faceNode = "BSFaceGenNiNodeSkinned";
-				mutable RE::BSFixedString WEAPON = "WEAPON";
-				mutable RE::BSFixedString SHIELD = "SHIELD";
-			} Strings;
-
-			Config::UserConfig* config = nullptr;
-
-			// For our depth clip hack with weapons, we store a cache
-			std::map<ID3D11RasterizerState*, winrt::com_ptr<ID3D11RasterizerState>> rasterDepthClipStates;
-			// We need to know which nodes to flip depth clipping on during render
-			std::vector<RE::NiAVObject*> wantClipNodes;
-			// And since we hooked the renderer, might as well control what we only want in the shadow maps!
-			std::vector<RE::NiAVObject*> shadowsOnly;
-#endif
 	};
 }

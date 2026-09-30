@@ -14,7 +14,7 @@ extern Offsets* g_Offsets;
 
 static Render::D3DContext gameContext;
 static std::vector<Render::DrawFunc> presentCallbacks;
-static std::unique_ptr<VTableDetour<IDXGISwapChain>> dxgiHook;
+static Render::D3D11Present origD3D11Present = nullptr;
 static bool initialized = false;
 static bool hookAttempted = false;
 
@@ -113,7 +113,7 @@ HRESULT Render::Present(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags
 		d3dObjects.depthStencilView = nullptr;
 		d3dObjects.gameRTV = nullptr;
 	}
-	return dxgiHook->GetBase<Render::D3D11Present>(8)(swapChain, syncInterval, flags);
+	return origD3D11Present(swapChain, syncInterval, flags);
 }
 
 static bool ReadSwapChain() {
@@ -153,9 +153,13 @@ void Render::InstallHooks() {
 	}
 
 	const auto mdmp = Debug::MiniDumpScope();
-	dxgiHook = std::make_unique<VTableDetour<IDXGISwapChain>>(gameContext.swapChain);
-	dxgiHook->Add(8, Render::Present);
-	if (!dxgiHook->Attach()) {
+	{
+		const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(gameContext.swapChain);
+		auto vtbl = REL::Relocation<std::uintptr_t>(vtblAddr);
+		origD3D11Present = reinterpret_cast<Render::D3D11Present>(
+			vtbl.write_vfunc(8, reinterpret_cast<std::uintptr_t>(Render::Present)));
+	}
+	if (!origD3D11Present) {
 		logger::error("SmoothCam: Failed to place detour on virtual IDXGISwapChain->Present.");
 		return;
 	}
@@ -186,7 +190,12 @@ void Render::Shutdown() {
 	d3dObjects.release();
 
 	// Free our present hook
-	dxgiHook->Detach();
+	if (origD3D11Present && gameContext.swapChain) {
+		const auto vtblAddr = *reinterpret_cast<std::uintptr_t*>(gameContext.swapChain);
+		auto vtbl = REL::Relocation<std::uintptr_t>(vtblAddr);
+		vtbl.write_vfunc(8, reinterpret_cast<std::uintptr_t>(origD3D11Present));
+		origD3D11Present = nullptr;
+	}
 
 	// Explicit release
 	gameContext.context = nullptr;

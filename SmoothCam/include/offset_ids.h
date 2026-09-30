@@ -61,10 +61,6 @@ class Offsets {
 			uintptr_t CrosshairData_dtor = 25590;
 			uintptr_t CrosshairData_pick = 25591;
 
-			// Firstperson
-			uintptr_t SwitchSkeleton = 39401;
-			uintptr_t RenderStuff = 100854;
-
 			// GameState
 			uintptr_t IsOverEncumbered = 36457;
 
@@ -128,10 +124,6 @@ class Offsets {
 			uintptr_t CrosshairData_dtor = 26126;			// 26126     1403C0EF0 CrossHairPickData::dtor
 			uintptr_t CrosshairData_pick = 26127;
 
-			// Firstperson
-			uintptr_t SwitchSkeleton = 40476;
-			uintptr_t RenderStuff = 107644;
-
 			// GameState
 			uintptr_t IsOverEncumbered = 37453;
 
@@ -192,10 +184,6 @@ class Offsets {
 		uintptr_t CrosshairData_ctor;
 		uintptr_t CrosshairData_dtor;
 		uintptr_t CrosshairData_pick;
-
-		// Firstperson
-		uintptr_t SwitchSkeleton = 0;
-		uintptr_t RenderStuff = 0;
 
 		// GameState
 		uintptr_t IsOverEncumbered = 0;

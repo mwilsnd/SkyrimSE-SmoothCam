@@ -1,4 +1,3 @@
-load("//Deps/skylib/lib:dicts.bzl", "dicts")
 load("//buck2/subdir_glob.bzl", "subdir_glob")
 
 DEFINES = [
@@ -7,113 +6,8 @@ DEFINES = [
     "/DSPDLOG_FMT_EXTERNAL",
     "/DFMT_USE_WINDOWS_H=0",
     "/DBOOST_STL_INTERFACES_DISABLE_CONCEPTS",
-    "/DASMJIT_STATIC",
     "/DBUCK",
 ]
-
-def define_polyhook():
-    native.cxx_library(
-        name = "asmtk",
-        headers = subdir_glob([("Deps/PolyHook_2_0/asmtk/src", "**/*.h")]),
-        exported_headers = subdir_glob([("Deps/PolyHook_2_0/asmtk/src", "**/*.h")]),
-        srcs = native.glob(["Deps/PolyHook_2_0/asmtk/src/**/*.cpp"]),
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES,
-        deps = [":asmjit"],
-        force_static = True,
-    )
-
-    native.cxx_library(
-        name = "asmjit",
-        headers = subdir_glob([("Deps/PolyHook_2_0/asmjit/src", "**/*.h")]),
-        exported_headers = subdir_glob([("Deps/PolyHook_2_0/asmjit/src", "**/*.h")]),
-        srcs = native.glob(["Deps/PolyHook_2_0/asmjit/src/**/*.cpp"]),
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES + [
-            "/wd2220",
-            "/wd5054",
-
-        ],
-        force_static = True,
-    )
-
-    native.cxx_library(
-        name = "zycore",
-        headers = dicts.add(
-            subdir_glob([
-                ("Deps/PolyHook_2_0/zydis/dependencies/zycore/include", "**/*.h"),
-            ]),
-            {
-                "ZycoreExportConfig.h": "DepGenerated/ZycoreExportConfig.h",
-            }
-        ),
-        exported_headers = dicts.add(
-            subdir_glob([
-                ("Deps/PolyHook_2_0/zydis/dependencies/zycore/include", "**/*.h"),
-            ]),
-            {
-                "ZycoreExportConfig.h": "DepGenerated/ZycoreExportConfig.h",
-            }
-        ),
-        srcs = native.glob(["Deps/PolyHook_2_0/zydis/dependencies/zycore/src/**/*.c"]),
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES + [
-            "/std:c11",
-            "/TC",
-        ],
-        force_static = True,
-    )
-
-    native.cxx_library(
-        name = "zydis",
-        headers = dicts.add(
-            subdir_glob([
-                ("Deps/PolyHook_2_0/zydis/include", "**/*.h"),
-                ("Deps/PolyHook_2_0/zydis/src", "**/*.inc"),
-            ]),
-            {
-                "ZydisExportConfig.h": "DepGenerated/ZydisExportConfig.h",
-            }
-        ),
-        exported_headers = dicts.add(
-            subdir_glob([
-                ("Deps/PolyHook_2_0/zydis/include", "**/*.h"),
-                ("Deps/PolyHook_2_0/zydis/src", "**/*.inc"),
-            ]),
-            {
-                "ZydisExportConfig.h": "DepGenerated/ZydisExportConfig.h",
-            }
-        ),
-        srcs = native.glob(["Deps/PolyHook_2_0/zydis/src/**/*.c"]),
-        deps = [":zycore"],
-        exported_deps = [":zycore"],
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES + [
-            "/std:c11",
-            "/TC",
-        ],
-        force_static = True,
-    )
-
-    native.cxx_library(
-        name = "Polyhook2",
-        headers = subdir_glob(
-            [("Deps/PolyHook_2_0/polyhook2", "**/*.hpp")],
-            prefix = "polyhook2"
-        ),
-        exported_headers = subdir_glob(
-            [("Deps/PolyHook_2_0/polyhook2", "**/*.hpp")],
-            prefix = "polyhook2"
-        ),
-        srcs = native.glob(["Deps/PolyHook_2_0/sources/**/*.cpp"]),
-        deps = [":zydis", ":asmjit", ":asmtk"],
-        exported_deps = [":zydis", ":asmjit"],
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES + [
-            "/wd4717",
-        ],
-        force_static = True,
-    )
 
 def define_commonlib_deps():
     native.cxx_library(
@@ -291,7 +185,6 @@ def define_targets(targets):
     pre_629_mode = read_root_config("build", "pre629", "disabled") == "enabled"
     build_1799_mode = read_root_config("build", "build1799", "disabled") == "enabled"
 
-    define_polyhook()
     define_commonlib_deps()
 
     native.cxx_library(
@@ -378,8 +271,6 @@ def define_targets(targets):
         native.cxx_library(
             name = "SmoothCam" + target["name"],
             srcs = [
-                "SmoothCam/source/camera_states/thirdperson/dialogue/face_to_face.cpp",
-                "SmoothCam/source/camera_states/thirdperson/dialogue/oblivion.cpp",
                 "SmoothCam/source/camera_states/thirdperson/dialogue/skyrim.cpp",
                 "SmoothCam/source/camera_states/thirdperson/thirdperson.cpp",
                 "SmoothCam/source/camera_states/thirdperson/thirdperson_dialogue.cpp",
@@ -416,7 +307,6 @@ def define_targets(targets):
                 "SmoothCam/source/render/state_overlay.cpp",
                 "SmoothCam/source/render/texture2d.cpp",
                 "SmoothCam/source/render/vertex_buffer.cpp",
-                "SmoothCam/source/trackir/trackir.cpp",
                 "SmoothCam/source/arrow_fixes.cpp",
                 "SmoothCam/source/camera.cpp",
                 "SmoothCam/source/compat.cpp",
@@ -451,7 +341,6 @@ def define_targets(targets):
                 ("1799" if build_1799_mode else "") +
                 ".dll",
             deps = [
-                ":Polyhook2",
                 ":eternal",
                 ":glm",
                 ":detours",

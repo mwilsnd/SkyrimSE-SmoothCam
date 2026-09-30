@@ -51,9 +51,6 @@ event OnConfigInit()
 	crosshairTypes = new string[] -> [
 		"Skyrim", "Dot"
 	]
-	;dialogueModes = new string[] -> [
-	;	"Disabled", "Skyrim", "Oblivion", "Face To Face"
-	;]
 	dialogueModes = new string[] -> [
 		"Disabled", "Skyrim"
 	]
@@ -196,26 +193,7 @@ event OnPageReset(string a_page)
 	elseIf (a_page == " Dialogue")
 		dialogueMode->!implControl
 		activeDialogueMode = dialogueModes[GetCurrentArrayIndex(dialogueMode.settingName, dialogueModes)]
-
-		if (activeDialogueMode == "Oblivion")
-			AddHeaderOption("Oblivion Camera Settings")
-			oblivionDialogueMaxFOV->!implControl
-			oblivionDialogueFOVDurationIn->!implControl
-			oblivionDialogueFOVDurationOut->!implControl
-			oblivionDialogueRunFPV->!implControl
-		elseIf (activeDialogueMode == "Face To Face")
-			AddHeaderOption("Face To Face Camera Settings")
-			faceToFaceSideOffset->!implControl
-			faceToFaceUpOffset->!implControl
-			faceToFaceZoomOffset->!implControl
-			faceToFaceRotationDuration->!implControl
-			faceToFaceDurationIn->!implControl
-			faceToFaceDurationOut->!implControl
-			faceToFaceNoSwitch->!implControl
-			faceToFaceForceThirdperson->!implControl
-		else
-			AddTextOption("This mode has no options", "", OPTION_FLAG_DISABLED)
-		endIf
+		AddTextOption("This mode has no options", "", OPTION_FLAG_DISABLED)
 
 	elseIf (a_page == " Presets")
 		AddHeaderOption("Save Preset")
