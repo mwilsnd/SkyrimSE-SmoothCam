@@ -167,11 +167,12 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const RE::Actor* player, cons
 	glm::vec3 lastPos = startPos;
 	glm::vec3 curPos = startPos;
 
-	uint8_t entries = 0;
-	std::array<std::tuple<glm::vec3, glm::vec3>, segCount> points;
+	std::array<glm::vec3, segCount> points;
+	points[0] = startPos;
+	uint8_t entries = 1;
 
 	bool hit = false;
-	for (auto i = 0; i < segCount; i++) {
+	for (auto i = 1; i < segCount; i++) {
 		TickProjectilePath(curPos, velocityVector, gravity, gravityScale, timeStep);
 		const auto origin = glm::vec4(lastPos.x, lastPos.y, lastPos.z, 0.0f);
 		const auto endPoint = glm::vec4(curPos.x, curPos.y, curPos.z, 0.0f);
@@ -179,14 +180,14 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const RE::Actor* player, cons
 
 		if (result.hit) {
 			hitPos = static_cast<glm::vec3>(result.hitPos);
-			points[i] = { lastPos, hitPos };
+			points[i] = hitPos;
 			entries++;
 			hit = true;
 			hitCharacter = result.hitCharacter != nullptr;
 			break;
 		}
 
-		points[i] = { lastPos, curPos };
+		points[i] = curPos;
 		entries++;
 		lastPos = curPos;
 		// Went past max distance, bail
@@ -206,34 +207,26 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const RE::Actor* player, cons
 			mmath::Remap(config->arrowArcColor.a, 0.0f, 255.0f, 0.0f, 1.0f)
 		);
 
+		auto& arc = renderables.arrowTailLine;
+		arc.points.clear();
+		arc.widthPx = config->arrowArcWidth;
+		arc.points.reserve(static_cast<size_t>(entries) + 1);
 		const auto max = static_cast<float>(entries);
+
 		for (auto i = 0; i < entries; i++) {
-			const auto& [l1, l2] = points[i];
+			const auto& l1 = points[i];
 			// Have the alpha fade in over distance
-			const auto cur = static_cast<float>(i);
-			const auto dt = max - cur;
+			const auto dt = max - static_cast<float>(i) + static_cast<int32_t>(i + 1 == entries);
 			const auto alpha = dt <= 0.0f ? 0.0f : dt / max;
-			const auto dt2 = max - (cur + 1);
-			const auto alpha2 = dt2 <= 0.0f ? 0.0f : dt2 / max;
-			renderables.arrowTailSegments.emplace_back(
-				Render::Point(
-					Render::ToRenderScale(l1),
-					{
-						col.r, col.g, col.b,
-						(1.0f - glm::clamp(alpha, 0.0f, 1.0f)) * col.a
-					}
-				),
-				Render::Point(
-					Render::ToRenderScale(l2),
-					{
-						col.r, col.g, col.b,
-						(1.0f - glm::clamp(alpha2, 0.0f, 1.0f)) * col.a
-					}
-				)
+			arc.points.emplace_back(
+				Render::ToRenderScale(l1),
+				glm::vec4{
+					col.r, col.g, col.b,
+					(1.0f - glm::clamp(alpha, 0.0f, 1.0f)) * col.a
+				}
 			);
 		}
 	}
-
 	return hit;
 }
 
@@ -685,7 +678,7 @@ void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& camera
 #ifdef DEBUG
 	if (1) {
 #else
-	if (renderables.arrowTailSegments.size() > 0 || (renderables.drawCrosshair && renderables.curCrosshair)) {
+	if (renderables.arrowTailLine.points.size() > 1 || (renderables.drawCrosshair && renderables.curCrosshair)) {
 #endif
 		// Update view, projection and common per frame data
 		const auto matProj = Render::GetProjectionMatrix(frustum);
@@ -708,7 +701,7 @@ void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& camera
 		renderables.cbufPerFrame->Bind(Render::PipelineStage::Fragment, 1, ctx);
 
 		// Setup depth and blending
-		Render::SetDepthState(ctx, true, true, D3D11_COMPARISON_FUNC::D3D11_COMPARISON_LESS_EQUAL);
+		Render::SetDepthState(ctx, config->arrowArcDepthTest, config->arrowArcDepthTest, D3D11_COMPARISON_FUNC::D3D11_COMPARISON_LESS_EQUAL);
 		Render::SetBlendState(
 			ctx, true,
 			D3D11_BLEND_OP::D3D11_BLEND_OP_ADD, D3D11_BLEND_OP::D3D11_BLEND_OP_ADD,
@@ -717,9 +710,10 @@ void Crosshair::Manager::Render(Render::D3DContext& ctx, const glm::vec3& camera
 		);
 	}
 
-	if (renderables.arrowTailSegments.size() > 0) {
-		renderables.tailDrawer->Submit(renderables.arrowTailSegments);
-		renderables.arrowTailSegments.clear();
+	if (renderables.arrowTailLine.points.size() > 1) {
+		renderables.tailDrawer->Submit(renderables.arrowTailLine,
+			renderables.cbufPerFrameStaging.matProjView);
+		renderables.arrowTailLine.points.clear();
 	}
 
 #ifdef DEBUG

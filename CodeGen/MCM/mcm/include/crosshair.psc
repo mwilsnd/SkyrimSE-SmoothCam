@@ -152,6 +152,23 @@ ToggleSetting drawArrowArc -> [
 	desc: "When the 3D crosshair is enabled for ranged combat and 'Enable Arrow Prediction' is selected, an arc will be drawn while aiming with bows which indicates the flight path your arrow will take."
 	page: " Crosshair"
 ]
+ToggleSetting arrowArcDepthTest -> [
+	settingName: "ArrowArcDepthTest"
+	displayName: "Arrow Arc Occlusion"
+	desc: "Allow the arrow prediction arc to be obscured by world geometry."
+	page: " Crosshair"
+]
+SliderSetting arrowArcWidth -> [
+	settingName: "ArrowArcWidth"
+	displayName: "Arrow Arc Width"
+	desc: "Adjust the width of the arrow prediction arc."
+	defaultValue: 3
+	interval: 0.1
+	min: 1
+	max: 8
+	displayFormat: "{1}"
+	page: " Crosshair"
+]
 ToggleSetting enableProjectileFixes -> [
 	settingName: "EnableProjectileFixes"
 	displayName: "Enable Projectile Fixes"

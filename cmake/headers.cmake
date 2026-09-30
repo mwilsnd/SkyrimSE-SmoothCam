@@ -23,6 +23,7 @@ SmoothCam/include/render/models/dot.h
 SmoothCam/include/render/models/skyrim_crosshair.h
 SmoothCam/include/render/shaders/draw_fullscreen_texture.h
 SmoothCam/include/render/shaders/shader_decl.h
+SmoothCam/include/render/shaders/wide_line.h
 SmoothCam/include/render/shaders/vertex_color_screen.h
 SmoothCam/include/render/shaders/vertex_color_world.h
 

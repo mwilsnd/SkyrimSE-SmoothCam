@@ -145,6 +145,8 @@ void Config::to_json(json& j, const UserConfig& obj) {
 		CREATE_JSON_VALUE(obj, useArrowPrediction),
 		CREATE_JSON_VALUE(obj, drawArrowArc),
 		CREATE_JSON_VALUE(obj, arrowArcColor),
+		CREATE_JSON_VALUE(obj, arrowArcDepthTest),
+		CREATE_JSON_VALUE(obj, arrowArcWidth),
 		CREATE_JSON_VALUE(obj, maxArrowPredictionRange),
 		CREATE_JSON_VALUE(obj, useProjectileFixes),
 
@@ -270,6 +272,8 @@ void Config::from_json(const json& j, UserConfig& obj) {
 	VALUE_FROM_JSON(obj, useArrowPrediction)
 	VALUE_FROM_JSON(obj, drawArrowArc)
 	VALUE_FROM_JSON(obj, arrowArcColor)
+	VALUE_FROM_JSON(obj, arrowArcDepthTest)
+	VALUE_FROM_JSON(obj, arrowArcWidth)
 	VALUE_FROM_JSON(obj, maxArrowPredictionRange)
 	VALUE_FROM_JSON(obj, useProjectileFixes)
 

@@ -243,8 +243,8 @@ namespace Crosshair {
 				bool drawCrosshair = false;
 				bool hitCharacter = false;
 
-				// Resouces for drawing the arrow prediction arc
-				Render::LineList arrowTailSegments;
+				// Resources for drawing the arrow prediction arc
+				Render::Polyline arrowTailLine;
 				std::unique_ptr<Render::LineDrawer> tailDrawer;
 
 				// D3D expects resources to be released in a certain order

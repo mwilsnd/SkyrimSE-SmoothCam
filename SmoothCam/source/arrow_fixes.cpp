@@ -17,7 +17,6 @@ extern Offsets* g_Offsets;
 static std::unique_ptr<Render::LineDrawer> segmentDrawer;
 std::mutex segmentLock;
 static std::vector<std::tuple<glm::vec3, glm::vec3>> points;
-static Render::LineList segments;
 static bool drawOverlay = false;
 
 
@@ -65,21 +64,21 @@ void ArrowFixes::Draw(Render::D3DContext&) {
 	if (!drawOverlay) return;
 
 	std::lock_guard<std::mutex> lock(segmentLock);
-	segments.clear();
-	for (const auto& [l1, l2] : points) {
-		segments.emplace_back(
-			Render::Point(
-				Render::ToRenderScale(l1),
-				{ 1.0f, 0.0f, 0.0f, 1.0f }
-			),
-			Render::Point(
-				Render::ToRenderScale(l2),
-				{ 1.0f, 0.0f, 0.0f, 1.0f }
-			)
-		);
-	}
 
-	segmentDrawer->Submit(segments);
+	const auto matProj = Render::GetProjectionMatrix(g_theCamera->GetFrustum());
+	const auto matView = Render::BuildViewMatrix(
+		g_theCamera->GetThirdpersonCamera()->GetPosition().world,
+		g_theCamera->GetThirdpersonCamera()->GetCameraRotation().euler);
+	const auto matProjView = matProj * matView;
+
+	for (const auto& [l1, l2] : points) {
+		Render::Polyline seg;
+		seg.points = {
+			Render::PolyPoint(Render::ToRenderScale(l1), { 1.0f, 0.0f, 0.0f, 1.0f }),
+			Render::PolyPoint(Render::ToRenderScale(l2), { 1.0f, 0.0f, 0.0f, 1.0f }),
+		};
+		segmentDrawer->Submit(seg, matProjView);
+	}
 }
 #endif
 
