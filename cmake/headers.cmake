@@ -17,15 +17,7 @@ SmoothCam/include/crosshair/base.h
 SmoothCam/include/crosshair/dot.h
 SmoothCam/include/crosshair/skyrim.h
 
-SmoothCam/include/debug/commands/dump_game_ini.h
-SmoothCam/include/debug/commands/dump_game_perfs_ini.h
-SmoothCam/include/debug/commands/get_setting.h
-SmoothCam/include/debug/commands/help.h
-SmoothCam/include/debug/commands/set_setting.h
-SmoothCam/include/debug/console.h
 SmoothCam/include/debug/eh.h
-SmoothCam/include/debug/ICommand.h
-SmoothCam/include/debug/registry.h
 
 SmoothCam/include/render/models/dot.h
 SmoothCam/include/render/models/skyrim_crosshair.h
@@ -72,7 +64,6 @@ SmoothCam/include/profile.h
 SmoothCam/include/raycast.h
 SmoothCam/include/resource.h
 SmoothCam/include/SmoothCamAPI.h
-SmoothCam/include/string_builder.h
 SmoothCam/include/thirdperson.h
 SmoothCam/include/timer.h
 SmoothCam/include/util.h

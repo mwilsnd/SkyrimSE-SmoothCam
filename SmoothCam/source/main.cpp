@@ -58,10 +58,6 @@ extern "C" __declspec(dllexport) constexpr auto SKSEPlugin_Version = []() {
 #ifdef SKYRIM_IS_PRE629
 extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
-#ifdef DEBUG
-	Debug::StartREPL();
-#endif
-
 #ifndef NDEBUG
 	auto sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
 #else
@@ -107,13 +103,6 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::Query
 #endif
 
 extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) {
-#ifdef DEBUG
-#ifdef SKYRIM_SUPPORT_AE
-	Debug::StartREPL();
-#endif
-	while (!IsDebuggerPresent()) {}
-#endif
-
 	SKSE::Init(a_skse);
 	g_Offsets = &Offsets::Get();
 
@@ -150,7 +139,9 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadIn
 
 	Hooks::RegisterGameShutdownEvent([] {
 		if (g_theCamera) {
-			DebugPrint("Freeing the camera\n");
+#ifndef NDEBUG
+			logger::info("Freeing the camera");
+#endif
 			g_theCamera.reset();
 		}
 	});

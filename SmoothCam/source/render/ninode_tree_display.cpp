@@ -9,10 +9,10 @@ extern std::unique_ptr<Render::D2D> g_D2D;
 template< typename T >
 std::wstring int_to_hex(T i) {
 	std::wstringstream stream;
-	stream << "0x" 
-		<< std::setfill (L'0') << std::setw(sizeof(T)*2) 
+	stream << L"0x"
+		<< std::setfill(L'0') << std::setw(sizeof(T) * 2)
 		<< std::hex << i;
-	return stream.str().c_str();
+	return stream.str();
 }
 
 Render::NiNodeTreeDisplay::NiNodeTreeDisplay(uint32_t width, uint32_t height, D3DContext& ctx) :
@@ -55,13 +55,10 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, RE::NiNode* node) noexcept
 		}
 		MultiByteToWideChar(CP_UTF8, 0, n->name.c_str(), -1, buffer , len);
 
-		str.clear();
-		str.reserve(static_cast<size_t>(len) + 1);
-		for (auto i = 0; i < len; i++) str.push_back(buffer[i]);
-		str[len] = 0;
+		str.assign(buffer, static_cast<size_t>(len));
 
 		if (y + lineHeight >= maxSize.y) {
-			auto& layout = g_D2D->GetDWrite()->GetLayout(builder.get(), maxSize.x, maxSize.y);
+			auto& layout = g_D2D->GetDWrite()->GetLayout(builder, maxSize.x, maxSize.y);
 			auto size = g_D2D->GetDWrite()->GetTextSize(layout);
 			g_D2D->GetDWrite()->Write(layout, { x, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
 
@@ -69,12 +66,12 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, RE::NiNode* node) noexcept
 			y = 0.0f;
 			builder.clear();
 		}
-		
-		for (uint32_t i = 0; i < level; i++) builder.append(L"-");
+
+		for (uint32_t i = 0; i < level; i++) builder += L"-";
 		builder.append(std::move(str));
-		builder.append(L"::");
-		builder.append(int_to_hex(n->flags.underlying()));
-		builder.append(L"\n");
+		builder += L"::";
+		builder += int_to_hex(n->flags.underlying());
+		builder += L"\n";
 		y += lineHeight;
 
 		auto no = skyrim_cast<RE::NiNode*>(n);
@@ -88,8 +85,8 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, RE::NiNode* node) noexcept
 	float y = 0.0f;
 	walkFun(node, x, y, 0);
 
-	if (builder.size() > 0) {
-		auto& layout = g_D2D->GetDWrite()->GetLayout(builder.get(), maxSize.x, maxSize.y);
+	if (!builder.empty()) {
+		auto& layout = g_D2D->GetDWrite()->GetLayout(builder, maxSize.x, maxSize.y);
 		auto size = g_D2D->GetDWrite()->GetTextSize(layout);
 		g_D2D->GetDWrite()->Write(layout, { x, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
 	}

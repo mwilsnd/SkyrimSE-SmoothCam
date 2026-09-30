@@ -2,7 +2,6 @@
 #ifdef WITH_D2D
 #include "render/d3d_context.h"
 #include "render/gradbox.h"
-#include "string_builder.h"
 
 namespace Render {
 	class NiNodeTreeDisplay : public GradBox {
@@ -27,7 +26,7 @@ namespace Render {
 			uint32_t xPos = 0;
 			uint32_t yPos = 0;
 			
-			StringBuilder<std::wstring> builder;
+			std::wstring builder;
 			wchar_t* buffer = nullptr;
 			size_t bufSize = 0;
 	};

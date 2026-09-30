@@ -179,7 +179,9 @@ void Render::Shutdown() {
 	initialized = false;
 
 #ifdef WITH_D2D
-	DebugPrint("Freeing Direct2D\n");
+#   ifndef NDEBUG
+	logger::info("Freeing Direct2D");
+#   endif
 	g_D2D.reset();
 #endif
 

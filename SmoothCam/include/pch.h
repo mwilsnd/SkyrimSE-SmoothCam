@@ -121,7 +121,6 @@ RESTORE_CODE_ANALYSIS;
 
 #include "offset_ids.h"
 #include "modapi.h"
-#include "debug/console.h"
 #include "timer.h"
 #include "basicdetour.h"
 #include "config.h"

@@ -195,7 +195,9 @@ static RE::BSEventNotifyControl mMenuOpenCloseHandler(uintptr_t pThis, RE::MenuO
 		const auto mdmp = Debug::MiniDumpScope();
 
 		if (ev->menuName.size() > 0 && g_theCamera) {
-			DebugPrint("Menu %s is %s\n", ev->menuName.c_str(), ev->opening ? "opening" : "closing");
+#ifndef NDEBUG
+			logger::info(FMT_STRING("Menu {} is {}"), ev->menuName.c_str(), ev->opening ? "opening" : "closing");
+#endif
 			auto id = Camera::MenuID::None;
 
 			if (strcmp(ev->menuName.c_str(), "Dialogue Menu") == 0) {
@@ -326,7 +328,9 @@ void Hooks::RegisterGameShutdownEvent(ShutdownCallback&& cb) noexcept {
 typedef uintptr_t(*CalledDuringRenderShutdown)();
 static std::unique_ptr<TypedDetour<CalledDuringRenderShutdown>> detCalledDuringRenderShutdown;
 static uintptr_t mCalledDuringRenderShutdown() {
-	DebugPrint("Shutting down...\n");
+#ifndef NDEBUG
+	logger::info("Shutting down...");
+#endif
 
 	// Process shutdown callbacks first
 	{
@@ -337,14 +341,20 @@ static uintptr_t mCalledDuringRenderShutdown() {
 	}
 
 #ifdef EMIT_MINIDUMPS
-	DebugPrint("Removing minidump handler\n");
+#   ifndef NDEBUG
+	logger::info("Removing minidump handler");
+#   endif
 	Debug::RemoveMiniDumpHandler();
 #endif
 
-	DebugPrint("Shutting down the rendering subsystem\n");
+#ifndef NDEBUG
+	logger::info("Shutting down the rendering subsystem");
+#endif
 	Render::Shutdown();
 
-	DebugPrint("SmoothCam shutdown, continue with game shutdown...\n");
+#ifndef NDEBUG
+	logger::info("SmoothCam shutdown, continue with game shutdown...");
+#endif
 	return detCalledDuringRenderShutdown->GetBase()();
 }
 
@@ -413,7 +423,9 @@ bool Hooks::DeferredAttach() {
 		FatalError(L"Failed to place detour on target virtual function(menuModeChangeHandler), this error is fatal.");
 	}
 
-	DebugPrint("Hooking camera state update methods\n");
+#ifndef NDEBUG
+	logger::info("Hooking camera state update methods");
+#endif
 	{
 		auto states = RE::PlayerCamera::GetSingleton()->cameraStates;
 
@@ -442,7 +454,9 @@ bool Hooks::DeferredAttach() {
 		FatalError(L"Failed to place detour on target virtual function(TESCameraState::Update), this error is fatal.");
 	}
 
-	DebugPrint("Hooking camera state input methods\n");
+#ifndef NDEBUG
+	logger::info("Hooking camera state input methods");
+#endif
 	{
 		auto vtblTPS = REL::Relocation<std::uintptr_t>(g_Offsets->vtable_ThirdPersonState_1);
 		origProcessButtonTPS = reinterpret_cast<ProcessButton>(

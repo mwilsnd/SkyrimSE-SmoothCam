@@ -10,15 +10,7 @@ SmoothCam/source/crosshair/base.cpp
 SmoothCam/source/crosshair/dot.cpp
 SmoothCam/source/crosshair/skyrim.cpp
 
-SmoothCam/source/debug/commands/dump_game_ini.cpp
-SmoothCam/source/debug/commands/dump_game_perfs_ini.cpp
-SmoothCam/source/debug/commands/get_setting.cpp
-SmoothCam/source/debug/commands/help.cpp
-SmoothCam/source/debug/commands/set_setting.cpp
-SmoothCam/source/debug/console.cpp
 SmoothCam/source/debug/eh.cpp
-SmoothCam/source/debug/ICommand.cpp
-SmoothCam/source/debug/registry.cpp
 
 SmoothCam/source/render/cbuffer.cpp
 SmoothCam/source/render/common.cpp
