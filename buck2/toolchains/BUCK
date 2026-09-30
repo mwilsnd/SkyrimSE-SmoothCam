@@ -1,6 +1,7 @@
 load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
 load("@prelude//platforms:defs.bzl", "execution_platform", "host_configuration")
 load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain")
+load("//d:d.bzl", "d_toolchain")
 
 WINDOWS_BASE_LIBS = [
     "kernel32.lib",
@@ -38,7 +39,6 @@ BASE_MSVC_OPTS = [
     "/DBUCK_V2",
     "/diagnostics:column",
     "/c",
-    "/TP",
     "/fastfail",
     "/utf-8",
 ]
@@ -101,7 +101,7 @@ system_cxx_toolchain(
         "config//os:windows": BASE_MSVC_OPTS + (REL_MSVC_OPTS if build_mode == "release" else DEBUG_MSVC_OPTS),
     }),
     cxx_flags = select({
-        "config//os:windows": ["/std:c++latest"] + BASE_MSVC_OPTS + (REL_MSVC_OPTS if build_mode == "release" else DEBUG_MSVC_OPTS),
+        "config//os:windows": ["/std:c++latest", "/TP"] + BASE_MSVC_OPTS + (REL_MSVC_OPTS if build_mode == "release" else DEBUG_MSVC_OPTS),
     }),
     link_flags = select({
         "config//os:linux": [],
@@ -124,5 +124,11 @@ system_cxx_toolchain(
         ]),
     }),
     link_style = "static",
+    visibility = ["PUBLIC"],
+)
+
+d_toolchain(
+    name = "d",
+    compiler = "ldc2",
     visibility = ["PUBLIC"],
 )

@@ -85,7 +85,7 @@ async def run():
 
     # We can try and install some stuff if missing
     test_installed("7-zip", ["7z"], ["scripts/install-7z.ps1"])
-    test_installed("D toolchain (dub, ldc2)", ["dub", "ldc2"], ["scripts/install-ldc.ps1"])
+    test_installed("D toolchain (ldc2)", ["ldc2"], ["scripts/install-ldc.ps1"])
 
     print("🧪 | Looking for buck2...")
     buck2 = "buck2"
@@ -104,7 +104,6 @@ async def run():
         if os.path.exists("build-out"):
             shutil.rmtree("build-out")
 
-        await run_subcmd("🔨", ["dub", "clean", "--all-packages"], cwd="CodeGen/MCM/paper")
         await run_subcmd("🦌", [buck2, "clean"])
 
     if not os.path.exists("Release_Package"):
@@ -114,12 +113,13 @@ async def run():
     if not os.path.exists("build-out"):
         os.makedirs("build-out")
 
-    print("📜 | Building paper")
-    await run_subcmd("🔨", ["dub", "build", "-b", "release", "--c", "application-release", "--force"], cwd="CodeGen/MCM/paper")
-
-    print("📜 | Generating MCM script...")
-    await run_subcmd("📜", [
-        "\"CodeGen/MCM/paper/paper.exe\"",
+    print("📜 | Building paper, generating MCM script...")
+    await run_subcmd("🦌", [
+        buck2, "run",
+        "--config", f"build.python_interpreter={python_bin}",
+        "--config-file", "buck2/mode/release",
+        ":paper",
+        "--",
         "\"CodeGen/MCM/mcm/mcm.psc\"",
         "\"../../../Release_Package/00 Data/SmoothCamMCM.psc\""
     ])

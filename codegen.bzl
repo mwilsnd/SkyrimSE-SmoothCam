@@ -1,6 +1,6 @@
 load("//Deps/skylib/lib:dicts.bzl", "dicts")
 load("//buck2/subdir_glob.bzl", "subdir_glob")
-load("@prelude//decls:d_rules.bzl", "d_rules")
+load("@toolchains//d:d_rules.bzl", "d_binary", "d_library")
 
 def define_tools():
     native.cxx_library(
@@ -196,7 +196,7 @@ def define_tools():
         ],
     )
 
-    d_rules.d_library(
+    d_library(
         name = "bindbc-loader",
         srcs = {
             "bindbc/loader/package.d": "Deps/bindbc-loader/source/bindbc/loader/package.d",
@@ -206,7 +206,7 @@ def define_tools():
         visibility = ["PUBLIC"],
     )
 
-    d_rules.d_library(
+    d_library(
         name = "bindbc-assimp",
         srcs = {
             "bindbc/assimp/binddynamic.d": "Deps/bindbc-assimp/source/bindbc/assimp/binddynamic.d",
@@ -218,7 +218,7 @@ def define_tools():
         deps = [":assimp", ":bindbc-loader"],
     )
 
-    d_rules.d_library(
+    d_library(
         name = "intel-intrinsics",
         srcs = {
             "inteli/avx2intrin.d": "Deps/intel-intrinsics/source/inteli/avx2intrin.d",
@@ -240,7 +240,7 @@ def define_tools():
         visibility = ["PUBLIC"],
     )
 
-    d_rules.d_library(
+    d_library(
         name = "gfm",
         srcs = {
             "gfm/math/box.d": "Deps/gfm/math/gfm/math/box.d",
@@ -256,8 +256,8 @@ def define_tools():
         deps = [":intel-intrinsics"],
     )
 
-    d_rules.d_binary(
-        name = "ModelBaker.exe",
+    d_binary(
+        name = "ModelBaker",
         srcs = {
             "mesh/basic_writer.d": "CodeGen/ModelBaker/source/mesh/basic_writer.d",
             "mesh/loader.d": "CodeGen/ModelBaker/source/mesh/loader.d",
@@ -278,8 +278,8 @@ def define_tools():
         deps = [":assimp", ":bindbc-assimp", ":gfm"],
     )
 
-    d_rules.d_binary(
-        name = "paper.exe",
+    d_binary(
+        name = "paper",
         srcs = {
             "constructs/all_of_struct.d": "CodeGen/MCM/paper/source/constructs/all_of_struct.d",
             "constructs/arena.d": "CodeGen/MCM/paper/source/constructs/arena.d",
