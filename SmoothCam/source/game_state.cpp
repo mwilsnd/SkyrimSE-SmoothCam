@@ -108,7 +108,11 @@ const bool GameState::IsInDragonCamera(const RE::PlayerCamera* camera) noexcept 
 }
 
 const bool GameState::IsInDialogue() noexcept {
+#ifdef SKYRIM_IS_PRE629
 	return RE::MenuTopicManager::GetSingleton()->unkB1 != 0;
+#else
+	return RE::MenuTopicManager::GetSingleton()->menuOpen != 0;
+#endif
 }
 
 RE::NiPointer<RE::TESObjectREFR> GameState::GetDialogueTarget() noexcept {

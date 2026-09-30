@@ -293,13 +293,8 @@ bool Camera::Firstperson::OnCameraStateTransition(RE::PlayerCharacter*, RE::Play
 
 #ifdef DEVELOPER
 void Camera::Firstperson::ToggleThirdpersonSkeleton(bool show) noexcept {
-#else
-void Camera::Firstperson::ToggleThirdpersonSkeleton(bool) noexcept {
-#endif
-#ifdef DEVELOPER
 	detSwitchSkeleton->GetBase()(m_camera->currentFocusObject, show ? 0 : 1);
 	tpSkeletonVisible = show;
-#endif
 }
 
 void Camera::Firstperson::HidePlayerHead(bool hide) noexcept {
@@ -399,3 +394,4 @@ void Camera::Firstperson::UpdateShadowOnlyNodes(RE::PlayerCharacter* player) noe
 	markEquippedGeoAsShadowOnly(RE::BGSBipedObjectForm::BipedObjectSlot::kHair);
 	markEquippedGeoAsShadowOnly(RE::BGSBipedObjectForm::BipedObjectSlot::kLongHair);
 }
+#endif

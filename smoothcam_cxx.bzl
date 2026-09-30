@@ -119,21 +119,44 @@ def define_commonlib_deps():
     native.cxx_library(
         name = "fmt",
         headers = {
+            "fmt/args.h": "Deps/fmt/include/fmt/args.h",
+            "fmt/base.h": "Deps/fmt/include/fmt/base.h",
+            "fmt/chrono.h": "Deps/fmt/include/fmt/chrono.h",
+            "fmt/color.h": "Deps/fmt/include/fmt/color.h",
+            "fmt/compile.h": "Deps/fmt/include/fmt/compile.h",
+            "fmt/core.h": "Deps/fmt/include/fmt/core.h",
+            "fmt/fmt-c.h": "Deps/fmt/include/fmt/fmt-c.h",
             "fmt/format-inl.h": "Deps/fmt/include/fmt/format-inl.h",
             "fmt/format.h": "Deps/fmt/include/fmt/format.h",
-            "fmt/core.h": "Deps/fmt/include/fmt/core.h",
             "fmt/os.h": "Deps/fmt/include/fmt/os.h",
+            "fmt/ostream.h": "Deps/fmt/include/fmt/ostream.h",
+            "fmt/printf.h": "Deps/fmt/include/fmt/printf.h",
+            "fmt/ranges.h": "Deps/fmt/include/fmt/ranges.h",
+            "fmt/std.h": "Deps/fmt/include/fmt/std.h",
+            "fmt/xchar.h": "Deps/fmt/include/fmt/xchar.h",
         },
         exported_headers = {
+            "fmt/args.h": "Deps/fmt/include/fmt/args.h",
+            "fmt/base.h": "Deps/fmt/include/fmt/base.h",
+            "fmt/chrono.h": "Deps/fmt/include/fmt/chrono.h",
+            "fmt/color.h": "Deps/fmt/include/fmt/color.h",
+            "fmt/compile.h": "Deps/fmt/include/fmt/compile.h",
+            "fmt/core.h": "Deps/fmt/include/fmt/core.h",
+            "fmt/fmt-c.h": "Deps/fmt/include/fmt/fmt-c.h",
             "fmt/format-inl.h": "Deps/fmt/include/fmt/format-inl.h",
             "fmt/format.h": "Deps/fmt/include/fmt/format.h",
-            "fmt/core.h": "Deps/fmt/include/fmt/core.h",
             "fmt/os.h": "Deps/fmt/include/fmt/os.h",
+            "fmt/ostream.h": "Deps/fmt/include/fmt/ostream.h",
+            "fmt/printf.h": "Deps/fmt/include/fmt/printf.h",
+            "fmt/ranges.h": "Deps/fmt/include/fmt/ranges.h",
+            "fmt/std.h": "Deps/fmt/include/fmt/std.h",
+            "fmt/xchar.h": "Deps/fmt/include/fmt/xchar.h",
         },
         srcs = ["Deps/fmt/src/format.cc", "Deps/fmt/src/os.cc"],
         visibility = ["PUBLIC"],
         compiler_flags = DEFINES + [
-            "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+            "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+            "/wd4702",
         ],
         force_static = True,
     )
@@ -152,18 +175,18 @@ def define_commonlib_deps():
         headers = subdir_glob([("Deps/spdlog/include", "spdlog/**/*.h")]),
         exported_headers = subdir_glob([("Deps/spdlog/include", "spdlog/**/*.h")]),
         srcs = [
-            "Deps/spdlog/src/spdlog.cpp",
-            "Deps/spdlog/src/stdout_sinks.cpp",
-            "Deps/spdlog/src/color_sinks.cpp",
-            "Deps/spdlog/src/file_sinks.cpp",
             "Deps/spdlog/src/async.cpp",
             "Deps/spdlog/src/cfg.cpp",
-            "Deps/spdlog/src/fmt.cpp",
+            "Deps/spdlog/src/color_sinks.cpp",
+            "Deps/spdlog/src/file_sinks.cpp",
+            "Deps/spdlog/src/spdlog.cpp",
+            "Deps/spdlog/src/stdout_sinks.cpp",
         ],
         deps = [":fmt"],
         visibility = ["PUBLIC"],
         compiler_flags = DEFINES + [
-            "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+            "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+            "/DSPDLOG_FMT_EXTERNAL"
         ],
         force_static = True,
     )
@@ -203,6 +226,7 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
         ]) if pre629Variant else subdir_glob([
             ("Deps/CommonLibSSE/include", "RE/**/*.h"),
             ("Deps/CommonLibSSE/include", "REL/**/*.h"),
+            ("Deps/CommonLibSSE/include", "REX/**/*.h"),
             ("Deps/CommonLibSSE/include", "SKSE/**/*.h"),
         ]),
         exported_headers = subdir_glob([
@@ -212,9 +236,10 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
         ]) if pre629Variant else subdir_glob([
             ("Deps/CommonLibSSE/include", "RE/**/*.h"),
             ("Deps/CommonLibSSE/include", "REL/**/*.h"),
+            ("Deps/CommonLibSSE/include", "REX/**/*.h"),
             ("Deps/CommonLibSSE/include", "SKSE/**/*.h"),
         ]),
-        srcs = native.glob(["Deps/CommonLibSSEPre629/src/**/*.cpp"]) if pre629Variant else native.glob(["Deps/CommonLibSSE/src/**/*.cpp"]),
+        srcs = native.glob(["Deps/CommonLibSSEPre629/src/**/*.cpp"]) if pre629Variant else native.glob(["Deps/CommonLibSSE/src/**/*.cpp"]),                
         exported_deps = [
             ":fmt",
             ":spdlog",
@@ -222,6 +247,7 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
             ":xbyak",
             ":stl_interfaces",
         ],
+        exported_linker_flags = ["bcrypt.lib", "DXGI.lib"] if not pre629Variant else [],
         visibility = [visibility],
         compiler_flags = DEFINES + [
             "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
@@ -263,6 +289,7 @@ def make_commonlib_target(target, extra_compiler_opts, visibility, pre629Variant
 
 def define_targets(targets):
     pre_629_mode = read_root_config("build", "pre629", "disabled") == "enabled"
+    build_1799_mode = read_root_config("build", "build1799", "disabled") == "enabled"
 
     define_polyhook()
     define_commonlib_deps()
@@ -299,7 +326,9 @@ def define_targets(targets):
         ],
         srcs = native.glob(["Deps/EASTL/source/**/*.cpp"]),
         visibility = ["PUBLIC"],
-        compiler_flags = DEFINES,
+        compiler_flags = DEFINES + [
+            "/wd5311",
+        ],
         force_static = True,
     )
 
@@ -356,17 +385,21 @@ def define_targets(targets):
         headers = subdir_glob([("Deps/json/include", "**/*.hpp")]),
         exported_headers = subdir_glob([("Deps/json/include", "**/*.hpp")]),
         visibility = ["PUBLIC"],
-        compiler_flags = DEFINES,
+        compiler_flags = DEFINES + [
+            "/wd5311",
+        ],
         force_static = True,
     )
 
     for target in targets:
-        if pre_629_mode and target == "SSE":
+        if build_1799_mode and target["name"] == "SSE":
             continue
         
         make_commonlib_target(
             target["name"],
-            (["/DSKYRIM_IS_PRE629"] if pre_629_mode else []) + target["extra_compiler_opts"],
+            (["/DSKYRIM_IS_PRE629"] if pre_629_mode else []) + 
+            (["/DSKYRIM_IS_1799"] if build_1799_mode else []) +
+            target["extra_compiler_opts"],
             "//:SmoothCam" + target["name"] + "Module",
             pre_629_mode
         )
@@ -433,12 +466,19 @@ def define_targets(targets):
                 "SmoothCam/source/util.cpp",
             ],
             headers = subdir_glob([("SmoothCam/include", "**/*.h")]),
-            compiler_flags = DEFINES + (["/DSKYRIM_IS_PRE629"] if pre_629_mode else []) + [
-                "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
-                "/FIpch.h",
-            ] + target["extra_compiler_opts"],
+            compiler_flags = DEFINES +
+                (["/DSKYRIM_IS_PRE629"] if pre_629_mode else []) +
+                (["/DSKYRIM_IS_1799"] if build_1799_mode else []) +
+                [
+                    "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+                    "/FIpch.h",
+                    "/wd5311", # EASTL && JSON
+                ] + target["extra_compiler_opts"],
             link_style = "shared",
-            soname = "SmoothCam" + target["name"] + ("Pre629" if pre_629_mode else "") + ".dll",
+            soname = "SmoothCam" + target["name"] +
+                ("Pre629" if (pre_629_mode and target["name"] == "AE") else "") +
+                ("1799" if build_1799_mode else "") +
+                ".dll",
             deps = [
                 ":EASTL",
                 ":Polyhook2",

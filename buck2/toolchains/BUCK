@@ -40,6 +40,7 @@ BASE_MSVC_OPTS = [
     "/c",
     "/TP",
     "/fastfail",
+    "/utf-8",
 ]
 
 DEBUG_MSVC_OPTS = [
@@ -50,6 +51,7 @@ DEBUG_MSVC_OPTS = [
     "/Od",
     "/Gy",
     "/D_DEBUG",
+    "/DDEBUG",
     "/RTC1",
 ]
 

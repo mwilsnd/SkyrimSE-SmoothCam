@@ -126,7 +126,11 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	const auto power = REL::Relocation<GetAFloat>(g_Offsets->Power)(arrow); // Scalar, 0-1 how long you held back the arrow (arrow->unk188)
 
 	// Not sure what this is looking for, but do it anyways
+#ifdef SKYRIM_IS_PRE629
 	if ((~(byte)(arrow->flags >> 0x1f) & 1) != 0) {
+#else
+	if ((~(byte)(arrow->flags.underlying() >> 0x1f) & 1) != 0) {
+#endif
 		// @Note: s2 being 1 does NOT mean this is magic
 		if (skyrim_cast<RE::ArrowProjectile*>(arrow)) {
 			static auto arrowTilt = RE::INISettingCollection::GetSingleton()->GetSetting("f3PArrowTiltUpAngle:Combat");

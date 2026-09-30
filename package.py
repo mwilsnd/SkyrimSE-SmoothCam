@@ -63,11 +63,11 @@ def test_installed(nice_name, cmds, installScripts):
     if missing:
         stop(f"Unable to find {nice_name}, please install it or run the bootstrap script")
 
-async def getArtifactLocation(buck2, target):
+async def getArtifactLocation(buck2, mode, target):
     buildPath = await run_subcmd("🦌", [
         buck2, "targets "
         "--config", f"build.python_interpreter={python_bin}",
-        "--config-file", "buck2/mode/release",
+        "--config-file", f"buck2/mode/{mode}",
         "--show-output", target
     ],  returnPipe=True)
     return WindowsPath(buildPath[-1].split()[1]).parents[0]
@@ -145,6 +145,16 @@ async def run():
         ], pipe=False)
         check_fail_code(code)
 
+        print("🎥 | Building SmoothCam AE,Pre1799")
+        code = await run_subcmd("🦌", [
+            buck2, "build",
+            "--config", f"build.python_interpreter={python_bin}",
+            "--out", "build-out/",
+            "--config-file", "buck2/mode/release_pre1799",
+            ":SmoothCamAE"
+        ], pipe=False)
+        check_fail_code(code)
+
         print("🎥 | Building SmoothCam AE")
         code = await run_subcmd("🦌", [
             buck2, "build",
@@ -160,17 +170,20 @@ async def run():
             buck2, "build",
             "--config", f"build.python_interpreter={python_bin}",
             "--out", "build-out/",
-            "--config-file", "buck2/mode/release",
+            "--config-file", "buck2/mode/release_sse",
             ":SmoothCamSSE"
         ], pipe=False)
         check_fail_code(code)
 
-    aeLocation = await getArtifactLocation(buck2, ":SmoothCamAE")
-    sseLocation = await getArtifactLocation(buck2, ":SmoothCamSSE")
+    aeLocation = await getArtifactLocation(buck2, "release", ":SmoothCamAE")
+    sseLocation = await getArtifactLocation(buck2, "release_sse", ":SmoothCamSSE")
 
     print("📑 | Copying artifacts to package...")
-    shutil.copyfile("build-out/SmoothCamAE.dll", "Release_Package/00 Data/AE/SmoothCam.dll")
-    shutil.copyfile(aeLocation / "SmoothCamAE.pdb", "Release_Package/00 Data/AE/SmoothCam.pdb")
+    shutil.copyfile("build-out/SmoothCamAE1799.dll", "Release_Package/00 Data/AE/SmoothCam.dll")
+    shutil.copyfile(aeLocation / "SmoothCamAE1799.pdb", "Release_Package/00 Data/AE/SmoothCam.pdb")
+
+    shutil.copyfile("build-out/SmoothCamAE.dll", "Release_Package/00 Data/AE-Pre1799/SmoothCam.dll")
+    shutil.copyfile(aeLocation / "SmoothCamAE.pdb", "Release_Package/00 Data/AE-Pre1799/SmoothCam.pdb")
 
     shutil.copyfile("build-out/SmoothCamAEPre629.dll", "Release_Package/00 Data/AE-Pre629/SmoothCam.dll")
     shutil.copyfile(aeLocation / "SmoothCamAEPre629.pdb", "Release_Package/00 Data/AE-Pre629/SmoothCam.pdb")
@@ -179,6 +192,7 @@ async def run():
     shutil.copyfile(sseLocation / "SmoothCamSSE.pdb", "Release_Package/00 Data/SSE/SmoothCam.pdb")
     
     os.remove("Release_Package/00 Data/AE/placeholder")
+    os.remove("Release_Package/00 Data/AE-Pre1799/placeholder")
     os.remove("Release_Package/00 Data/AE-Pre629/placeholder")
     os.remove("Release_Package/00 Data/SSE/placeholder")
     os.remove("Release_Package/00 Data/SmoothCamMCM.psc")

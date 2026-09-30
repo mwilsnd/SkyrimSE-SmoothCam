@@ -25,7 +25,11 @@ void Raycast::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpSh
 	const auto collisionObj = static_cast<const RE::hkpCollidable*>(hit.body);
 	const auto flags = collisionObj->broadPhaseHandle.collisionFilterInfo;
 
+#ifdef SKYRIM_IS_PRE629
 	const uint64_t m = 1ULL << static_cast<uint64_t>(flags);
+#else
+	const uint64_t m = 1ULL << static_cast<uint64_t>(flags.filter);
+#endif
 	constexpr uint64_t filter = 0x40122716; //@TODO
 	if ((m & filter) != 0) {
 		if (objectFilter.size() > 0) {
@@ -124,7 +128,11 @@ Raycast::RayResult Raycast::hkpCastRay(const glm::vec4& start, const glm::vec4& 
 	RE::bhkPickData pickData{};
 	pickData.rayInput = pickRayInput;
 	pickData.ray = RE::hkVector4(to.x, to.y, to.z, one);
+#ifdef SKYRIM_IS_PRE629
 	pickData.rayHitCollectorA8 = reinterpret_cast<RE::hkpClosestRayHitCollector*>(collector);
+#else
+	pickData.closestRayHitCollector = reinterpret_cast<RE::hkpClosestRayHitCollector*>(collector);
+#endif
 
 	const auto ply = RE::PlayerCharacter::GetSingleton();
 	if (!ply->parentCell) return {};

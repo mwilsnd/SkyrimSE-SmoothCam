@@ -27,6 +27,7 @@ build-out/
 temp/
 enc_temp_folder/
 Release_Package/
+vcpkg_installed/
 
 SmoothCamMCM.psc
 /blend

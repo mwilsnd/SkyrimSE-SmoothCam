@@ -80,9 +80,6 @@ class Offsets {
 			// Render
 			uintptr_t FOV = 513786;
 			uintptr_t D3DObjects = 524728;
-			uintptr_t CameraSwap = 75713;
-			uintptr_t UpdateGPUCameraData = 75694;
-			uintptr_t CBuffer12 = 524768;
 			uintptr_t GBuffer = 524998;
 		} SE;
 
@@ -150,9 +147,6 @@ class Offsets {
 			// Render
 			uintptr_t FOV = 388785;
 			uintptr_t D3DObjects = 411347;
-			uintptr_t CameraSwap = 0;
-			uintptr_t UpdateGPUCameraData = 0;
-			uintptr_t CBuffer12 = 0;
 			uintptr_t GBuffer = 411479;
 		} AE;
 
@@ -218,9 +212,6 @@ class Offsets {
 		// Render
 		uintptr_t FOV = 0;
 		uintptr_t D3DObjects = 0;
-		uintptr_t CameraSwap = 0;
-		uintptr_t UpdateGPUCameraData = 0;
-		uintptr_t CBuffer12 = 0;
 		uintptr_t GBuffer = 0;
 
 		uintptr_t menuHookOffset = 0;

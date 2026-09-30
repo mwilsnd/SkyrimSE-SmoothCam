@@ -69,9 +69,6 @@ void Offsets::populateAE() noexcept {
 
 	FOV = REL::ID(AE.FOV).address();
 	D3DObjects = REL::ID(AE.D3DObjects).address();
-	CameraSwap = REL::ID(AE.CameraSwap).address();
-	UpdateGPUCameraData = REL::ID(AE.UpdateGPUCameraData).address();
-	CBuffer12 = REL::ID(AE.CBuffer12).address();
 	GBuffer = REL::ID(AE.GBuffer).address();
 }
 #else
@@ -129,9 +126,6 @@ void Offsets::populateSE() noexcept {
 
 	FOV = REL::ID(SE.FOV).address();
 	D3DObjects = REL::ID(SE.D3DObjects).address();
-	CameraSwap = REL::ID(SE.CameraSwap).address();
-	UpdateGPUCameraData = REL::ID(SE.UpdateGPUCameraData).address();
-	CBuffer12 = REL::ID(SE.CBuffer12).address();
 	GBuffer = REL::ID(SE.GBuffer).address();
 }
 #endif

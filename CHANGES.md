@@ -1,3 +1,10 @@
+# Beta 1.7.2
+* Bumped module and MCM version number to 19
+
+**Fixes:**
+* Added support for SkyrimSE 1.7.99
+* Added support for AddressLibrary format version 5
+
 # Beta 1.7.1
 * Bumped module and MCM version number to 18
 

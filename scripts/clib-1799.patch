@@ -1,0 +1,296 @@
+diff --git a/include/RE/P/PlayerCharacter.h b/include/RE/P/PlayerCharacter.h
+index 3f97d936..6e609ac4 100644
+--- a/include/RE/P/PlayerCharacter.h
++++ b/include/RE/P/PlayerCharacter.h
+@@ -50,6 +50,7 @@ namespace RE
+ 	struct TESQuestStageItem;
+ 	struct TESTrackedStatsEvent;
+ 	struct TeleportPath;
++	struct DontCare0;
+ 
+ 	enum class PLAYER_ACTION
+ 	{
+@@ -141,7 +142,11 @@ namespace RE
+ 		public BSTEventSink<MenuOpenCloseEvent>,     // 2B0
+ 		public BSTEventSink<MenuModeChangeEvent>,    // 2B8
+ 		public BSTEventSink<UserEventEnabledEvent>,  // 2C0
+-		public BSTEventSink<TESTrackedStatsEvent>    // 2C8
++		public BSTEventSink<TESTrackedStatsEvent>
++#ifdef SKYRIM_IS_1799
++		,    // 2C8
++		public BSTEventSink<DontCare0>
++#endif
+ 	{
+ 	public:
+ 		inline static constexpr auto RTTI = RTTI_PlayerCharacter;
+@@ -517,6 +522,8 @@ namespace RE
+ 	};
+ #ifndef SKYRIM_SUPPORT_AE
+ 	static_assert(sizeof(PlayerCharacter) == 0xBE0);
++#elif SKYRIM_IS_1799
++	static_assert(sizeof(PlayerCharacter) == 0xBF0);
+ #else
+ 	static_assert(sizeof(PlayerCharacter) == 0xBE8);
+ #endif
+diff --git a/include/RE/S/SkyrimVM.h b/include/RE/S/SkyrimVM.h
+index be8a7e54..ba639840 100644
+--- a/include/RE/S/SkyrimVM.h
++++ b/include/RE/S/SkyrimVM.h
+@@ -80,6 +80,8 @@ namespace RE
+ 	struct TESTriggerEvent;
+ 	struct TESTriggerLeaveEvent;
+ 	struct TESUniqueIDChangeEvent;
++	struct DontCare0;
++	struct DontCare1;
+ 
+ 	class SkyrimVM :
+ 		public BSTSingletonSDM<SkyrimVM>,                      // 01A0
+@@ -131,6 +133,10 @@ namespace RE
+ 		public BSTEventSink<TESTriggerLeaveEvent>,             // 0168
+ 		public BSTEventSink<TESUniqueIDChangeEvent>,           // 0170
+ 		public BSTEventSink<TESSwitchRaceCompleteEvent>,       // 0178
++#ifdef SKYRIM_IS_1799
++		public BSTEventSink<DontCare0>,
++		public BSTEventSink<DontCare1>,
++#endif
+ 		public BSTEventSink<TESPlayerBowShotEvent>,            // 0180
+ 		public BSTEventSink<TESFastTravelEndEvent>,            // 0188
+ 		public BSTEventSink<PositionPlayerEvent>,              // 0190
+@@ -276,5 +282,9 @@ namespace RE
+ 		mutable BSSpinLock                                                    InventoryEventFilterMapLock;  // 8940
+ 		BSTHashMap<VMHandle, InventoryEventFilterLists*>                      InventoryEventFilterMap;      // 8948 - AddInventoryEventFilter()
+ 	};
++#ifdef SKYRIM_IS_1799
++	static_assert(sizeof(SkyrimVM) == 0x8988);
++#else
+ 	static_assert(sizeof(SkyrimVM) == 0x8978);
++#endif
+ }
+diff --git a/include/REL/ID.h b/include/REL/ID.h
+index fa4c7f9c..77946cc5 100644
+--- a/include/REL/ID.h
++++ b/include/REL/ID.h
+@@ -71,9 +71,20 @@ namespace REL
+ 			explicit Offset2ID(ExecutionPolicy&& a_policy)  //
+ 				requires(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>)
+ 			{
++#ifdef SKYRIM_IS_1799
++				const std::span<uint32_t> id2offset = IDDatabase::get()._id2offset5;
++				_offset2id.reserve(id2offset.size());
++
++				for (uint64_t id = 0; id < id2offset.size(); id++) {
++					if (const auto offset = id2offset[id]; offset != 0) {
++						_offset2id.push_back({id, offset});
++					}
++				}
++#else
+ 				const std::span<const mapping_t> id2offset = IDDatabase::get()._id2offset;
+ 				_offset2id.reserve(id2offset.size());
+ 				_offset2id.insert(_offset2id.begin(), id2offset.begin(), id2offset.end());
++#endif
+ 				std::sort(a_policy, _offset2id.begin(), _offset2id.end(), [](auto&& a_lhs, auto&& a_rhs) {
+ 					return a_lhs.offset < a_rhs.offset;
+ 				});
+@@ -129,6 +140,9 @@ namespace REL
+ 
+ 		[[nodiscard]] inline std::size_t id2offset(std::uint64_t a_id) const
+ 		{
++#ifdef SKYRIM_IS_1799
++			if (a_id >= _id2offset5.size() || _id2offset5[a_id] == 0) {
++#else
+ 			mapping_t  elem{ a_id, 0 };
+ 			const auto it = std::lower_bound(
+ 				_id2offset.begin(),
+@@ -138,6 +152,7 @@ namespace REL
+ 					return a_lhs.id < a_rhs.id;
+ 				});
+ 			if (it == _id2offset.end()) {
++#endif
+ 				stl::report_and_fail(
+ 					std::format(
+ 						"Failed to find the id within the address library: {}\n"
+@@ -146,7 +161,11 @@ namespace REL
+ 						a_id));
+ 			}
+ 
++#ifdef SKYRIM_IS_1799
++			return _id2offset5[a_id];
++#else
+ 			return static_cast<std::size_t>(it->offset);
++#endif
+ 		}
+ 
+ 	private:
+@@ -195,6 +214,54 @@ namespace REL
+ 			std::int32_t _addressCount{ 0 };
+ 		};
+ 
++		class Header5 {
++			public:
++				void read(binary_io::file_istream& a_in)
++				{
++					a_in.read(format);
++					if (format != 5) {
++						stl::report_and_fail(
++							fmt::format(
++								"Unsupported address library format: {}\n"
++								"This means this script extender plugin is incompatible with the address "
++								"library available for this version of the game, and thus does not "
++								"support it."sv,
++								format));
++					}
++
++					const auto [major, minor, patch, revision] =
++						a_in.read<int32_t, int32_t, int32_t, int32_t>();
++					_version[0] = static_cast<uint32_t>(major);
++					_version[1] = static_cast<uint32_t>(minor);
++					_version[2] = static_cast<uint32_t>(patch);
++					_version[3] = static_cast<uint32_t>(revision);
++
++					a_in.seek_relative(64);
++					a_in.read(pointerSize);
++					a_in.read(dataFormat);
++					a_in.read(addressCount);
++				}
++
++				[[nodiscard]] size_t address_count() const noexcept { return static_cast<size_t>(addressCount); }
++				[[nodiscard]] uint64_t pointer_size() const noexcept { return static_cast<uint64_t>(pointerSize); }
++				[[nodiscard]] Version version() const noexcept {
++					return {
++						static_cast<uint16_t>(_version[0]),
++						static_cast<uint16_t>(_version[1]),
++						static_cast<uint16_t>(_version[2]),
++						static_cast<uint16_t>(_version[3])
++					};
++				}
++
++			private:
++				int32_t format{0};
++				uint32_t _version[4]{};
++				char name[64]{};
++				int32_t pointerSize{0};
++				int32_t dataFormat{0};
++				int32_t addressCount{0};
++		};
++
+ 		IDDatabase() { load(); }
+ 
+ 		IDDatabase(const IDDatabase&) = delete;
+@@ -225,12 +292,34 @@ namespace REL
+ 		{
+ 			try {
+ 				binary_io::file_istream in(a_filename);
++#ifdef SKYRIM_IS_1799
++				Header5                 header;
++#else
+ 				header_t                header;
++#endif
+ 				header.read(in);
+ 				if (header.version() != a_version) {
+ 					stl::report_and_fail("version mismatch"sv);
+ 				}
+ 
++#ifdef SKYRIM_IS_1799
++				auto mapname = L"COMMONLIB_IDDB_OFFSETS_"s;
++				mapname += a_version.wstring(L"_");
++				const auto byteSize = std::filesystem::file_size(a_filename); 
++				
++				if (_mmap.open(mapname, byteSize)) {
++					const auto afterHeader = reinterpret_cast<uint32_t*>(
++						reinterpret_cast<intptr_t>(_mmap.data()) + sizeof(Header5));
++					_id2offset5 = { static_cast<uint32_t*>(afterHeader), header.address_count() };
++				} else if (_mmap.create(mapname, byteSize)) {
++					const auto afterHeader = reinterpret_cast<uint32_t*>(
++						reinterpret_cast<intptr_t>(_mmap.data()) + sizeof(Header5));
++					_id2offset5 = { static_cast<uint32_t*>(afterHeader), header.address_count() };
++
++					for (auto& offset : _id2offset5) {
++						offset = std::get<0>(in.read<uint32_t>());
++					}
++#else
+ 				auto mapname = L"CommonLibSSEOffsets-v2-"s;
+ 				mapname += a_version.wstring();
+ 				const auto byteSize = static_cast<std::size_t>(header.address_count()) * sizeof(mapping_t);
+@@ -245,6 +334,7 @@ namespace REL
+ 						[](auto&& a_lhs, auto&& a_rhs) {
+ 							return a_lhs.id < a_rhs.id;
+ 						});
++#endif
+ 				} else {
+ 					stl::report_and_fail("failed to create shared mapping"sv);
+ 				}
+@@ -345,6 +435,9 @@ namespace REL
+ 
+ 		detail::memory_map   _mmap;
+ 		std::span<mapping_t> _id2offset;
++#ifdef SKYRIM_IS_1799
++		std::span<uint32_t> _id2offset5;
++#endif
+ 	};
+ 
+ 	class ID
+diff --git a/include/SKSE/Interfaces.h b/include/SKSE/Interfaces.h
+index 696cbe1a..6457a4c9 100644
+--- a/include/SKSE/Interfaces.h
++++ b/include/SKSE/Interfaces.h
+@@ -376,6 +376,7 @@ namespace SKSE
+ 		enum
+ 		{
+ 			kVersionIndependentEx_NoStructUse = 1 << 0,
++			kVersionIndependentEx_AddrLibV5 = 1 << 1,
+ 		};
+ 
+ 		constexpr void PluginVersion(REL::Version a_version) noexcept { pluginVersion = a_version.pack(); }
+@@ -419,7 +420,7 @@ namespace SKSE
+ 		char                pluginName[256] = {};
+ 		char                author[256] = {};
+ 		char                supportEmail[252] = {};
+-		std::uint32_t       versionIndependenceEx = 0;
++		std::uint32_t       versionIndependenceEx = kVersionIndependentEx_AddrLibV5;
+ 		std::uint32_t       versionIndependence = 0;
+ 		std::uint32_t       compatibleVersions[16] = {};
+ 		std::uint32_t       xseMinimum = 0;
+diff --git a/include/SKSE/Version.h b/include/SKSE/Version.h
+index 58b24572..d21af3a0 100644
+--- a/include/SKSE/Version.h
++++ b/include/SKSE/Version.h
+@@ -34,9 +34,10 @@ namespace SKSE
+ 	inline constexpr REL::Version RUNTIME_SSE_1_6_1130(1, 6, 1130, 0);
+ 	inline constexpr REL::Version RUNTIME_SSE_1_6_1170(1, 6, 1170, 0);
+ 	inline constexpr REL::Version RUNTIME_SSE_1_6_1179(1, 6, 1179, 0);  // GOG
++	inline constexpr REL::Version RUNTIME_SSE_1_7_99(1, 7, 99, 0);
+ #endif
+ #ifdef SKYRIM_SUPPORT_AE
+-	inline constexpr auto RUNTIME_SSE_LATEST = RUNTIME_SSE_1_6_1170;  // latest for steam
++	inline constexpr auto RUNTIME_LATEST = RUNTIME_SSE_1_7_99;  // latest for steam
+ #else
+ 	inline constexpr auto RUNTIME_SSE_LATEST = RUNTIME_SSE_1_5_97;
+ #endif
+diff --git a/src/REL/ID.cpp b/src/REL/ID.cpp
+index e6c0f63b..1b6b0171 100644
+--- a/src/REL/ID.cpp
++++ b/src/REL/ID.cpp
+@@ -14,7 +14,11 @@ namespace REL
+ 			bytes.value = a_size;
+ 
+ 			_mapping = REX::W32::OpenFileMappingW(
++#ifdef SKYRIM_IS_1799
++				REX::W32::FILE_MAP_READ,
++#else
+ 				REX::W32::FILE_MAP_READ | REX::W32::FILE_MAP_WRITE,
++#endif
+ 				false,
+ 				a_name.data());
+ 			if (!_mapping) {
+@@ -24,7 +28,11 @@ namespace REL
+ 
+ 			_view = REX::W32::MapViewOfFile(
+ 				_mapping,
++#ifdef SKYRIM_IS_1799
++				REX::W32::FILE_MAP_READ,
++#else
+ 				REX::W32::FILE_MAP_READ | REX::W32::FILE_MAP_WRITE,
++#endif
+ 				0,
+ 				0,
+ 				bytes.value);

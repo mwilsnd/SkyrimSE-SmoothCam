@@ -88,6 +88,9 @@ async def run():
             if shutil.which(buck2) == None:
                 stop("Unable to find buck2, aborting")
 
+    print("🔨 | Applying local patches...")
+    await run_subcmd("📦", ["powershell.exe", "-executionpolicy", "bypass", "-File", "scripts/apply-clib-patch.ps1"])
+
     print("🔨 | Build tools configured! You can now try running package.py.")
 
 loop = asyncio.get_event_loop()

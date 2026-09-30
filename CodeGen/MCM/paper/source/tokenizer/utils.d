@@ -4,7 +4,7 @@ import tokenizer.tokens : Tok;
 import result;
 import std.array;
 
-auto stripStringCR()(auto const ref string str) {
+auto stripStringCR()(const auto ref string str) {
     return replace(str, "\r\n", "\n");
 }
 

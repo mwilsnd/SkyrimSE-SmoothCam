@@ -43,7 +43,7 @@ namespace Camera {
 			// Triggers when the camera state changes
 			virtual bool OnCameraStateTransition(RE::PlayerCharacter* player, RE::PlayerCamera* camera,
 				const GameState::CameraState newState, const GameState::CameraState oldState) noexcept override;
-
+#ifdef DEVELOPER
 		private:
 			// Enables the thirdperson skeleton and hides the face gen head node
 			void ToggleThirdpersonSkeleton(bool show) noexcept;
@@ -71,5 +71,6 @@ namespace Camera {
 			eastl::vector<RE::NiAVObject*> wantClipNodes;
 			// And since we hooked the renderer, might as well control what we only want in the shadow maps!
 			eastl::vector<RE::NiAVObject*> shadowsOnly;
+#endif
 	};
 }
