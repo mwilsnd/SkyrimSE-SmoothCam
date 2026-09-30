@@ -111,20 +111,62 @@ void mmath::DecomposeToBasis(const glm::vec3& point, const glm::vec3& rotation,
 glm::mat4 mmath::Perspective(float fov, float aspect, const RE::NiFrustum& frustum) noexcept {
 	const auto range = frustum.fFar / (frustum.fNear - frustum.fFar);
 	const auto height = 1.0f / glm::tan(fov * 0.5f);
+	const auto oldWidthScale = height;
+	const auto oldHeightScale = height * aspect;
+
+	// See: issue #80
+	const auto frustumWidth = frustum.fRight - frustum.fLeft;
+	const auto frustumHeight = frustum.fTop - frustum.fBottom;
+	const auto canUseFrustum =
+		!frustum.bOrtho &&
+		mmath::IsValid(frustumWidth) &&
+		mmath::IsValid(frustumHeight) &&
+		glm::abs(frustumWidth) > 0.000001f &&
+		glm::abs(frustumHeight) > 0.000001f;
+
+	float widthScale = oldWidthScale;
+	float heightScale = oldHeightScale;
+	float offsetX = 0.0f;
+	float offsetY = 0.0f;
+
+	if (canUseFrustum) {
+		const auto widthScaleFromSlopes = 2.0f / frustumWidth;
+		const auto heightScaleFromSlopes = 2.0f / frustumHeight;
+		const auto widthScaleFromNear = 2.0f * frustum.fNear / frustumWidth;
+		const auto heightScaleFromNear = 2.0f * frustum.fNear / frustumHeight;
+
+		const auto slopeError =
+			glm::abs(widthScaleFromSlopes - oldWidthScale) +
+			glm::abs(heightScaleFromSlopes - oldHeightScale);
+		const auto nearError =
+			glm::abs(widthScaleFromNear - oldWidthScale) +
+			glm::abs(heightScaleFromNear - oldHeightScale);
+
+		if (nearError < slopeError) {
+			widthScale = widthScaleFromNear;
+			heightScale = heightScaleFromNear;
+		} else {
+			widthScale = widthScaleFromSlopes;
+			heightScale = heightScaleFromSlopes;
+		}
+
+		offsetX = (frustum.fLeft + frustum.fRight) / (frustum.fLeft - frustum.fRight);
+		offsetY = (frustum.fTop + frustum.fBottom) / (frustum.fBottom - frustum.fTop);
+	}
 
 	glm::mat4 proj;
-	proj[0][0] = height;
+	proj[0][0] = widthScale;
 	proj[0][1] = 0.0f;
 	proj[0][2] = 0.0f;
 	proj[0][3] = 0.0f;
 
 	proj[1][0] = 0.0f;
-	proj[1][1] = height * aspect;
+	proj[1][1] = heightScale;
 	proj[1][2] = 0.0f;
 	proj[1][3] = 0.0f;
 
-	proj[2][0] = 0.0f;
-	proj[2][1] = 0.0f;
+	proj[2][0] = offsetX;
+	proj[2][1] = offsetY;
 	proj[2][2] = range * -1.0f;
 	proj[2][3] = 1.0f;
 
@@ -133,8 +175,6 @@ glm::mat4 mmath::Perspective(float fov, float aspect, const RE::NiFrustum& frust
 	proj[3][2] = range * frustum.fNear;
 	proj[3][3] = 0.0f;
 	
-	// exact match, save for 2,0 2,1 - looks like XMMatrixPerspectiveOffCenterLH with a slightly
-	// different frustum or something. whatever, close enough.
 	return proj; 
 }
 

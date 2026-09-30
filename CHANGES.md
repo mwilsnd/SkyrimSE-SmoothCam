@@ -4,6 +4,11 @@
 **Fixes:**
 * Added support for SkyrimSE 1.7.99
 * Added support for AddressLibrary format version 5
+* Fixed perspective calculation for ultrawide monitors, improves arrow prediction accuracy [zkellsworth](https://github.com/mwilsnd/SkyrimSE-SmoothCam/issues/80)
+* Change origin node for arrow prediction to WEAPON [lerarosalene](https://github.com/mwilsnd/SkyrimSE-SmoothCam/pull/90)
+
+**New Stuff:**
+* Added configurable line width to arrow prediction arc
 
 # Beta 1.7.1
 * Bumped module and MCM version number to 18
