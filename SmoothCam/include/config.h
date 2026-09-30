@@ -260,9 +260,9 @@ namespace Config {
 
 		// Separate local space interpolation
 		bool separateLocalInterp = true;
-		ScalarMethods separateLocalScalar = ScalarMethods::EXP_IN;
-		float localMinFollowRate = 0.7f;
-		float localMaxFollowRate = 0.98f;
+		ScalarMethods separateLocalScalar = ScalarMethods::LINEAR;
+		float localMinFollowRate = 1.0f;
+		float localMaxFollowRate = 1.0f;
 		float localMaxSmoothingDistance = 60.0f;
 
 		// Separate Z

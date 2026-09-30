@@ -452,7 +452,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.standing.interpConf.minCameraFollowRate = 0.33f;
 	conf.standing.interpConf.maxCameraFollowRate = 0.85f;
 	conf.standing.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.standing.interpConf.overrideLocalInterp = true;
+	conf.standing.interpConf.overrideLocalInterp = false;
 	conf.standing.interpConf.separateLocalScalar = ScalarMethods::QUAD_IN;
 	conf.standing.interpConf.localMinFollowRate = 0.2f;
 	conf.standing.interpConf.localMaxFollowRate = 0.8f;
@@ -462,7 +462,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.standing.interpRangedConf.minCameraFollowRate = 0.33f;
 	conf.standing.interpRangedConf.maxCameraFollowRate = 0.85f;
 	conf.standing.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.standing.interpRangedConf.overrideLocalInterp = true;
+	conf.standing.interpRangedConf.overrideLocalInterp = false;
 	conf.standing.interpRangedConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.standing.interpRangedConf.localMinFollowRate = 0.5f;
 	conf.standing.interpRangedConf.localMaxFollowRate = 0.85f;
@@ -472,7 +472,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.standing.interpMagicConf.minCameraFollowRate = 0.33f;
 	conf.standing.interpMagicConf.maxCameraFollowRate = 0.85f;
 	conf.standing.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.standing.interpMagicConf.overrideLocalInterp = true;
+	conf.standing.interpMagicConf.overrideLocalInterp = false;
 	conf.standing.interpMagicConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.standing.interpMagicConf.localMinFollowRate = 0.5f;
 	conf.standing.interpMagicConf.localMaxFollowRate = 0.85f;
@@ -482,7 +482,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.standing.interpMeleeConf.minCameraFollowRate = 0.33f;
 	conf.standing.interpMeleeConf.maxCameraFollowRate = 0.85f;
 	conf.standing.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.standing.interpMeleeConf.overrideLocalInterp = true;
+	conf.standing.interpMeleeConf.overrideLocalInterp = false;
 	conf.standing.interpMeleeConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.standing.interpMeleeConf.localMinFollowRate = 0.5f;
 	conf.standing.interpMeleeConf.localMaxFollowRate = 0.85f;
@@ -515,7 +515,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.walking.interpConf.minCameraFollowRate = 0.45f;
 	conf.walking.interpConf.maxCameraFollowRate = 0.79f;
 	conf.walking.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.walking.interpConf.overrideLocalInterp = true;
+	conf.walking.interpConf.overrideLocalInterp = false;
 	conf.walking.interpConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.walking.interpConf.localMinFollowRate = 0.35f;
 	conf.walking.interpConf.localMaxFollowRate = 0.98f;
@@ -525,7 +525,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.walking.interpRangedConf.minCameraFollowRate = 0.33f;
 	conf.walking.interpRangedConf.maxCameraFollowRate = 0.85f;
 	conf.walking.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.walking.interpRangedConf.overrideLocalInterp = true;
+	conf.walking.interpRangedConf.overrideLocalInterp = false;
 	conf.walking.interpRangedConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.walking.interpRangedConf.localMinFollowRate = 0.77f;
 	conf.walking.interpRangedConf.localMaxFollowRate = 0.85f;
@@ -535,7 +535,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.walking.interpMagicConf.minCameraFollowRate = 0.33f;
 	conf.walking.interpMagicConf.maxCameraFollowRate = 0.85f;
 	conf.walking.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.walking.interpMagicConf.overrideLocalInterp = true;
+	conf.walking.interpMagicConf.overrideLocalInterp = false;
 	conf.walking.interpMagicConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.walking.interpMagicConf.localMinFollowRate = 0.77f;
 	conf.walking.interpMagicConf.localMaxFollowRate = 0.85f;
@@ -545,7 +545,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.walking.interpMeleeConf.minCameraFollowRate = 0.33f;
 	conf.walking.interpMeleeConf.maxCameraFollowRate = 0.85f;
 	conf.walking.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.walking.interpMeleeConf.overrideLocalInterp = true;
+	conf.walking.interpMeleeConf.overrideLocalInterp = false;
 	conf.walking.interpMeleeConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.walking.interpMeleeConf.localMinFollowRate = 0.77f;
 	conf.walking.interpMeleeConf.localMaxFollowRate = 0.85f;
@@ -578,7 +578,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.running.interpConf.minCameraFollowRate = 0.27f;
 	conf.running.interpConf.maxCameraFollowRate = 0.73f;
 	conf.running.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.running.interpConf.overrideLocalInterp = true;
+	conf.running.interpConf.overrideLocalInterp = false;
 	conf.running.interpConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.running.interpConf.localMinFollowRate = 1.0f;
 	conf.running.interpConf.localMaxFollowRate = 1.0f;
@@ -588,7 +588,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.running.interpRangedConf.minCameraFollowRate = 0.4f;
 	conf.running.interpRangedConf.maxCameraFollowRate = 0.75f;
 	conf.running.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.running.interpRangedConf.overrideLocalInterp = true;
+	conf.running.interpRangedConf.overrideLocalInterp = false;
 	conf.running.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.running.interpRangedConf.localMinFollowRate = 1.0f;
 	conf.running.interpRangedConf.localMaxFollowRate = 1.0f;
@@ -598,7 +598,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.running.interpMagicConf.minCameraFollowRate = 0.4f;
 	conf.running.interpMagicConf.maxCameraFollowRate = 0.75f;
 	conf.running.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.running.interpMagicConf.overrideLocalInterp = true;
+	conf.running.interpMagicConf.overrideLocalInterp = false;
 	conf.running.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.running.interpMagicConf.localMinFollowRate = 1.0f;
 	conf.running.interpMagicConf.localMaxFollowRate = 1.0f;
@@ -608,7 +608,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.running.interpMeleeConf.minCameraFollowRate = 0.4f;
 	conf.running.interpMeleeConf.maxCameraFollowRate = 0.75f;
 	conf.running.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.running.interpMeleeConf.overrideLocalInterp = true;
+	conf.running.interpMeleeConf.overrideLocalInterp = false;
 	conf.running.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.running.interpMeleeConf.localMinFollowRate = 1.0f;
 	conf.running.interpMeleeConf.localMaxFollowRate = 1.0f;
@@ -641,7 +641,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sprinting.interpConf.minCameraFollowRate = 0.7f;
 	conf.sprinting.interpConf.maxCameraFollowRate = 0.98f;
 	conf.sprinting.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sprinting.interpConf.overrideLocalInterp = true;
+	conf.sprinting.interpConf.overrideLocalInterp = false;
 	conf.sprinting.interpConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sprinting.interpConf.localMinFollowRate = 1.0f;
 	conf.sprinting.interpConf.localMaxFollowRate = 1.0f;
@@ -651,7 +651,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sprinting.interpRangedConf.minCameraFollowRate = 0.7f;
 	conf.sprinting.interpRangedConf.maxCameraFollowRate = 0.98f;
 	conf.sprinting.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sprinting.interpRangedConf.overrideLocalInterp = true;
+	conf.sprinting.interpRangedConf.overrideLocalInterp = false;
 	conf.sprinting.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sprinting.interpRangedConf.localMinFollowRate = 1.0f;
 	conf.sprinting.interpRangedConf.localMaxFollowRate = 1.0f;
@@ -661,7 +661,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sprinting.interpMagicConf.minCameraFollowRate = 0.7f;
 	conf.sprinting.interpMagicConf.maxCameraFollowRate = 0.98f;
 	conf.sprinting.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sprinting.interpMagicConf.overrideLocalInterp = true;
+	conf.sprinting.interpMagicConf.overrideLocalInterp = false;
 	conf.sprinting.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sprinting.interpMagicConf.localMinFollowRate = 1.0f;
 	conf.sprinting.interpMagicConf.localMaxFollowRate = 1.0f;
@@ -671,7 +671,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sprinting.interpMeleeConf.minCameraFollowRate = 0.7f;
 	conf.sprinting.interpMeleeConf.maxCameraFollowRate = 0.98f;
 	conf.sprinting.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sprinting.interpMeleeConf.overrideLocalInterp = true;
+	conf.sprinting.interpMeleeConf.overrideLocalInterp = false;
 	conf.sprinting.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sprinting.interpMeleeConf.localMinFollowRate = 1.0f;
 	conf.sprinting.interpMeleeConf.localMaxFollowRate = 1.0f;
@@ -704,7 +704,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sneaking.interpConf.minCameraFollowRate = 0.7f;
 	conf.sneaking.interpConf.maxCameraFollowRate = 0.98f;
 	conf.sneaking.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sneaking.interpConf.overrideLocalInterp = true;
+	conf.sneaking.interpConf.overrideLocalInterp = false;
 	conf.sneaking.interpConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sneaking.interpConf.localMinFollowRate = 1.0f;
 	conf.sneaking.interpConf.localMaxFollowRate = 1.0f;
@@ -714,7 +714,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sneaking.interpRangedConf.minCameraFollowRate = 0.7f;
 	conf.sneaking.interpRangedConf.maxCameraFollowRate = 0.98f;
 	conf.sneaking.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sneaking.interpRangedConf.overrideLocalInterp = true;
+	conf.sneaking.interpRangedConf.overrideLocalInterp = false;
 	conf.sneaking.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sneaking.interpRangedConf.localMinFollowRate = 1.0f;
 	conf.sneaking.interpRangedConf.localMaxFollowRate = 1.0f;
@@ -724,7 +724,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sneaking.interpMagicConf.minCameraFollowRate = 0.7f;
 	conf.sneaking.interpMagicConf.maxCameraFollowRate = 0.98f;
 	conf.sneaking.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sneaking.interpMagicConf.overrideLocalInterp = true;
+	conf.sneaking.interpMagicConf.overrideLocalInterp = false;
 	conf.sneaking.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sneaking.interpMagicConf.localMinFollowRate = 1.0f;
 	conf.sneaking.interpMagicConf.localMaxFollowRate = 1.0f;
@@ -734,7 +734,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.sneaking.interpMeleeConf.minCameraFollowRate = 0.7f;
 	conf.sneaking.interpMeleeConf.maxCameraFollowRate = 0.98f;
 	conf.sneaking.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.sneaking.interpMeleeConf.overrideLocalInterp = true;
+	conf.sneaking.interpMeleeConf.overrideLocalInterp = false;
 	conf.sneaking.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.sneaking.interpMeleeConf.localMinFollowRate = 1.0f;
 	conf.sneaking.interpMeleeConf.localMaxFollowRate = 1.0f;
@@ -751,7 +751,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.swimming.interpConf.minCameraFollowRate = 0.33f;
 	conf.swimming.interpConf.maxCameraFollowRate = 0.85f;
 	conf.swimming.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.swimming.interpConf.overrideLocalInterp = true;
+	conf.swimming.interpConf.overrideLocalInterp = false;
 	conf.swimming.interpConf.separateLocalScalar = ScalarMethods::SINE_IN;
 	conf.swimming.interpConf.localMinFollowRate = 0.4f;
 	conf.swimming.interpConf.localMaxFollowRate = 0.98f;
@@ -779,7 +779,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.bowAim.interpHorsebackConf.minCameraFollowRate = 1.0f;
 	conf.bowAim.interpHorsebackConf.maxCameraFollowRate = 1.0f;
 	conf.bowAim.interpHorsebackConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.bowAim.interpHorsebackConf.overrideLocalInterp = true;
+	conf.bowAim.interpHorsebackConf.overrideLocalInterp = false;
 	conf.bowAim.interpHorsebackConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.bowAim.interpHorsebackConf.localMinFollowRate = 1.0f;
 	conf.bowAim.interpHorsebackConf.localMaxFollowRate = 1.0f;
@@ -789,7 +789,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.bowAim.interpRangedConf.minCameraFollowRate = 1.0f;
 	conf.bowAim.interpRangedConf.maxCameraFollowRate = 1.0f;
 	conf.bowAim.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.bowAim.interpRangedConf.overrideLocalInterp = true;
+	conf.bowAim.interpRangedConf.overrideLocalInterp = false;
 	conf.bowAim.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.bowAim.interpRangedConf.localMinFollowRate = 1.0f;
 	conf.bowAim.interpRangedConf.localMaxFollowRate = 1.0f;
@@ -799,7 +799,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.bowAim.interpMeleeConf.minCameraFollowRate = 1.0f;
 	conf.bowAim.interpMeleeConf.maxCameraFollowRate = 1.0f;
 	conf.bowAim.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.bowAim.interpMeleeConf.overrideLocalInterp = true;
+	conf.bowAim.interpMeleeConf.overrideLocalInterp = false;
 	conf.bowAim.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.bowAim.interpMeleeConf.localMinFollowRate = 1.0f;
 	conf.bowAim.interpMeleeConf.localMaxFollowRate = 1.0f;
@@ -849,7 +849,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.horseback.interpConf.minCameraFollowRate = 0.33f;
 	conf.horseback.interpConf.maxCameraFollowRate = 0.98f;
 	conf.horseback.interpConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.horseback.interpConf.overrideLocalInterp = true;
+	conf.horseback.interpConf.overrideLocalInterp = false;
 	conf.horseback.interpConf.separateLocalScalar = ScalarMethods::EXP_IN;
 	conf.horseback.interpConf.localMinFollowRate = 0.7f;
 	conf.horseback.interpConf.localMaxFollowRate = 0.98f;
@@ -859,7 +859,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.horseback.interpRangedConf.minCameraFollowRate = 0.33f;
 	conf.horseback.interpRangedConf.maxCameraFollowRate = 0.98f;
 	conf.horseback.interpRangedConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.horseback.interpRangedConf.overrideLocalInterp = true;
+	conf.horseback.interpRangedConf.overrideLocalInterp = false;
 	conf.horseback.interpRangedConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.horseback.interpRangedConf.localMinFollowRate = 1.0f;
 	conf.horseback.interpRangedConf.localMaxFollowRate = 1.0f;
@@ -869,7 +869,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.horseback.interpMagicConf.minCameraFollowRate = 0.33f;
 	conf.horseback.interpMagicConf.maxCameraFollowRate = 0.98f;
 	conf.horseback.interpMagicConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.horseback.interpMagicConf.overrideLocalInterp = true;
+	conf.horseback.interpMagicConf.overrideLocalInterp = false;
 	conf.horseback.interpMagicConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.horseback.interpMagicConf.localMinFollowRate = 1.0f;
 	conf.horseback.interpMagicConf.localMaxFollowRate = 1.0f;
@@ -879,7 +879,7 @@ const Config::UserConfig& Config::GetDefaultConfig() noexcept {
 	conf.horseback.interpMeleeConf.minCameraFollowRate = 0.33f;
 	conf.horseback.interpMeleeConf.maxCameraFollowRate = 0.98f;
 	conf.horseback.interpMeleeConf.zoomMaxSmoothingDistance = 650.0f;
-	conf.horseback.interpMeleeConf.overrideLocalInterp = true;
+	conf.horseback.interpMeleeConf.overrideLocalInterp = false;
 	conf.horseback.interpMeleeConf.separateLocalScalar = ScalarMethods::LINEAR;
 	conf.horseback.interpMeleeConf.localMinFollowRate = 1.0f;
 	conf.horseback.interpMeleeConf.localMaxFollowRate = 1.0f;
