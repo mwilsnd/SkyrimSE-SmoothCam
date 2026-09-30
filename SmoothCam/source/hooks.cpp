@@ -5,19 +5,19 @@
 #include "arrow_fixes.h"
 #include "debug/eh.h"
 
-extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern std::unique_ptr<Camera::Camera> g_theCamera;
 extern Offsets* g_Offsets;
 
 using PlayerMenuOpenCloseEvent = void; // RE::BSTEventSink<RE::MenuOpenCloseEvent>
 using PlayerMenuModeChangeEvent = void; // RE::BSTEventSink<MenuModeChangeEvent>
-static eastl::unique_ptr<PolymorphicVTableDetour<RE::TESCameraState, 13>> cameraUpdateHooks;
-static eastl::unique_ptr<VTableDetour<RE::PlayerInputHandler>> playerInputHook;
-static eastl::unique_ptr<VTableDetour<PlayerMenuOpenCloseEvent>> menuOpenCloseHook;
-static eastl::unique_ptr<VTableDetour<PlayerMenuModeChangeEvent>> menuModeChangeHook;
-static eastl::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_ThirdPersonState;
-static eastl::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_DragonState;
-static eastl::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_HorseState;
-static eastl::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_BleedoutState;
+static std::unique_ptr<PolymorphicVTableDetour<RE::TESCameraState, 13>> cameraUpdateHooks;
+static std::unique_ptr<VTableDetour<RE::PlayerInputHandler>> playerInputHook;
+static std::unique_ptr<VTableDetour<PlayerMenuOpenCloseEvent>> menuOpenCloseHook;
+static std::unique_ptr<VTableDetour<PlayerMenuModeChangeEvent>> menuModeChangeHook;
+static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_ThirdPersonState;
+static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_DragonState;
+static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_HorseState;
+static std::unique_ptr<VTableDetour<RE::TESCameraState>> inputHandler_BleedoutState;
 
 // Camera update
 typedef void(__thiscall* CameraOnUpdate)(RE::TESCameraState*, RE::BSTSmartPointer<RE::TESCameraState>&);
@@ -203,7 +203,7 @@ static RE::BSEventNotifyControl mMenuModeChangeHandler(uintptr_t pThis, MenuMode
 
 // 80230 : gotoAndStop
 typedef uintptr_t(*CrosshairInvoke)(RE::GFxMovieView** param1, uint64_t* param2, const char* name, uint64_t param4);
-static eastl::unique_ptr<TypedDetour<CrosshairInvoke>> detCrosshairInvoke;
+static std::unique_ptr<TypedDetour<CrosshairInvoke>> detCrosshairInvoke;
 static uintptr_t mCrosshairInvoke(RE::GFxMovieView** param1, uint64_t* param2, const char* name, uint64_t param4) {
 	const auto ret = detCrosshairInvoke->GetBase()(param1, param2, name, param4);
 	if (!name || !g_theCamera) return ret;
@@ -222,7 +222,7 @@ static uintptr_t mCrosshairInvoke(RE::GFxMovieView** param1, uint64_t* param2, c
 
 //{ 0x00ECA860, 80233 }
 typedef bool(*GFxInvoke)(void* pThis, void* obj, RE::GFxValue* result, const char* name, RE::GFxValue* args, uint32_t numArgs, bool isDisplayObj);
-static eastl::unique_ptr<TypedDetour<GFxInvoke>> detGFxInvoke;
+static std::unique_ptr<TypedDetour<GFxInvoke>> detGFxInvoke;
 static bool mGFxInvoke(void* pThis, void* obj, RE::GFxValue* result, const char* name, RE::GFxValue* args, uint32_t numArgs, bool isDisplayObj) {
 	const auto ret = detGFxInvoke->GetBase()(pThis, obj, result, name, args, numArgs, isDisplayObj);
 
@@ -252,7 +252,7 @@ static bool mGFxInvoke(void* pThis, void* obj, RE::GFxValue* result, const char*
 //FUN_14084b430:49866
 typedef void(*FactorCameraOffset)(RE::PlayerCamera* camera, RE::NiPoint3& pos, bool fac);
 using FactorCameraOffsetDetour = TypedDetour<FactorCameraOffset>;
-static eastl::unique_ptr<FactorCameraOffsetDetour> detFactorCameraOffset;
+static std::unique_ptr<FactorCameraOffsetDetour> detFactorCameraOffset;
 static void mFactorCameraOffset(RE::PlayerCamera* camera, RE::NiPoint3& pos, bool fac) {
 	// SSE Engine Fixes will call GetEyeVector with factorCameraOffset
 	// We appear to screw this computation up as a side effect of correcting the interaction crosshair
@@ -278,13 +278,13 @@ static void mFactorCameraOffset(RE::PlayerCamera* camera, RE::NiPoint3& pos, boo
 }
 
 // Render tear-down, before CoUninitialize
-static eastl::vector<Hooks::ShutdownCallback> shutdownEVs;
+static std::vector<Hooks::ShutdownCallback> shutdownEVs;
 void Hooks::RegisterGameShutdownEvent(ShutdownCallback&& cb) noexcept {
-	shutdownEVs.push_back(eastl::move(cb));
+	shutdownEVs.push_back(std::move(cb));
 }
 
 typedef uintptr_t(*CalledDuringRenderShutdown)();
-static eastl::unique_ptr<TypedDetour<CalledDuringRenderShutdown>> detCalledDuringRenderShutdown;
+static std::unique_ptr<TypedDetour<CalledDuringRenderShutdown>> detCalledDuringRenderShutdown;
 static uintptr_t mCalledDuringRenderShutdown() {
 	DebugPrint("Shutting down...\n");
 
@@ -317,7 +317,7 @@ static uintptr_t mCalledDuringRenderShutdown() {
 // Render startup
 // Hook here after D3DStartup so we don't step on SSEDisplayTweaks :>
 typedef void(*CalledDuringRenderStartup)();
-static eastl::unique_ptr<TypedDetour<CalledDuringRenderStartup>> detCalledDuringRenderStartup;
+static std::unique_ptr<TypedDetour<CalledDuringRenderStartup>> detCalledDuringRenderStartup;
 static void mCalledDuringRenderStartup() {
 	if (Render::HasAttemptedHook()) return;
 
@@ -353,12 +353,12 @@ static void mCalledDuringRenderStartup() {
 }
 
 bool Hooks::DeferredAttach() {
-	playerInputHook = eastl::make_unique<VTableDetour<RE::PlayerInputHandler>>(RE::PlayerControls::GetSingleton()->togglePOVHandler);
+	playerInputHook = std::make_unique<VTableDetour<RE::PlayerInputHandler>>(RE::PlayerControls::GetSingleton()->togglePOVHandler);
 	playerInputHook->Add(1, mOnInput);
 	if (!playerInputHook->Attach())
 		FatalError(L"Failed to place detour on target virtual function(togglePOVHandler), this error is fatal.");
 
-	menuOpenCloseHook = eastl::make_unique<VTableDetour<PlayerMenuOpenCloseEvent>>(
+	menuOpenCloseHook = std::make_unique<VTableDetour<PlayerMenuOpenCloseEvent>>(
 		reinterpret_cast<PlayerMenuOpenCloseEvent*>(
 			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) + g_Offsets->menuHookOffset
 		)
@@ -367,7 +367,7 @@ bool Hooks::DeferredAttach() {
 	if (!menuOpenCloseHook->Attach())
 		FatalError(L"Failed to place detour on target virtual function(menuOpenCloseHandler), this error is fatal.");
 
-	menuModeChangeHook = eastl::make_unique<VTableDetour<PlayerMenuModeChangeEvent>>(
+	menuModeChangeHook = std::make_unique<VTableDetour<PlayerMenuModeChangeEvent>>(
 		reinterpret_cast<PlayerMenuModeChangeEvent*>(
 			reinterpret_cast<uintptr_t>(RE::PlayerCharacter::GetSingleton()) +  g_Offsets->menuHookOffset + 8
 		)
@@ -377,7 +377,7 @@ bool Hooks::DeferredAttach() {
 		FatalError(L"Failed to place detour on target virtual function(menuModeChangeHandler), this error is fatal.");
 
 	auto states = RE::PlayerCamera::GetSingleton()->cameraStates;
-	cameraUpdateHooks = eastl::make_unique<PolymorphicVTableDetour<RE::TESCameraState, 13>>();
+	cameraUpdateHooks = std::make_unique<PolymorphicVTableDetour<RE::TESCameraState, 13>>();
 	cameraUpdateHooks->Add(states[RE::CameraState::kFirstPerson].get(), 3, mCameraUpdate);
 	cameraUpdateHooks->Add(states[RE::CameraState::kThirdPerson].get(), 3, mCameraUpdate);
 	cameraUpdateHooks->Add(states[RE::CameraState::kDragon].get(), 3, mCameraUpdate);
@@ -405,22 +405,22 @@ bool Hooks::DeferredAttach() {
 	auto drag_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_DragonCameraState_1).get();
 	auto horse_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_HorseCameraState_1).get();
 	auto bleed_1 = REL::Relocation<RE::TESCameraState*>(g_Offsets->vtable_BleedoutCameraState_1).get();
-	inputHandler_ThirdPersonState = eastl::make_unique<VTableDetour<RE::TESCameraState>>(
+	inputHandler_ThirdPersonState = std::make_unique<VTableDetour<RE::TESCameraState>>(
 		reinterpret_cast<RE::TESCameraState*>(&tps_1)
 	);
 	inputHandler_ThirdPersonState->Add(4, mProcessButtonTPS);
 
-	inputHandler_DragonState = eastl::make_unique<VTableDetour<RE::TESCameraState>>(
+	inputHandler_DragonState = std::make_unique<VTableDetour<RE::TESCameraState>>(
 		reinterpret_cast<RE::TESCameraState*>(&drag_1)
 	);
 	inputHandler_DragonState->Add(4, mProcessButtonDragon);
 
-	inputHandler_HorseState = eastl::make_unique<VTableDetour<RE::TESCameraState>>(
+	inputHandler_HorseState = std::make_unique<VTableDetour<RE::TESCameraState>>(
 		reinterpret_cast<RE::TESCameraState*>(&horse_1)
 	);
 	inputHandler_HorseState->Add(4, mProcessButtonHorse);
 
-	inputHandler_BleedoutState = eastl::make_unique<VTableDetour<RE::TESCameraState>>(
+	inputHandler_BleedoutState = std::make_unique<VTableDetour<RE::TESCameraState>>(
 		reinterpret_cast<RE::TESCameraState*>(&bleed_1)
 	);
 	inputHandler_BleedoutState->Add(4, mProcessButtonBleedout);
@@ -430,16 +430,16 @@ bool Hooks::DeferredAttach() {
 		FatalError(L"Failed to place detour on target functions(TESCameraState::ProcessButton), this error is fatal.");
 
 	// FactorCameraOffset
-	detFactorCameraOffset = eastl::make_unique<FactorCameraOffsetDetour>(g_Offsets->FactorCameraOffset, mFactorCameraOffset);
+	detFactorCameraOffset = std::make_unique<FactorCameraOffsetDetour>(g_Offsets->FactorCameraOffset, mFactorCameraOffset);
 	if (!detFactorCameraOffset->Attach())
 		FatalError(L"Failed to place detour on target function(Hooks::FactorCameraOffset), this error is fatal.");
 
 	// Crosshair UI
-	detGFxInvoke = eastl::make_unique<TypedDetour<GFxInvoke>>(g_Offsets->GFxInvoke, mGFxInvoke);
+	detGFxInvoke = std::make_unique<TypedDetour<GFxInvoke>>(g_Offsets->GFxInvoke, mGFxInvoke);
 	if (!detGFxInvoke->Attach())
 		FatalError(L"Failed to place detour on target function(80,233), this error is fatal.");
 
-	detCrosshairInvoke = eastl::make_unique<TypedDetour<CrosshairInvoke>>(g_Offsets->GFxGotoAndStop, mCrosshairInvoke);
+	detCrosshairInvoke = std::make_unique<TypedDetour<CrosshairInvoke>>(g_Offsets->GFxGotoAndStop, mCrosshairInvoke);
 	if (!detCrosshairInvoke->Attach())
 		FatalError(L"Failed to place detour on target function(80,230), this error is fatal.");
 
@@ -448,7 +448,7 @@ bool Hooks::DeferredAttach() {
 
 bool Hooks::AttachD3D() {
 	logger::info("Hooking render startup method");
-	detCalledDuringRenderStartup = eastl::make_unique<TypedDetour<CalledDuringRenderStartup>>(
+	detCalledDuringRenderStartup = std::make_unique<TypedDetour<CalledDuringRenderStartup>>(
 		g_Offsets->RenderStartup,
 		mCalledDuringRenderStartup
 	);
@@ -458,7 +458,7 @@ bool Hooks::AttachD3D() {
 	}
 
 	logger::info("Hooking render shutdown method");
-	detCalledDuringRenderShutdown = eastl::make_unique<TypedDetour<CalledDuringRenderShutdown>>(
+	detCalledDuringRenderShutdown = std::make_unique<TypedDetour<CalledDuringRenderShutdown>>(
 		g_Offsets->RenderShutdown,
 		mCalledDuringRenderShutdown
 	);

@@ -29,7 +29,7 @@ namespace Camera {
 				void DrawBounds(RE::NiAVObject* obj, const glm::vec4&& col) noexcept;
 				void DrawBounds(const glm::vec3& loc, const glm::vec4&& col) noexcept;
 
-				eastl::unique_ptr<Render::LineDrawer> segmentDrawer;
+				std::unique_ptr<Render::LineDrawer> segmentDrawer;
 				Render::LineList segments;
 				bool drawOverlay = false;
 				bool allowDraw = false;
@@ -43,7 +43,7 @@ namespace Camera {
 				static_assert(sizeof(VSMatricesCBuffer) % 16 == 0);
 
 				VSMatricesCBuffer cbufPerFrameStaging = {};
-				eastl::shared_ptr<Render::CBuffer> cbufPerFrame;
+				std::shared_ptr<Render::CBuffer> cbufPerFrame;
 #endif
 
 			private:

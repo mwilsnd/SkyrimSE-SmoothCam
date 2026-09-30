@@ -4,10 +4,10 @@
 #include "render/dwrite.h"
 #include <iomanip>
 
-extern eastl::unique_ptr<Render::D2D> g_D2D;
+extern std::unique_ptr<Render::D2D> g_D2D;
 
 template< typename T >
-eastl::wstring int_to_hex(T i) {
+std::wstring int_to_hex(T i) {
 	std::wstringstream stream;
 	stream << "0x" 
 		<< std::setfill (L'0') << std::setw(sizeof(T)*2) 
@@ -37,10 +37,10 @@ void Render::NiNodeTreeDisplay::Draw(D3DContext& ctx, RE::NiNode* node) noexcept
 	DrawBackground(ctx);
 
 	builder.clear();
-	eastl::wstring str;
+	std::wstring str;
 	
 	const auto maxSize = glm::vec2{ width, height };
-	eastl::function<void(RE::NiAVObject*, float&, float&, uint32_t)> walkFun;
+	std::function<void(RE::NiAVObject*, float&, float&, uint32_t)> walkFun;
 	walkFun = [&ctx, &maxSize, &walkFun, &str, this](RE::NiAVObject* n, float& x, float& y, uint32_t level) {
 		constexpr auto lineHeight = 10.0f;
 

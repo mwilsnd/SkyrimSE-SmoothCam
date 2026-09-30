@@ -11,8 +11,8 @@
 extern Offsets* g_Offsets;
 
 Camera::Camera::Camera() noexcept : config(Config::GetCurrentConfig()) {
-	cameraFirst = eastl::make_unique<Firstperson>(this);
-	cameraThird = eastl::make_unique<Thirdperson>(this);
+	cameraFirst = std::make_unique<Firstperson>(this);
+	cameraThird = std::make_unique<Thirdperson>(this);
 
 	if (Render::HasContext())
 		Render::OnPresent(std::bind(&Camera::Camera::Render, this, std::placeholders::_1));

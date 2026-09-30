@@ -380,14 +380,14 @@ namespace Config {
 	// Returns true if ok, otherwise does nothing
 	bool LoadPreset(int slot);
 	// Returns true if ok, otherwise does nothing
-	LoadStatus LoadPresetName(int slot, eastl::string& name);
+	LoadStatus LoadPresetName(int slot, std::string& name);
 	// Returns the name of the saved preset or "Slot <N>" if no preset is found
 	RE::BSFixedString GetPresetSlotName(int slot);
 	// Get the file path for the given preset slot
-	eastl::wstring GetPresetPath(int slot);
+	std::wstring GetPresetPath(int slot);
 
 	// Load the list of bones for the camera to follow
-	using BoneList = eastl::vector<RE::BSFixedString>;
+	using BoneList = std::vector<RE::BSFixedString>;
 	bool LoadBoneList(const std::wstring_view&& searchName, BoneList& outBones);
 	
 	void LoadBonePriorities();

@@ -35,7 +35,7 @@ Crosshair::Manager::Manager() noexcept {
 	perObj.cpuAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE;
 	perObj.size = sizeof(decltype(renderables.cbufPerObjectStaging));
 	perObj.initialData = &renderables.cbufPerObjectStaging;
-	renderables.cbufPerObject = eastl::make_shared<Render::CBuffer>(perObj, ctx);
+	renderables.cbufPerObject = std::make_shared<Render::CBuffer>(perObj, ctx);
 
 	// Per-frame data, shared among many objects (view, projection)
 	Render::CBufferCreateInfo perFrane;
@@ -43,10 +43,10 @@ Crosshair::Manager::Manager() noexcept {
 	perFrane.cpuAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE;
 	perFrane.size = sizeof(decltype(renderables.cbufPerFrameStaging));
 	perFrane.initialData = &renderables.cbufPerFrameStaging;
-	renderables.cbufPerFrame = eastl::make_shared<Render::CBuffer>(perFrane, ctx);
+	renderables.cbufPerFrame = std::make_shared<Render::CBuffer>(perFrane, ctx);
 
 	// Create our line drawer for the crosshair tail
-	renderables.tailDrawer = eastl::make_unique<Render::LineDrawer>(ctx);
+	renderables.tailDrawer = std::make_unique<Render::LineDrawer>(ctx);
 }
 
 Crosshair::Manager::~Manager() {
@@ -168,7 +168,7 @@ bool Crosshair::Manager::ProjectilePredictionCurve(const RE::Actor* player, cons
 	glm::vec3 curPos = startPos;
 
 	uint8_t entries = 0;
-	eastl::array<eastl::tuple<glm::vec3, glm::vec3>, segCount> points;
+	std::array<std::tuple<glm::vec3, glm::vec3>, segCount> points;
 
 	bool hit = false;
 	for (auto i = 0; i < segCount; i++) {
@@ -602,13 +602,13 @@ void Crosshair::Manager::Set3DCrosshairType(Config::CrosshairType type) noexcept
 	// Crosshair either changed or this is the first time running
 	switch (type) {
 		case Config::CrosshairType::Skyrim:
-			renderables.curCrosshair = eastl::make_unique<Crosshair::Skyrim>();
+			renderables.curCrosshair = std::make_unique<Crosshair::Skyrim>();
 			break;
 		case Config::CrosshairType::Dot:
-			renderables.curCrosshair = eastl::make_unique<Crosshair::Dot>();
+			renderables.curCrosshair = std::make_unique<Crosshair::Dot>();
 			break;
 		default:
-			renderables.curCrosshair = eastl::make_unique<Crosshair::Skyrim>();
+			renderables.curCrosshair = std::make_unique<Crosshair::Skyrim>();
 			break;
 	}
 

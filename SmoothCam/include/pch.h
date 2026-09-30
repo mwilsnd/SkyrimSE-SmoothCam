@@ -2,13 +2,6 @@
 #include <codeanalysis\warnings.h>
 #include "code_analysis.h"
 #include <new>
-void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line);
-void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags,
-    unsigned debugFlags, const char* file, int line);
-
-extern "C" {
-    int __cdecl Vsnprintf8(char* p, size_t n, const char* pFormat, va_list arguments);
-}
 
 // Ignore all warnings from external code
 SILENCE_CODE_ANALYSIS;
@@ -41,23 +34,19 @@ SILENCE_EXTERNAL;
 #   endif
 #   pragma warning(pop)
 
-#   define EASTL_EASTDC_VSNPRINTF 0
-#   include <EASTL/shared_ptr.h>
-#   include <EASTL/unique_ptr.h>
-#   include <EASTL/string.h>
-#   include <EASTL/numeric_limits.h>
-#   include <EASTL/algorithm.h>
-#   include <EASTL/functional.h>
-#   include <EASTL/bitset.h>
-#   include <EASTL/unordered_map.h>
-#   include <EASTL/map.h>
-#   include <EASTL/array.h>
-#   include <EASTL/tuple.h>
-#   include <EASTL/vector.h>
-#   include <EASTL/fixed_vector.h>
-#   include <EASTL/fixed_slist.h>
-#   include <EASTL/fixed_list.h>
-#   include <EASTL/bonus/fixed_ring_buffer.h>
+#   include <memory>
+#   include <string>
+#   include <string_view>
+#   include <vector>
+#   include <array>
+#   include <bitset>
+#   include <functional>
+#   include <map>
+#   include <unordered_map>
+#   include <tuple>
+#   include <algorithm>
+#   include <limits>
+#   include <numeric>
 
 #   ifdef BUCK_V2
 #       include <detours/detours.h>
@@ -94,6 +83,7 @@ using vec4u = glm::vec<4, float, glm::highp>;
 using vec2ui = glm::vec<2, int, glm::highp>;
 using vec3ui = glm::vec<3, int, glm::highp>;
 using vec4ui = glm::vec<4, int, glm::highp>;
+
 RESTORE_EXTERNAL;
 RESTORE_CODE_ANALYSIS;
 
@@ -115,6 +105,8 @@ RESTORE_CODE_ANALYSIS;
 // Enable an exception handler that writes minidumps when smoothcam code crashes
 #define EMIT_MINIDUMPS
 
+#include "util.h"
+
 // Enable Direct2D code
 //#define WITH_D2D
 #ifdef WITH_D2D
@@ -135,7 +127,6 @@ RESTORE_CODE_ANALYSIS;
 
 #include "offset_ids.h"
 #include "modapi.h"
-#include "util.h"
 #include "debug/console.h"
 #include "timer.h"
 #include "basicdetour.h"

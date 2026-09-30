@@ -99,7 +99,7 @@ namespace Render {
 	winrt::com_ptr<ID3D11RenderTargetView>& GetGameRT() noexcept;
 
 	// Add a new function for drawing during the present hook
-	using DrawFunc = eastl::function<void(D3DContext&)>;
+	using DrawFunc = std::function<void(D3DContext&)>;
 	void OnPresent(DrawFunc&& callback) noexcept;
 
 	// Set the depth state

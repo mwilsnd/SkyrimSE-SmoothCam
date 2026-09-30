@@ -13,10 +13,10 @@ namespace Crosshair {
 			Dot& operator=(const Dot&) = delete;
 			Dot& operator=(Dot&&) noexcept = delete;
 
-			virtual void Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept override;
+			virtual void Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept override;
 			virtual void Render(Render::D3DContext& ctx, bool allowDepthTesting) noexcept override;
 
 		private:
-			eastl::unique_ptr<Render::MeshDrawer> meshDrawer;
+			std::unique_ptr<Render::MeshDrawer> meshDrawer;
 	};
 }

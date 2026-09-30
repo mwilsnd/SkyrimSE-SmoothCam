@@ -7,7 +7,7 @@ struct StringBuilder {
 
 	void append(T&& v) noexcept {
 		size_ += v.length();
-		items.push_back(eastl::move(v));
+		items.push_back(std::move(v));
 	}
 
 	void clear() noexcept {
@@ -42,6 +42,6 @@ struct StringBuilder {
 
 	private:
 		T str = {};
-		eastl::vector<T> items = {};
+		std::vector<T> items = {};
 		size_t size_ = 0;
 };

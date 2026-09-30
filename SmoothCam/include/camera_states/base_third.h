@@ -69,7 +69,7 @@ namespace Camera {
 				void SetCameraRotation(mmath::Rotation& rot, RE::PlayerCamera* playerCamera) noexcept;
 
 				// Find a node to use as the world position for following
-				RE::NiAVObject* FindFollowBone(const RE::TESObjectREFR* ref, const eastl::string_view& filterBone = "") const noexcept;
+				RE::NiAVObject* FindFollowBone(const RE::TESObjectREFR* ref, const std::string_view& filterBone = "") const noexcept;
 				// Offset the gmae FOV by the given amount
 				void SetFOVOffset(float fov, bool force = false) noexcept;
 				// Return the current offset transition state, for mutation

@@ -939,15 +939,15 @@ struct ConfigData {
 	Config::BoneList bonePriorities = {};
 	Config::BoneList focusBonePriorities = {};
 	Config::BoneList eyeBonePriorities = {};
-	eastl::vector<Config::ConfigChanged> changeEvents{};
+	std::vector<Config::ConfigChanged> changeEvents{};
 };
-static eastl::unique_ptr<ConfigData> configData = nullptr;
+static std::unique_ptr<ConfigData> configData = nullptr;
 
 void Config::Initialize() {
 	ReadConfigFile();
 	
 	// Load bone data
-	configData = eastl::make_unique<ConfigData>();
+	configData = std::make_unique<ConfigData>();
 	LoadBonePriorities();
 	LoadFocusBonePriorities();
 #ifdef DEVELOPER
@@ -1050,7 +1050,7 @@ bool Config::LoadPreset(int slot) {
 	return true;
 }
 
-Config::LoadStatus Config::LoadPresetName(int slot, eastl::string& name) {
+Config::LoadStatus Config::LoadPresetName(int slot, std::string& name) {
 	if (slot >= MaxPresetSlots) return LoadStatus::FAILED;
 
 	Preset p;
@@ -1077,7 +1077,7 @@ RE::BSFixedString Config::GetPresetSlotName(int slot) {
 	if (slot >= MaxPresetSlots)
 		return { "ERROR: Preset index out of range" };
 
-	eastl::string userName;
+	std::string userName;
 	const auto code = LoadPresetName(slot, userName);
 	if (code == LoadStatus::OK)
 		return { userName.c_str() };
@@ -1087,8 +1087,8 @@ RE::BSFixedString Config::GetPresetSlotName(int slot) {
 		return { "Empty" };
 }
 
-eastl::wstring Config::GetPresetPath(int slot) {
-	eastl::wstring slotName(L"Data/SKSE/Plugins/SmoothCamPreset");
+std::wstring Config::GetPresetPath(int slot) {
+	std::wstring slotName(L"Data/SKSE/Plugins/SmoothCamPreset");
 	slotName.append(std::to_wstring(slot).c_str());
 	slotName.append(L".json");
 	return slotName;
@@ -1195,7 +1195,7 @@ Config::BoneList& Config::GetEyeBonePriorities() noexcept {
 #endif
 
 void Config::RegisterConfigChangedEvent(ConfigChanged&& ev) noexcept {
-	configData->changeEvents.push_back(eastl::move(ev));
+	configData->changeEvents.push_back(std::move(ev));
 }
 
 #pragma warning(pop)

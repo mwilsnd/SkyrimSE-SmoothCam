@@ -6,11 +6,11 @@ extern Offsets* g_Offsets;
 
 Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, CameraID::Thirdperson) {
 	config = Config::GetCurrentConfig();
-	crosshair = eastl::make_unique<Crosshair::Manager>();
+	crosshair = std::make_unique<Crosshair::Manager>();
 
-	thirdPersonState = eastl::make_unique<State::ThirdpersonState>(this);
-	thirdPersonDialogueState = eastl::make_unique<State::ThirdpersonDialogueState>(this);
-	thirdPersonVanityState = eastl::make_unique<State::ThirdpersonVanityState>(this);
+	thirdPersonState = std::make_unique<State::ThirdpersonState>(this);
+	thirdPersonDialogueState = std::make_unique<State::ThirdpersonDialogueState>(this);
+	thirdPersonVanityState = std::make_unique<State::ThirdpersonVanityState>(this);
 
 	cameraStates[static_cast<size_t>(GameState::CameraState::ThirdPerson)] = thirdPersonState.get();
 	cameraStates[static_cast<size_t>(GameState::CameraState::ThirdPersonCombat)] = thirdPersonState.get();
@@ -20,17 +20,17 @@ Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 
 #ifdef WITH_CHARTS
 	if (Render::HasContext()) {
-		focusTargetNodeTree = eastl::make_unique<Render::NiNodeTreeDisplay>(600, 1080, Render::GetContext());
-		stateOverlay = eastl::make_unique<Render::StateOverlay>(600, 128, this, Render::GetContext());
+		focusTargetNodeTree = std::make_unique<Render::NiNodeTreeDisplay>(600, 1080, Render::GetContext());
+		stateOverlay = std::make_unique<Render::StateOverlay>(600, 128, this, Render::GetContext());
 
-		graph_worldPosTarget = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
-		graph_offsetPos = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
-		graph_targetOffsetPos = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
-		graph_localSpace = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
-		graph_rotation = eastl::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
-		graph_tpsRotation = eastl::make_unique<Render::LineGraph>(4, 128, 600, 128, Render::GetContext());
-		graph_computeTime = eastl::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
-		graph_fov = eastl::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
+		graph_worldPosTarget = std::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
+		graph_offsetPos = std::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
+		graph_targetOffsetPos = std::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
+		graph_localSpace = std::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
+		graph_rotation = std::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
+		graph_tpsRotation = std::make_unique<Render::LineGraph>(4, 128, 600, 128, Render::GetContext());
+		graph_computeTime = std::make_unique<Render::LineGraph>(3, 128, 600, 128, Render::GetContext());
+		graph_fov = std::make_unique<Render::LineGraph>(2, 128, 600, 128, Render::GetContext());
 
 		const auto xColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		const auto yColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
@@ -86,7 +86,7 @@ Camera::Thirdperson::Thirdperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 		cbuf.cpuAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		cbuf.size = sizeof(glm::mat4);
 		cbuf.initialData = &orthoMatrix;
-		perFrameBuffer = eastl::make_unique<Render::CBuffer>(cbuf, Render::GetContext());
+		perFrameBuffer = std::make_unique<Render::CBuffer>(cbuf, Render::GetContext());
 	}
 #endif
 }
@@ -802,7 +802,7 @@ void Camera::Thirdperson::UpdateInternalRotation(const RE::PlayerCamera* camera)
 	}
 }
 
-RE::NiAVObject* Camera::Thirdperson::FindFollowBone(const RE::TESObjectREFR* ref, const eastl::string_view& filterBone)
+RE::NiAVObject* Camera::Thirdperson::FindFollowBone(const RE::TESObjectREFR* ref, const std::string_view& filterBone)
 	const noexcept
 {
 	if (!ref->loadedData || !ref->loadedData->data3D) return nullptr;
@@ -1333,7 +1333,7 @@ std::tuple<glm::vec3, glm::vec3> Camera::Thirdperson::GetDistanceClamping() cons
 	float maxsX = config->cameraDistanceClampXMax;
 
 	if (config->swapXClamping && shoulderSwap < 1) {
-		eastl::swap(minsX, maxsX);
+		std::swap(minsX, maxsX);
 		maxsX *= -1.0f;
 		minsX *= -1.0f;
 	}

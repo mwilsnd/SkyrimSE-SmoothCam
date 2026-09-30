@@ -44,12 +44,12 @@ namespace Camera {
 				virtual void Update(RE::PlayerCharacter* player, RE::Actor* cameraRef, RE::PlayerCamera* playerCamera)
 					noexcept override;
 
-				RE::NiAVObject* FindFocalBone(RE::TESObjectREFR* ref, const eastl::string_view& filterBone = "") const noexcept;
+				RE::NiAVObject* FindFocalBone(RE::TESObjectREFR* ref, const std::string_view& filterBone = "") const noexcept;
 				Thirdperson* GetThirdpersonCamera() const noexcept;
 
 			private:
-				eastl::array<
-					eastl::unique_ptr<IThirdPersonDialogue>,
+				std::array<
+					std::unique_ptr<IThirdPersonDialogue>,
 					static_cast<size_t>(Config::DialogueMode::MAX)
 				> modes;
 				IThirdPersonDialogue* activeMode = nullptr;

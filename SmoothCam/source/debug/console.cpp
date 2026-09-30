@@ -13,18 +13,18 @@ static std::mutex consoleLock;
 static std::thread repl;
 
 static std::mutex commandListLock;
-static eastl::vector<eastl::tuple<eastl::string, eastl::string>> commandList;
+static std::vector<std::tuple<std::string, std::string>> commandList;
 
 std::mutex& Debug::GetTerminalLock() noexcept {
 	return consoleLock;
 }
 
 void Debug::StartREPL(FILE* outStream) noexcept {
-	CommandRegistry::Get()->Register(eastl::make_unique<Debug::DumpGameINI>());
-	CommandRegistry::Get()->Register(eastl::make_unique<Debug::DumpGamePerfsINI>());
-	CommandRegistry::Get()->Register(eastl::make_unique<Debug::GetSetting>());
-	CommandRegistry::Get()->Register(eastl::make_unique<Debug::SetSetting>());
-	CommandRegistry::Get()->Register(eastl::make_unique<Debug::Help>());
+	CommandRegistry::Get()->Register(std::make_unique<Debug::DumpGameINI>());
+	CommandRegistry::Get()->Register(std::make_unique<Debug::DumpGamePerfsINI>());
+	CommandRegistry::Get()->Register(std::make_unique<Debug::GetSetting>());
+	CommandRegistry::Get()->Register(std::make_unique<Debug::SetSetting>());
+	CommandRegistry::Get()->Register(std::make_unique<Debug::Help>());
 
 	repl = std::thread([](FILE* outStream) {
 		AllocConsole();
@@ -41,9 +41,9 @@ void Debug::StartREPL(FILE* outStream) noexcept {
 			std::lock_guard<std::mutex> listLock(commandListLock);
 
 			const auto pos = command.find_first_of(' ', 0);
-			auto cmd = pos != eastl::string::npos ? command.substr(0, pos) : command;
-			auto args = pos != eastl::string::npos ? command.substr(glm::min(pos+1, command.length())) : "";
-			commandList.emplace_back(eastl::string(cmd.c_str()), eastl::string(args.c_str()));
+			auto cmd = pos != std::string::npos ? command.substr(0, pos) : command;
+			auto args = pos != std::string::npos ? command.substr(glm::min(pos+1, command.length())) : "";
+			commandList.emplace_back(std::string(cmd.c_str()), std::string(args.c_str()));
 		}
 	}, outStream);
 	repl.detach();

@@ -8,11 +8,11 @@
 #include "camera.h"
 #include "thirdperson.h"
 
-extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern std::unique_ptr<Camera::Camera> g_theCamera;
 extern Offsets* g_Offsets;
 
 static std::mutex renderLock;
-static eastl::unique_ptr<Render::LineDrawer> lineDrawer;
+static std::unique_ptr<Render::LineDrawer> lineDrawer;
 static Render::LineList lines;
 
 struct VSMatricesCBuffer {
@@ -24,17 +24,17 @@ struct VSMatricesCBuffer {
 static_assert(sizeof(VSMatricesCBuffer) % 16 == 0);
 
 static VSMatricesCBuffer cbufPerFrameStaging = {};
-static eastl::shared_ptr<Render::CBuffer> cbufPerFrame;
+static std::shared_ptr<Render::CBuffer> cbufPerFrame;
 
 void Util::InitializeDebugDrawing(Render::D3DContext& context) noexcept {
-	lineDrawer = eastl::make_unique<Render::LineDrawer>(context);
+	lineDrawer = std::make_unique<Render::LineDrawer>(context);
 
 	Render::CBufferCreateInfo perFrane;
 	perFrane.bufferUsage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
 	perFrane.cpuAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE;
 	perFrane.size = sizeof(decltype(cbufPerFrameStaging));
 	perFrane.initialData = &cbufPerFrameStaging;
-	cbufPerFrame = eastl::make_shared<Render::CBuffer>(perFrane, context);
+	cbufPerFrame = std::make_shared<Render::CBuffer>(perFrane, context);
 
 	Render::OnPresent([](Render::D3DContext& ctx) {
 		std::lock_guard<std::mutex> lock(renderLock);
@@ -84,7 +84,7 @@ void Util::InitializeDebugDrawing(Render::D3DContext& context) noexcept {
 
 void Util::DrawCross3D(const glm::vec3& pos, float extents, const glm::vec4& color) noexcept {
 	std::lock_guard<std::mutex> lock(renderLock);
-	eastl::array<glm::vec3, 6> points = {
+	std::array<glm::vec3, 6> points = {
 		pos + glm::vec3{extents, 0.0f, 0.0f},
 		pos + glm::vec3{-extents, 0.0f, 0.0f},
 

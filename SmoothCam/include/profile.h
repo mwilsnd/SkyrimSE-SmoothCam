@@ -52,5 +52,5 @@ class Profiler {
 		}
 
 		double start = 0.0;
-		eastl::fixed_ring_buffer<double, history> buf = eastl::fixed_ring_buffer<double, history>(history);
+		Util::RingBuffer<double, history> buf;
 };

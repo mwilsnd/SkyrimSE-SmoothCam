@@ -15,8 +15,8 @@ State::FaceToFaceDialogue::FaceToFaceDialogue(ThirdpersonDialogueState* parentSt
 	perFrane.cpuAccessFlags = D3D11_CPU_ACCESS_FLAG::D3D11_CPU_ACCESS_WRITE;
 	perFrane.size = sizeof(decltype(cbufPerFrameStaging));
 	perFrane.initialData = &cbufPerFrameStaging;
-	cbufPerFrame = eastl::make_shared<Render::CBuffer>(perFrane, ctx);
-	segmentDrawer = eastl::make_unique<Render::LineDrawer>(ctx);
+	cbufPerFrame = std::make_shared<Render::CBuffer>(perFrane, ctx);
+	segmentDrawer = std::make_unique<Render::LineDrawer>(ctx);
 
 	Render::OnPresent(std::bind(&State::FaceToFaceDialogue::Draw, this, std::placeholders::_1));
 #endif
@@ -65,7 +65,7 @@ void State::FaceToFaceDialogue::DrawBounds(RE::NiAVObject* obj, const glm::vec4&
 	auto center = glm::vec3{ obj->world.translate.x, obj->world.translate.y, obj->world.translate.z };
 	auto extent = 15.0f;
 
-	eastl::array<glm::vec3, 6> points = {
+	std::array<glm::vec3, 6> points = {
 		center + glm::vec3{extent, 0.0f, 0.0f},
 		center + glm::vec3{-extent, 0.0f, 0.0f},
 
@@ -87,7 +87,7 @@ void State::FaceToFaceDialogue::DrawBounds(RE::NiAVObject* obj, const glm::vec4&
 void State::FaceToFaceDialogue::DrawBounds(const glm::vec3& loc, const glm::vec4&& col) noexcept {
 	auto extent = 15.0f;
 
-	eastl::array<glm::vec3, 6> points = {
+	std::array<glm::vec3, 6> points = {
 		loc + glm::vec3{extent, 0.0f, 0.0f},
 		loc + glm::vec3{-extent, 0.0f, 0.0f},
 

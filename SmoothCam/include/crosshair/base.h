@@ -15,7 +15,7 @@ namespace Crosshair {
 			Base& operator=(Base&&) noexcept = delete;
 
 			// Create any needed 3D assets for rendering
-			virtual void Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept = 0;
+			virtual void Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept = 0;
 			
 			// Render the crosshair
 			virtual void Render(Render::D3DContext& ctx, bool allowDepthTesting) noexcept = 0;
@@ -39,7 +39,7 @@ namespace Crosshair {
 			glm::mat4 GetTransform() const noexcept;
 
 		protected:
-			eastl::shared_ptr<Render::CBuffer> perObjectBuffer;
+			std::shared_ptr<Render::CBuffer> perObjectBuffer;
 			glm::mat4 transform = glm::identity<glm::mat4>();
 			glm::vec3 position = { 0.0f, 0.0f, 0.0f };
 			glm::vec3 rotation = { 0.0f, 0.0f, 0.0f };

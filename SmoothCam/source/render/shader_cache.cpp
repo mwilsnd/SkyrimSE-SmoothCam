@@ -6,7 +6,7 @@ void Render::ShaderCache::Release() noexcept {
 	shaders.clear();
 }
 
-eastl::shared_ptr<Render::Shader> Render::ShaderCache::Load(const ShaderCreateInfo& info, Render::D3DContext& ctx)
+std::shared_ptr<Render::Shader> Render::ShaderCache::Load(const ShaderCreateInfo& info, Render::D3DContext& ctx)
 	noexcept
 {
 	const auto it = shaders.find(info);
@@ -18,7 +18,7 @@ eastl::shared_ptr<Render::Shader> Render::ShaderCache::Load(const ShaderCreateIn
 		}
 	}
 
-	auto ptr = eastl::make_shared<Render::Shader>(info, ctx);
+	auto ptr = std::make_shared<Render::Shader>(info, ctx);
 	if (ptr->IsValid())
 		shaders.insert({ info, ptr });
 	return ptr;

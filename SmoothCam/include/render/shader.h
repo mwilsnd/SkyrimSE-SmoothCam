@@ -13,12 +13,12 @@ namespace Render {
 
 	struct ShaderCreateInfo {
 		Shaders::ShaderDecl source;
-		eastl::string entryName = "main";
-		eastl::string version;
+		std::string entryName = "main";
+		std::string version;
 		PipelineStage stage;
 
 		ShaderCreateInfo(const Shaders::ShaderDecl& source, PipelineStage stage,
-			eastl::string&& entryName = "main", eastl::string&& version = "5_0")
+			std::string&& entryName = "main", std::string&& version = "5_0")
 			: source(source), entryName(entryName), version(version), stage(stage)
 		{}
 
@@ -64,7 +64,7 @@ namespace Render {
 				ID3D11PixelShader* fragment;
 			} program;
 
-			bool Compile(const eastl::string& source, const eastl::string& entryName, const eastl::string& version) noexcept;
+			bool Compile(const std::string& source, const std::string& entryName, const std::string& version) noexcept;
 
 			friend class VertexBuffer;
 	};

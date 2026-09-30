@@ -90,7 +90,7 @@ class VTableDetour {
 
 		void Add(PLH::VFuncMap&& methods) noexcept {
 			assert(!attached);
-			redirects = eastl::move(methods);
+			redirects = std::move(methods);
 		}
 
 		template<typename U>
@@ -98,24 +98,22 @@ class VTableDetour {
 			return reinterpret_cast<U>(originals.at(index));
 		}
 
-		// @NOTE: Because of the union hack, Attach MUST *always* be called, otherwise you risk attempting to run
-		// a destructor on an uninitialized object. Yes, this is nasty.
 		bool Attach() noexcept {
 			assert(!attached);
 
-			new (&hooks) PLH::VFuncSwapHook(
+			hooks.push_back(std::make_unique<PLH::VFuncSwapHook>(
 				reinterpret_cast<uint64_t>(target),
 				redirects,
 				&originals
-			);
+			));
 
-			attached = hooks.hook();
+			attached = hooks.back()->hook();
 			return attached;
 		}
 
 		void Detach() noexcept {
 			assert(attached);
-			hooks.unHook();
+			hooks.back()->unHook();
 			attached = false;
 		}
 
@@ -124,10 +122,7 @@ class VTableDetour {
 		PLH::VFuncMap redirects;
 		PLH::VFuncMap originals;
 
-		// Dumb hack for dumb reasons
-		union {
-			PLH::VFuncSwapHook hooks;
-		};
+		std::vector<std::unique_ptr<PLH::VFuncSwapHook>> hooks;
 
 		bool attached = false;
 };
@@ -159,7 +154,7 @@ class PolymorphicVTableDetour {
 
 			targets.push_back(target);
 			redirects.push_back({ { index, reinterpret_cast<uint64_t>(fnDetour) } });
-			originals.push_back();
+			originals.emplace_back();
 		}
 
 		template<typename U>
@@ -173,14 +168,13 @@ class PolymorphicVTableDetour {
 		bool Attach() noexcept {
 			assert(!attached);
 			for (auto i = 0; i < targets.size(); ++i) {
-				hooks.push_back_uninitialized();
-				new (&hooks.back()) PLH::VFuncSwapHook(
+				hooks.push_back(std::make_unique<PLH::VFuncSwapHook>(
 					reinterpret_cast<uint64_t>(targets[i]),
 					redirects[i],
 					&originals[i]
-				);
+				));
 
-				if (!hooks.back().hook())
+				if (!hooks.back()->hook())
 					return false;
 			}
 			attached = true;
@@ -190,15 +184,15 @@ class PolymorphicVTableDetour {
 		void Detach() noexcept {
 			assert(attached);
 			for (auto& it : hooks)
-				it.unHook();
+				it->unHook();
 			attached = false;
 		}
 
 	private:
-		eastl::fixed_vector<T*, numTypes, false> targets;
-		eastl::fixed_vector<PLH::VFuncMap, numTypes, false> redirects;
-		eastl::fixed_vector<PLH::VFuncMap, numTypes, false> originals;
-		eastl::fixed_vector<PLH::VFuncSwapHook, numTypes, false> hooks;
+		std::vector<T*> targets;
+		std::vector<PLH::VFuncMap> redirects;
+		std::vector<PLH::VFuncMap> originals;
+		std::vector<std::unique_ptr<PLH::VFuncSwapHook>> hooks;
 
 		bool attached = false;
 };

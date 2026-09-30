@@ -87,7 +87,7 @@ namespace Messaging {
 			bool IsHorseAimUnlocked() const noexcept;
 
 		public:
-			using Consumers = eastl::vector<eastl::string>;
+			using Consumers = std::vector<std::string>;
 
 			void RegisterConsumer(const char* modName) noexcept;
 			const Consumers& GetConsumers() const noexcept;

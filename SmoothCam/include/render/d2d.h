@@ -67,7 +67,7 @@ namespace Render {
 			void WriteToBackbuffer(D3DContext& ctx) noexcept;
 
 			// Get the direct write instance
-			eastl::unique_ptr<DWrite>& GetDWrite() noexcept;
+			std::unique_ptr<DWrite>& GetDWrite() noexcept;
 			// Get a color brush for use with D2D/DWrite
 			winrt::com_ptr<ID2D1SolidColorBrush> GetColorBrush(const glm::vec4& color) noexcept;
 			// Draw a line
@@ -118,19 +118,19 @@ namespace Render {
 			winrt::com_ptr<ID2D1DeviceContext1> context;
 			winrt::com_ptr<ID2D1Bitmap1> bitmap;
 
-			eastl::unique_ptr<DWrite> dwrite;
-			eastl::shared_ptr<Texture2D> colorBuffer;
-			eastl::shared_ptr<Texture2D> sharedColorBuffer;
+			std::unique_ptr<DWrite> dwrite;
+			std::shared_ptr<Texture2D> colorBuffer;
+			std::shared_ptr<Texture2D> sharedColorBuffer;
 			winrt::com_ptr<IDXGISurface> dxgiBackBuffer;
 			
-			eastl::unique_ptr<SRV> colorSRV;
-			eastl::unique_ptr<VertexBuffer> vboFullscreen;
-			eastl::shared_ptr<Shader> fullScreenVS;
-			eastl::shared_ptr<Shader> fullScreenPS;
+			std::unique_ptr<SRV> colorSRV;
+			std::unique_ptr<VertexBuffer> vboFullscreen;
+			std::shared_ptr<Shader> fullScreenVS;
+			std::shared_ptr<Shader> fullScreenPS;
 
 			winrt::com_ptr<ID3D11Query> workQuery;
 
-			eastl::unordered_map<
+			std::unordered_map<
 				ColorBrushKey,
 				winrt::com_ptr<ID2D1SolidColorBrush>,
 				ColorBrushHasher,

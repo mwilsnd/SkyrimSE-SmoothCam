@@ -24,12 +24,12 @@ namespace Render {
 
 		typedef struct Mesh {
 			MeshHeader header = {};
-			eastl::vector<Vertex> vertices = {};
+			std::vector<Vertex> vertices = {};
 		} Mesh;
 
 		typedef struct Model {
 			ModelHeader header = {};
-			eastl::vector<Mesh> meshes = {};
+			std::vector<Mesh> meshes = {};
 		} Model;
 
 		bool Load(const uint8_t* location, Model& output);

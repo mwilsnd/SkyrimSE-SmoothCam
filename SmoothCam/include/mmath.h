@@ -494,7 +494,7 @@ namespace mmath {
 				}
 			}
 
-			stack.push_back(eastl::move(entry));
+			stack.push_back(std::move(entry));
 		}
 
 		template<typename T, mmath::Local isLocal = mmath::Local::No>

@@ -31,9 +31,9 @@ namespace Render {
 			void Draw(const RE::Actor* focus, const Config::OffsetGroup* curGroup, D3DContext& ctx) noexcept;
 
 		private:
-			void DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,
+			void DrawBitset32(const std::wstring& name, const std::bitset<32>& bits,
 				const glm::vec2& pos, D3DContext& ctx) noexcept;
-			void DrawBool(const eastl::wstring& name, bool value, const glm::vec2& pos,
+			void DrawBool(const std::wstring& name, bool value, const glm::vec2& pos,
 				D3DContext& ctx) noexcept;
 
 			Camera::Thirdperson* camera = nullptr;

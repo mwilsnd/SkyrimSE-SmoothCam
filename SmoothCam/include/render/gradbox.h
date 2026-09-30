@@ -25,11 +25,11 @@ namespace Render {
 			bool backgroundDirty = false;
 			glm::vec4 bgColor1 = { 0.05f, 0.05f, 0.05f, 0.7f };
 			glm::vec4 bgColor2 = { 0.1f, 0.1f, 0.1f, 0.7f };
-			eastl::shared_ptr<Render::Shader> vsBackground;
-			eastl::shared_ptr<Render::Shader> psBackground;
+			std::shared_ptr<Render::Shader> vsBackground;
+			std::shared_ptr<Render::Shader> psBackground;
 
-			eastl::vector<float> backgroundVerts;
-			eastl::unique_ptr<Render::VertexBuffer> vboBackground;
+			std::vector<float> backgroundVerts;
+			std::unique_ptr<Render::VertexBuffer> vboBackground;
 
 			glm::uvec2 bgSize = { 0, 0 };
 			glm::ivec2 bgPos = { 0, 0 };

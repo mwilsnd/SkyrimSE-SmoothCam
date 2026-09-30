@@ -304,35 +304,6 @@ def define_targets(targets):
     )
 
     native.cxx_library(
-        name = "EABase",
-        headers = subdir_glob([("Deps/EABase/include/Common", "**/*.h")]),
-        exported_headers = subdir_glob([("Deps/EABase/include/Common", "**/*.h")]),
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES,
-        force_static = True,
-    )
-
-    native.cxx_library(
-        name = "EASTL",
-        headers = subdir_glob([("Deps/EASTL/include", "**/*.h")]),
-        exported_headers = subdir_glob([("Deps/EASTL/include", "**/*.h")]),
-        deps = [":EABase"],
-        exported_deps = [":EABase"],
-        linker_flags = [
-            "/D_CHAR16T",
-            "/D_CRT_SECURE_NO_WARNINGS",
-            "/D_SCL_SECURE_NO_WARNINGS",
-            "/DEASTL_OPENSOURCE=1"
-        ],
-        srcs = native.glob(["Deps/EASTL/source/**/*.cpp"]),
-        visibility = ["PUBLIC"],
-        compiler_flags = DEFINES + [
-            "/wd5311",
-        ],
-        force_static = True,
-    )
-
-    native.cxx_library(
         name = "glm",
         include_directories = ["Deps/glm", "Deps/glm/glm"],
         public_include_directories = ["Deps/glm", "Deps/glm/glm"],
@@ -472,7 +443,7 @@ def define_targets(targets):
                 [
                     "/D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
                     "/FIpch.h",
-                    "/wd5311", # EASTL && JSON
+                    "/wd5311", # JSON
                 ] + target["extra_compiler_opts"],
             link_style = "shared",
             soname = "SmoothCam" + target["name"] +
@@ -480,7 +451,6 @@ def define_targets(targets):
                 ("1799" if build_1799_mode else "") +
                 ".dll",
             deps = [
-                ":EASTL",
                 ":Polyhook2",
                 ":eternal",
                 ":glm",

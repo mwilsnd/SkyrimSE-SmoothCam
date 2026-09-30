@@ -31,7 +31,7 @@ namespace Raycast {
 			objectFilter.push_back(obj);
 		}
 
-		const eastl::vector<HitResult>& GetHits();
+		const std::vector<HitResult>& GetHits();
 
 		void Reset();
 
@@ -40,8 +40,8 @@ namespace Raycast {
 		std::uint32_t pad0C{};
 		RE::hkpWorldRayCastOutput rayHit; // 10
 
-		eastl::vector<HitResult> hits{};
-		eastl::vector<const RE::NiAVObject*> objectFilter;
+		std::vector<HitResult> hits{};
+		std::vector<const RE::NiAVObject*> objectFilter;
 	};
 
 #pragma warning(push)

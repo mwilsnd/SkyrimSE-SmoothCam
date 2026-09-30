@@ -3,7 +3,7 @@
 const SKSE::MessagingInterface* g_messaging = nullptr;
 SKSE::PluginHandle g_pluginHandle = SKSE::kInvalidPluginHandle;
 Offsets* g_Offsets = nullptr;
-eastl::unique_ptr<Camera::Camera> g_theCamera = nullptr;
+std::unique_ptr<Camera::Camera> g_theCamera = nullptr;
 
 static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 	switch (message->type) {
@@ -16,7 +16,7 @@ static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
 				logger::info("Looking for compatible mods");
 				Compat::Initialize();
 				logger::info("Creating the camera");
-				g_theCamera = eastl::make_unique<Camera::Camera>();
+				g_theCamera = std::make_unique<Camera::Camera>();
 				logger::info("Attaching deferred detours");
 				if (!Hooks::DeferredAttach())
 					logger::critical("Failed to attach deferred detours.");

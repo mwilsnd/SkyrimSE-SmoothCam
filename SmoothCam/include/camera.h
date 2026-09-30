@@ -182,8 +182,8 @@ namespace Camera {
 			RE::NiPointer<RE::NiCamera> cameraNi = nullptr;     // Active NiCamera
 			ICamera* activeCamera = nullptr;                    // And the active camera
 
-			eastl::unique_ptr<Thirdperson> cameraThird;         // Third person camera
-			eastl::unique_ptr<Firstperson> cameraFirst;         // First person camera
+			std::unique_ptr<Thirdperson> cameraThird;         // Third person camera
+			std::unique_ptr<Firstperson> cameraFirst;         // First person camera
 		
 			bool ranLastFrame = false;                          // Did the camera run last frame?
 			bool povIsThird = false;                            // Our current POV state

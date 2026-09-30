@@ -222,7 +222,7 @@ void Camera::State::BaseThird::SetCameraRotation(mmath::Rotation& rot, RE::Playe
 	camera->SetCameraRotation(rot, playerCamera);
 }
 
-RE::NiAVObject* Camera::State::BaseThird::FindFollowBone(const RE::TESObjectREFR* ref, const eastl::string_view& filterBone) const noexcept {
+RE::NiAVObject* Camera::State::BaseThird::FindFollowBone(const RE::TESObjectREFR* ref, const std::string_view& filterBone) const noexcept {
 	return camera->FindFollowBone(ref, filterBone);
 }
 

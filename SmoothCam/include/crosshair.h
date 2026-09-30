@@ -235,17 +235,17 @@ namespace Crosshair {
 
 				VSMatricesCBuffer cbufPerFrameStaging = {};
 				VSPerObjectCBuffer cbufPerObjectStaging = {};
-				eastl::shared_ptr<Render::CBuffer> cbufPerFrame;
-				eastl::shared_ptr<Render::CBuffer> cbufPerObject;
+				std::shared_ptr<Render::CBuffer> cbufPerFrame;
+				std::shared_ptr<Render::CBuffer> cbufPerObject;
 
-				eastl::unique_ptr<Crosshair::Base> curCrosshair;
+				std::unique_ptr<Crosshair::Base> curCrosshair;
 				Config::CrosshairType crosshairType = Config::CrosshairType::None;
 				bool drawCrosshair = false;
 				bool hitCharacter = false;
 
 				// Resouces for drawing the arrow prediction arc
 				Render::LineList arrowTailSegments;
-				eastl::unique_ptr<Render::LineDrawer> tailDrawer;
+				std::unique_ptr<Render::LineDrawer> tailDrawer;
 
 				// D3D expects resources to be released in a certain order
 				void release() {

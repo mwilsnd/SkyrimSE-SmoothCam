@@ -39,11 +39,11 @@ void Raycast::RayCollector::AddRayHit(const RE::hkpCdBody& body, const RE::hkpSh
 		}
 
 		earlyOutHitFraction = hit.hitFraction;
-		hits.push_back(eastl::move(hit));
+		hits.push_back(std::move(hit));
 	}
 }
 
-const eastl::vector<Raycast::RayCollector::HitResult>& Raycast::RayCollector::GetHits() {
+const std::vector<Raycast::RayCollector::HitResult>& Raycast::RayCollector::GetHits() {
 	return hits;
 }
 

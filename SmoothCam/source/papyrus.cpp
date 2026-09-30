@@ -10,7 +10,7 @@
 
 extern Compat::ModDetectionFlags modDetectionFlags;
 extern Config::UserConfig currentConfig;
-extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern std::unique_ptr<Camera::Camera> g_theCamera;
 
 using namespace PapyrusBindings;
 #define PAPYRUS_MANGLE(VarName)			\
@@ -206,7 +206,7 @@ constexpr auto boolGetters = mapbox::eternal::hash_map<mapbox::eternal::string, 
 	IMPL_GETTER("OverrideLocalInterpBowAimSneak",		bowAim.interpMeleeConf.overrideLocalInterp),
 });
 
-const eastl::unordered_map<eastl::string_view, eastl::function<bool(void)>> boolGetterFNs = {
+const std::unordered_map<std::string_view, std::function<bool(void)>> boolGetterFNs = {
 	{
 		PAPYRUS_MANGLE("D3DHooked"), []() noexcept {
 			return Render::HasContext();
@@ -215,7 +215,7 @@ const eastl::unordered_map<eastl::string_view, eastl::function<bool(void)>> bool
 };
 
 // Float
-const auto floatGetters = eastl::unordered_map<eastl::string_view, float*>({
+const auto floatGetters = std::unordered_map<std::string_view, float*>({
 	// Misc
 	IMPL_GETTER("CustomZOffsetAmount",					customZOffset),
 	// Primary interpolation
@@ -324,7 +324,7 @@ const auto floatGetters = eastl::unordered_map<eastl::string_view, float*>({
 	IMPL_GETTER("MaxSepLocalSmoothingInterpDistanceBowAimSneak",	bowAim.interpMeleeConf.localMaxSmoothingDistance),
 });
 
-const eastl::unordered_map<eastl::string_view, eastl::function<void(float)>> floatSetterFN = {
+const std::unordered_map<std::string_view, std::function<void(float)>> floatSetterFN = {
 	// We can ignore getters for these as we just return 0.0f if not found, which is what we want in this case
 	IMPL_GROUP_SETTER("Group:SideOffset",				sideOffset, float),
 	IMPL_GROUP_SETTER("Group:UpOffset",					upOffset, float),
@@ -357,7 +357,7 @@ constexpr auto intGetters = mapbox::eternal::hash_map<mapbox::eternal::string, i
 });
 
 // String
-const eastl::unordered_map<eastl::string_view, eastl::function<RE::BSFixedString(void)>> stringGetters = {
+const std::unordered_map<std::string_view, std::function<RE::BSFixedString(void)>> stringGetters = {
 	IMPL_SCALAR_METHOD_GETTER("InterpolationMethod", currentScalar),
 	IMPL_SCALAR_METHOD_GETTER("SeparateZInterpMethod", separateZScalar),
 	IMPL_SCALAR_METHOD_GETTER("SepLocalInterpMethod", separateLocalScalar),
@@ -409,7 +409,7 @@ const eastl::unordered_map<eastl::string_view, eastl::function<RE::BSFixedString
 	}},
 };
 
-const eastl::unordered_map<eastl::string_view, eastl::function<void(RE::BSFixedString&)>> stringSetters = {
+const std::unordered_map<std::string_view, std::function<void(RE::BSFixedString&)>> stringSetters = {
 	IMPL_SCALAR_METHOD_SETTER("InterpolationMethod", currentScalar),
 	IMPL_SCALAR_METHOD_SETTER("SeparateZInterpMethod", separateZScalar),
 	IMPL_SCALAR_METHOD_SETTER("SepLocalInterpMethod", separateLocalScalar),

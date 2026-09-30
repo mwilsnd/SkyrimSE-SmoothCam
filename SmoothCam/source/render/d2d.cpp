@@ -97,7 +97,7 @@ Render::D2D::D2D(D3DContext& ctx) {
 	context->SetTarget(bitmap.get());
 
 	// Start direct write
-	dwrite = eastl::make_unique<Render::DWrite>(this);
+	dwrite = std::make_unique<Render::DWrite>(this);
 
 	// Make a work query for forcing sync on the shared texture
 	D3D11_QUERY_DESC qd;
@@ -151,7 +151,7 @@ Render::D2D::D2D(D3DContext& ctx) {
 		"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
 		D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0
 	});
-	vboFullscreen = eastl::make_unique<Render::VertexBuffer>(vbInfo, ctx);
+	vboFullscreen = std::make_unique<Render::VertexBuffer>(vbInfo, ctx);
 
 	// Init our different stroke styles
 	strokeStyles[static_cast<size_t>(StrokeStyle::Solid)] = GetStrokeStyle<0>(
@@ -275,7 +275,7 @@ void Render::D2D::WriteToBackbuffer(D3DContext& ctx) noexcept {
 	vboFullscreen->Draw();
 }
 
-eastl::unique_ptr<Render::DWrite>& Render::D2D::GetDWrite() noexcept {
+std::unique_ptr<Render::DWrite>& Render::D2D::GetDWrite() noexcept {
 	return dwrite;
 }
 
@@ -316,7 +316,7 @@ void Render::D2D::CreateRenderTarget(D3DContext& ctx, D3DContext& renderingCtx) 
 	texInfo.bindFlags = D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE |
 		D3D11_BIND_FLAG::D3D11_BIND_RENDER_TARGET;
 	texInfo.miscFlags = D3D11_RESOURCE_MISC_SHARED;
-	colorBuffer = eastl::make_shared<Texture2D>(ctx, texInfo);
+	colorBuffer = std::make_shared<Texture2D>(ctx, texInfo);
 
 	winrt::com_ptr<IDXGIResource> res;
 	auto code = colorBuffer->GetResource()->QueryInterface(__uuidof(IDXGIResource), res.put_void());
@@ -347,7 +347,7 @@ void Render::D2D::CreateRenderTarget(D3DContext& ctx, D3DContext& renderingCtx) 
 	}
 
 	texInfo.createSampler = true;
-	sharedColorBuffer = eastl::make_shared<Texture2D>(renderingCtx, sharedTex, texInfo);
+	sharedColorBuffer = std::make_shared<Texture2D>(renderingCtx, sharedTex, texInfo);
 
 	SRVCreateInfo srv;
 	srv.dimensions = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -355,6 +355,6 @@ void Render::D2D::CreateRenderTarget(D3DContext& ctx, D3DContext& renderingCtx) 
 	srv.texture = sharedColorBuffer;
 	srv.texture2D.MipLevels = 1;
 	srv.texture2D.MostDetailedMip = 0;
-	colorSRV = eastl::make_unique<Render::SRV>(renderingCtx, srv);
+	colorSRV = std::make_unique<Render::SRV>(renderingCtx, srv);
 }
 #endif

@@ -6,6 +6,44 @@ namespace Render {
 #endif
 
 namespace Util {
+	template <typename T, size_t Size>
+	class RingBuffer {
+		public:
+			RingBuffer() = default;
+
+			void push_back(const T& value) {
+				if (size_ < Size) {
+					data[size_++] = value;
+				} else {
+					for (size_t i = 0; i + 1 < Size; ++i) {
+						data[i] = data[i + 1];
+					}
+					data[Size - 1] = value;
+				}
+			}
+
+			size_t size() const noexcept { return size_; }
+			bool empty() const noexcept { return size_ == 0; }
+
+			T& front() noexcept { return data[0]; }
+			const T& front() const noexcept { return data[0]; }
+			T& back() noexcept { return data[size_ - 1]; }
+			const T& back() const noexcept { return data[size_ - 1]; }
+			T& operator[](size_t i) { return data[i]; }
+			const T& operator[](size_t i) const { return data[i]; }
+
+			T* begin() noexcept { return data; }
+			const T* begin() const noexcept { return data; }
+			const T* cbegin() const noexcept { return data; }
+			T* end() noexcept { return data + size_; }
+			const T* end() const noexcept { return data + size_; }
+			const T* cend() const noexcept { return data + size_; }
+
+		private:
+			T data[Size] = {};
+			size_t size_ = 0;
+	};
+
 	enum
 	{
 		// first 256 for keyboard, then 8 mouse buttons, then mouse wheel up, wheel down, then 16 gamepad buttons
@@ -72,12 +110,12 @@ namespace Util {
 
 	template<typename T>
 	inline void HashCombine(size_t& seed, const T& v) noexcept {
-		eastl::hash<T> h;
+		std::hash<T> h;
 		seed ^= h(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
 
-	inline eastl::string UpperCase(const eastl::string& str) noexcept {
-		eastl::string result;
+	inline std::string UpperCase(const std::string& str) noexcept {
+		std::string result;
 		result.reserve(str.length());
 
 		for (auto it = str.cbegin(); it != str.cend(); it++) {
@@ -91,8 +129,8 @@ namespace Util {
 		return result;
 	}
 
-	inline eastl::string UpperCase(const RE::BSFixedString& str) noexcept {
-		eastl::string result;
+	inline std::string UpperCase(const RE::BSFixedString& str) noexcept {
+		std::string result;
 		const auto len = std::strlen(str.c_str());
 		result.reserve(len);
 

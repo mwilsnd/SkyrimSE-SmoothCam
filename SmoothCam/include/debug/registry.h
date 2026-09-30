@@ -7,10 +7,10 @@ namespace Debug {
 	class CommandRegistry {
 		public:
 			static CommandRegistry* Get() noexcept;
-			void Register(eastl::unique_ptr<ICommand>&& command) noexcept;
-			ICommand* Find(const eastl::string& name) const noexcept;
+			void Register(std::unique_ptr<ICommand>&& command) noexcept;
+			ICommand* Find(const std::string& name) const noexcept;
 
-			using CommandTable = eastl::unordered_map<eastl::string, eastl::unique_ptr<ICommand>>;
+			using CommandTable = std::unordered_map<std::string, std::unique_ptr<ICommand>>;
 			const CommandTable& GetCommands() const noexcept;
 
 		private:

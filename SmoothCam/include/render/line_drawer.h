@@ -18,7 +18,7 @@ namespace Render {
 		Line(Point&& start, Point&& end) : start(start), end(end) {};
 	} Line;
 
-	using LineList = eastl::vector<Line>;
+	using LineList = std::vector<Line>;
 
 	// Number of points we can submit in a single draw call
 	constexpr size_t LineDrawPointBatchSize = 256;
@@ -38,11 +38,11 @@ namespace Render {
 			void Submit(const LineList& lines) noexcept;
 
 		protected:
-			eastl::shared_ptr<Render::Shader> vs;
-			eastl::shared_ptr<Render::Shader> ps;
+			std::shared_ptr<Render::Shader> vs;
+			std::shared_ptr<Render::Shader> ps;
 
 		private:
-			eastl::array<eastl::unique_ptr<Render::VertexBuffer>, NumBuffers> vbo;
+			std::array<std::unique_ptr<Render::VertexBuffer>, NumBuffers> vbo;
 
 			void CreateObjects(D3DContext& ctx);
 			void DrawBatch(uint32_t bufferIndex, LineList::const_iterator& begin, LineList::const_iterator& end);

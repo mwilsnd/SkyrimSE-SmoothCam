@@ -91,7 +91,7 @@ namespace Camera {
 			// Get the crosshair manager
 			Crosshair::Manager* GetCrosshairManager() noexcept;
 			// Find a node to use as the world position for following
-			RE::NiAVObject* FindFollowBone(const RE::TESObjectREFR* ref, const eastl::string_view& filterBone = "") const noexcept;
+			RE::NiAVObject* FindFollowBone(const RE::TESObjectREFR* ref, const std::string_view& filterBone = "") const noexcept;
 			// Offset the gmae FOV by the given amount
 			void SetFOVOffset(float fov, bool force = false) noexcept;
 			// Return the current offset transition state, for mutation
@@ -164,21 +164,21 @@ namespace Camera {
 			// User config
 			Config::UserConfig* config = nullptr;
 			// Crosshair manager
-			eastl::unique_ptr<Crosshair::Manager> crosshair = nullptr;
+			std::unique_ptr<Crosshair::Manager> crosshair = nullptr;
 			// Thirdperson state
-			eastl::unique_ptr<State::ThirdpersonState> thirdPersonState = nullptr;
+			std::unique_ptr<State::ThirdpersonState> thirdPersonState = nullptr;
 			// Thirdperson dialogue
-			eastl::unique_ptr<State::ThirdpersonDialogueState> thirdPersonDialogueState = nullptr;
+			std::unique_ptr<State::ThirdpersonDialogueState> thirdPersonDialogueState = nullptr;
 			// Thirdperson vanity
-			eastl::unique_ptr<State::ThirdpersonVanityState> thirdPersonVanityState = nullptr;
+			std::unique_ptr<State::ThirdpersonVanityState> thirdPersonVanityState = nullptr;
 			// All states
-			eastl::array<State::BaseThird*, static_cast<size_t>(GameState::CameraState::MAX_STATE)> cameraStates{};
+			std::array<State::BaseThird*, static_cast<size_t>(GameState::CameraState::MAX_STATE)> cameraStates{};
 			// Current camera state
 			State::BaseThird* runningState = nullptr;
 			// Current actor being followed
 			RE::Actor* currentFocusObject = nullptr;
 			// Input state lockers
-			eastl::array<bool, RE::CameraState::kTotal> inputLockers{};
+			std::array<bool, RE::CameraState::kTotal> inputLockers{};
 
 			// The current rotation of the camera in both euler angles and in quaternion form
 			mmath::Rotation rotation{};
@@ -238,19 +238,19 @@ namespace Camera {
 
 			// Debug overlays
 #ifdef WITH_CHARTS
-			eastl::unique_ptr<Render::CBuffer> perFrameBuffer = nullptr;
+			std::unique_ptr<Render::CBuffer> perFrameBuffer = nullptr;
 
-			eastl::unique_ptr<Render::LineGraph> graph_worldPosTarget = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_offsetPos = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_targetOffsetPos = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_localSpace = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_rotation = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_tpsRotation = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_computeTime = nullptr;
-			eastl::unique_ptr<Render::LineGraph> graph_fov = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_worldPosTarget = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_offsetPos = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_targetOffsetPos = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_localSpace = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_rotation = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_tpsRotation = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_computeTime = nullptr;
+			std::unique_ptr<Render::LineGraph> graph_fov = nullptr;
 
-			eastl::unique_ptr<Render::NiNodeTreeDisplay> focusTargetNodeTree = nullptr;
-			eastl::unique_ptr<Render::StateOverlay> stateOverlay = nullptr;
+			std::unique_ptr<Render::NiNodeTreeDisplay> focusTargetNodeTree = nullptr;
+			std::unique_ptr<Render::StateOverlay> stateOverlay = nullptr;
 
 			enum class DisplayMode : uint8_t {
 				None,

@@ -3,7 +3,7 @@
 
 Debug::DumpGameINI::~DumpGameINI() {}
 
-void Debug::DumpGameINI::Run(const eastl::string&) noexcept {
+void Debug::DumpGameINI::Run(const std::string&) noexcept {
 	auto settings = RE::INISettingCollection::GetSingleton();
 
 	puts("Current INI values:");
@@ -39,7 +39,7 @@ void Debug::DumpGameINI::Run(const eastl::string&) noexcept {
 	puts("");
 }
 
-const eastl::string_view Debug::DumpGameINI::GetHelpString() const noexcept {
+const std::string_view Debug::DumpGameINI::GetHelpString() const noexcept {
 	return helpMsg;
 }
 #endif

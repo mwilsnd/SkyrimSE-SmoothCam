@@ -3,10 +3,10 @@
 
 Debug::SetSetting::~SetSetting() {}
 
-void Debug::SetSetting::Run(const eastl::string& args) noexcept {
+void Debug::SetSetting::Run(const std::string& args) noexcept {
 	const auto pos = args.find_first_of(' ', 0);
-	auto name = pos != eastl::string::npos ? args.substr(0, pos) : args;
-	auto value = pos != eastl::string::npos ? args.substr(glm::min(pos+1, args.length())) : "";
+	auto name = pos != std::string::npos ? args.substr(0, pos) : args;
+	auto value = pos != std::string::npos ? args.substr(glm::min(pos+1, args.length())) : "";
 
 	auto setting = RE::INISettingCollection::GetSingleton()->GetSetting(name.c_str());
 
@@ -42,7 +42,7 @@ void Debug::SetSetting::Run(const eastl::string& args) noexcept {
 	}
 }
 
-const eastl::string_view Debug::SetSetting::GetHelpString() const noexcept {
+const std::string_view Debug::SetSetting::GetHelpString() const noexcept {
 	return helpMsg;
 }
 #endif

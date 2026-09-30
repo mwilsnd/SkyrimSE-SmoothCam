@@ -16,7 +16,7 @@ namespace Render {
 
 			void Release() noexcept;
 
-			eastl::shared_ptr<Shader> Load(const ShaderCreateInfo& info, Render::D3DContext& ctx) noexcept;
+			std::shared_ptr<Shader> Load(const ShaderCreateInfo& info, Render::D3DContext& ctx) noexcept;
 
 			struct SCIHasher {
 				size_t operator()(const ShaderCreateInfo& key) const {
@@ -34,8 +34,8 @@ namespace Render {
 			ShaderCache() noexcept;
 
 		private:
-			eastl::unordered_map<
-				ShaderCreateInfo, eastl::weak_ptr<Render::Shader>,
+			std::unordered_map<
+				ShaderCreateInfo, std::weak_ptr<Render::Shader>,
 				SCIHasher, SCICompare
 			> shaders;
 	};

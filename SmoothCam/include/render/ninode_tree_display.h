@@ -27,7 +27,7 @@ namespace Render {
 			uint32_t xPos = 0;
 			uint32_t yPos = 0;
 			
-			StringBuilder<eastl::wstring> builder;
+			StringBuilder<std::wstring> builder;
 			wchar_t* buffer = nullptr;
 			size_t bufSize = 0;
 	};

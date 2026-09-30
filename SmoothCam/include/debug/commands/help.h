@@ -7,15 +7,15 @@ namespace Debug {
 	class Help : public ICommand {
 		public:
 			virtual ~Help() override;
-			virtual void Run(const eastl::string& args) noexcept override;
-			virtual const eastl::string_view GetHelpString() const noexcept override;
-			virtual const eastl::string& GetName() const noexcept override {
+			virtual void Run(const std::string& args) noexcept override;
+			virtual const std::string_view GetHelpString() const noexcept override;
+			virtual const std::string& GetName() const noexcept override {
 				return commandName;
 			};
 
 		protected:
-			const eastl::string commandName = "help";
-			const eastl::string helpMsg = "Displays a list of all commands\n";
+			const std::string commandName = "help";
+			const std::string helpMsg = "Displays a list of all commands\n";
 	};
 }
 #endif

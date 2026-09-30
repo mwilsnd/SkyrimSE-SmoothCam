@@ -66,11 +66,11 @@ namespace Camera {
 			Config::UserConfig* config = nullptr;
 
 			// For our depth clip hack with weapons, we store a cache
-			eastl::map<ID3D11RasterizerState*, winrt::com_ptr<ID3D11RasterizerState>> rasterDepthClipStates;
+			std::map<ID3D11RasterizerState*, winrt::com_ptr<ID3D11RasterizerState>> rasterDepthClipStates;
 			// We need to know which nodes to flip depth clipping on during render
-			eastl::vector<RE::NiAVObject*> wantClipNodes;
+			std::vector<RE::NiAVObject*> wantClipNodes;
 			// And since we hooked the renderer, might as well control what we only want in the shadow maps!
-			eastl::vector<RE::NiAVObject*> shadowsOnly;
+			std::vector<RE::NiAVObject*> shadowsOnly;
 #endif
 	};
 }

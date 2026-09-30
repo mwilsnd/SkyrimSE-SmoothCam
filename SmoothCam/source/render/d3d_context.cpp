@@ -13,30 +13,30 @@
 extern Offsets* g_Offsets;
 
 static Render::D3DContext gameContext;
-static eastl::vector<Render::DrawFunc> presentCallbacks;
-static eastl::unique_ptr<VTableDetour<IDXGISwapChain>> dxgiHook;
+static std::vector<Render::DrawFunc> presentCallbacks;
+static std::unique_ptr<VTableDetour<IDXGISwapChain>> dxgiHook;
 static bool initialized = false;
 static bool hookAttempted = false;
 
 #ifdef WITH_D2D
-eastl::unique_ptr<Render::D2D> g_D2D = nullptr;
+std::unique_ptr<Render::D2D> g_D2D = nullptr;
 #endif
 
 struct D3DObjectsStore {
 	winrt::com_ptr<ID3D11DepthStencilView> depthStencilView;
 	winrt::com_ptr<ID3D11RenderTargetView> gameRTV;
 
-	eastl::unordered_map<
+	std::unordered_map<
 		Render::DSStateKey, Render::DSState,
 		Render::DSHasher, Render::DSCompare
 	> loadedDepthStates;
 
-	eastl::unordered_map<
+	std::unordered_map<
 		Render::BlendStateKey, Render::BlendState,
 		Render::BlendStateHasher, Render::BlendStateCompare
 	> loadedBlendStates;
 
-	eastl::unordered_map<
+	std::unordered_map<
 		Render::RasterStateKey, Render::RasterState,
 		Render::RasterStateHasher, Render::RasterStateCompare
 	> loadedRasterStates;
@@ -153,7 +153,7 @@ void Render::InstallHooks() {
 	}
 
 	const auto mdmp = Debug::MiniDumpScope();
-	dxgiHook = eastl::make_unique<VTableDetour<IDXGISwapChain>>(gameContext.swapChain);
+	dxgiHook = std::make_unique<VTableDetour<IDXGISwapChain>>(gameContext.swapChain);
 	dxgiHook->Add(8, Render::Present);
 	if (!dxgiHook->Attach()) {
 		logger::error("SmoothCam: Failed to place detour on virtual IDXGISwapChain->Present.");
@@ -166,7 +166,7 @@ void Render::InstallHooks() {
 #ifdef WITH_D2D
 void Render::InitD2D() {
 	logger::info("Initializing Direct2D\n");
-	g_D2D = eastl::make_unique<Render::D2D>(Render::GetContext());
+	g_D2D = std::make_unique<Render::D2D>(Render::GetContext());
 }
 #endif
 
@@ -227,7 +227,7 @@ void Render::SetDepthState(D3DContext& ctx, bool writeEnable, bool testEnable, D
 
 	auto state = DSState{ ctx, key };
 	ctx.context->OMSetDepthStencilState(state.state.get(), 255);
-	d3dObjects.loadedDepthStates.emplace(key, eastl::move(state));
+	d3dObjects.loadedDepthStates.emplace(key, std::move(state));
 }
 
 void Render::SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp, D3D11_BLEND_OP blendAlphaOp,
@@ -255,7 +255,7 @@ void Render::SetBlendState(D3DContext& ctx, bool enable, D3D11_BLEND_OP blendOp,
 	auto state = BlendState{ ctx, key };
 	ctx.context->OMSetBlendState(state.state.get(), key.factors, 0xffffffff);
 
-	d3dObjects.loadedBlendStates.emplace(key, eastl::move(state));
+	d3dObjects.loadedBlendStates.emplace(key, std::move(state));
 }
 
 void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CULL_MODE cullMode, bool frontCCW,
@@ -283,5 +283,5 @@ void Render::SetRasterState(D3DContext& ctx, D3D11_FILL_MODE fillMode, D3D11_CUL
 
 	auto state = RasterState{ ctx, key };
 	ctx.context->RSSetState(state.state.get());
-	d3dObjects.loadedRasterStates.emplace(key, eastl::move(state));
+	d3dObjects.loadedRasterStates.emplace(key, std::move(state));
 }

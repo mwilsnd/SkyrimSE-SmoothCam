@@ -4,14 +4,14 @@
 extern Offsets* g_Offsets;
 
 // Returns the bits for player->actorState->flags04 which appear to convey movement info
-const eastl::bitset<32> GameState::GetPlayerMovementBits(const RE::Actor* player) noexcept {
-	const auto bits = eastl::bitset<32>(*reinterpret_cast<const uint32_t*>(&player->actorState1));
+const std::bitset<32> GameState::GetPlayerMovementBits(const RE::Actor* player) noexcept {
+	const auto bits = std::bitset<32>(*reinterpret_cast<const uint32_t*>(&player->actorState1));
 	return bits;
 }
 
 // Returns the bits for player->actorState->flags08 which appear to convey action info
-const eastl::bitset<32> GameState::GetPlayerActionBits(const RE::Actor* player) noexcept {
-	const auto bits = eastl::bitset<32>(*reinterpret_cast<const uint32_t*>(&player->actorState2));
+const std::bitset<32> GameState::GetPlayerActionBits(const RE::Actor* player) noexcept {
+	const auto bits = std::bitset<32>(*reinterpret_cast<const uint32_t*>(&player->actorState2));
 	return bits;
 }
 
@@ -463,7 +463,7 @@ const bool GameState::IsOverEncumbered(const RE::Actor* player) noexcept {
 }
 
 bool GameState::IsActorTalking(RE::Actor* actor) noexcept {
-	const auto bits = eastl::bitset<32>(actor->boolBits.underlying());
+	const auto bits = std::bitset<32>(actor->boolBits.underlying());
 	return !(bits[7] && // kSoundFileDone
 			bits[8]) && // kVoiceFileDone
 			actor->voiceTimer > 0.0f; // voiceTimer

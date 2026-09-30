@@ -10,7 +10,7 @@ namespace Hooks {
 
 	void ApplyPatches();
 
-	using ShutdownCallback = eastl::function<void()>;
+	using ShutdownCallback = std::function<void()>;
 	// Register a function to be called during game shutdown
 	void RegisterGameShutdownEvent(ShutdownCallback&& cb) noexcept;
 }

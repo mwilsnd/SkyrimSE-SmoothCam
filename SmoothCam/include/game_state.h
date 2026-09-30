@@ -112,9 +112,9 @@ namespace GameState {
 	using PlayerArrayBA0 = SSA<UnkBowDrawnTimerEntry, 2>;
 
 	// Returns the bits for player->actorState->flags04 which appear to convey movement info
-	const eastl::bitset<32> GetPlayerMovementBits(const RE::Actor* player) noexcept;
+	const std::bitset<32> GetPlayerMovementBits(const RE::Actor* player) noexcept;
 	// Returns the bits for player->actorState->flags08 which appear to convey action info
-	const eastl::bitset<32> GetPlayerActionBits(const RE::Actor* player) noexcept;
+	const std::bitset<32> GetPlayerActionBits(const RE::Actor* player) noexcept;
 
 	// Check if the camera is near the player's head (for first person mods)
 	const bool IC_InFirstPersonState() noexcept;

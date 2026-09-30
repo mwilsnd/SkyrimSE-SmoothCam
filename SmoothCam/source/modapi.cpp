@@ -4,7 +4,7 @@
 #include "crosshair.h"
 #include "debug/eh.h"
 
-extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern std::unique_ptr<Camera::Camera> g_theCamera;
 extern const SKSE::MessagingInterface* g_messaging;
 
 Messaging::SmoothCamInterface::SmoothCamInterface() noexcept {
@@ -225,7 +225,7 @@ bool Messaging::SmoothCamInterface::IsHorseAimUnlocked() const noexcept {
 }
 
 void Messaging::SmoothCamInterface::RegisterConsumer(const char* modName) noexcept {
-	consumers.push_back(eastl::move(eastl::string(modName)));
+	consumers.push_back(std::move(std::string(modName)));
 	logger::info(FMT_STRING("Added API consumer '{}'"), modName);
 }
 

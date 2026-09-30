@@ -92,7 +92,7 @@ void Render::GradBox::MakeBackgroundVerts(D3DContext& ctx) noexcept {
 			D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0
 		});
 
-		vboBackground = eastl::make_unique<Render::VertexBuffer>(vbInfo, ctx);
+		vboBackground = std::make_unique<Render::VertexBuffer>(vbInfo, ctx);
 	} else {
 		auto data = vboBackground->Map(D3D11_MAP::D3D11_MAP_WRITE_DISCARD);
 		memcpy(data.pData, backgroundVerts.data(), backgroundVerts.size() * sizeof(float));

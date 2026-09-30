@@ -4,7 +4,7 @@
 #include "render/shader_cache.h"
 #include "camera.h"
 
-void Crosshair::Dot::Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept {
+void Crosshair::Dot::Create3D(Render::D3DContext& ctx, std::shared_ptr<Render::CBuffer>& perObjectBuf) noexcept {
 	Render::Model::Model mdl;
 	if (!Render::Model::Load(dotMesh, mdl))
 		FatalError(L"SmoothCam: Failed to load 3D asset");
@@ -28,7 +28,7 @@ void Crosshair::Dot::Create3D(Render::D3DContext& ctx, eastl::shared_ptr<Render:
 		return;
 	}
 
-	meshDrawer = eastl::make_unique<Render::MeshDrawer>(meshInfo, perObjectBuffer, ctx);
+	meshDrawer = std::make_unique<Render::MeshDrawer>(meshInfo, perObjectBuffer, ctx);
 
 	const glm::vec3 ourSize{ 10.0f, 10.0f, 1.0f };
 	SetScale(ourSize);

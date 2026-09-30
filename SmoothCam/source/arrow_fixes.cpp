@@ -7,27 +7,27 @@
 #endif
 #include "debug/eh.h"
 
-extern eastl::unique_ptr<Camera::Camera> g_theCamera;
+extern std::unique_ptr<Camera::Camera> g_theCamera;
 extern Offsets* g_Offsets;
 
 #ifdef DEBUG
 // Draw the flight path of the last fired projectile for debug help
 // INSERT toggles the overlay
 
-static eastl::unique_ptr<Render::LineDrawer> segmentDrawer;
+static std::unique_ptr<Render::LineDrawer> segmentDrawer;
 std::mutex segmentLock;
-static eastl::vector<eastl::tuple<glm::vec3, glm::vec3>> points;
+static std::vector<std::tuple<glm::vec3, glm::vec3>> points;
 static Render::LineList segments;
 static bool drawOverlay = false;
 
 
 typedef uintptr_t(*UpdateTraceArrowProjectile)(RE::Projectile*, RE::NiPoint3*, RE::NiPoint3*);
 using TickArrowFlightPath = TypedDetour<UpdateTraceArrowProjectile>;
-static eastl::unique_ptr<TickArrowFlightPath> detUpdateTraceArrowProjectile;
+static std::unique_ptr<TickArrowFlightPath> detUpdateTraceArrowProjectile;
 static uintptr_t mUpdateTraceArrowProjectile(RE::Projectile* arrow, RE::NiPoint3* to, RE::NiPoint3* from) {
 	if (arrow->shooter.native_handle() == 0x00100000) {
 		std::lock_guard<std::mutex> lock(segmentLock);
-		points.push_back(eastl::make_tuple(glm::vec3{ from->x, from->y, from->z }, glm::vec3{ to->x, to->y, to->z }));
+		points.push_back(std::make_tuple(glm::vec3{ from->x, from->y, from->z }, glm::vec3{ to->x, to->y, to->z }));
 	}
 	return detUpdateTraceArrowProjectile->GetBase()(arrow, to, from);
 }
@@ -36,7 +36,7 @@ static uintptr_t mUpdateTraceArrowProjectile(RE::Projectile* arrow, RE::NiPoint3
 typedef uint32_t(*MaybeSpawnArrow)(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
 	uintptr_t param_3, uintptr_t** param_4);
 using ArrowSpawnFunc = TypedDetour<MaybeSpawnArrow>;
-static eastl::unique_ptr<ArrowSpawnFunc> detArrowSpawn;
+static std::unique_ptr<ArrowSpawnFunc> detArrowSpawn;
 static uint32_t mArrowSpawn(uint32_t* arrowHandle, ArrowFixes::LaunchData* launchData,
 	uintptr_t param_3, uintptr_t** param_4)
 {
@@ -85,7 +85,7 @@ void ArrowFixes::Draw(Render::D3DContext&) {
 
 typedef void(*UpdateArrowFlightPath)(RE::Projectile* arrow);
 using UpdateArrowFlightPathDetour = TypedDetour<UpdateArrowFlightPath>;
-static eastl::unique_ptr<UpdateArrowFlightPathDetour> detArrowFlightPath;
+static std::unique_ptr<UpdateArrowFlightPathDetour> detArrowFlightPath;
 static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 	const auto config = Config::GetCurrentConfig();
 	if (!config->useProjectileFixes) 
@@ -191,22 +191,22 @@ static void mUpdateArrowFlightPath(RE::Projectile* arrow) {
 }
 
 bool ArrowFixes::Attach() {
-	detArrowFlightPath = eastl::make_unique<UpdateArrowFlightPathDetour>(g_Offsets->UpdateFlightPath, mUpdateArrowFlightPath);
+	detArrowFlightPath = std::make_unique<UpdateArrowFlightPathDetour>(g_Offsets->UpdateFlightPath, mUpdateArrowFlightPath);
 	
 	if (!detArrowFlightPath->Attach())
 		FatalError(L"Failed to place detour on target function(ArrowFixes::UpdateFlightPath), this error is fatal.");
 
 #ifdef DEBUG
-	detUpdateTraceArrowProjectile = eastl::make_unique<TickArrowFlightPath>(g_Offsets->DebugTraceProjectile, mUpdateTraceArrowProjectile);
+	detUpdateTraceArrowProjectile = std::make_unique<TickArrowFlightPath>(g_Offsets->DebugTraceProjectile, mUpdateTraceArrowProjectile);
 	if (!detUpdateTraceArrowProjectile->Attach())
 		FatalError(L"Failed to place detour on target function(ArrowFixes::DebugTraceProjectile), this error is fatal.");
 
-	detArrowSpawn = eastl::make_unique<ArrowSpawnFunc>(g_Offsets->DebugSpawnProjectile, mArrowSpawn);
+	detArrowSpawn = std::make_unique<ArrowSpawnFunc>(g_Offsets->DebugSpawnProjectile, mArrowSpawn);
 	if (!detArrowSpawn->Attach())
 		FatalError(L"Failed to place detour on target function(ArrowFixes::DebugSpawnProjectile), this error is fatal.");
 
 	if (Render::HasContext())
-		segmentDrawer = eastl::make_unique<Render::LineDrawer>(Render::GetContext());
+		segmentDrawer = std::make_unique<Render::LineDrawer>(Render::GetContext());
 	
 	Hooks::RegisterGameShutdownEvent([] {
 		std::lock_guard<std::mutex> lock(segmentLock);

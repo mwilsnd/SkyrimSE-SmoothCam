@@ -5,25 +5,25 @@ extern Offsets* g_Offsets;
 
 //1406a1820:39401
 typedef uintptr_t(*SwitchSkeleton)(RE::Actor*, byte);
-static eastl::unique_ptr<TypedDetour<SwitchSkeleton>> detSwitchSkeleton;
+static std::unique_ptr<TypedDetour<SwitchSkeleton>> detSwitchSkeleton;
 static bool tpSkeletonVisible = true;
 uintptr_t mSwitchSkeleton(RE::Actor* actor, byte param_2) {
 	tpSkeletonVisible = !param_2;
 	return detSwitchSkeleton->GetBase()(actor, param_2);
 }
 
-static eastl::map<ID3D11RasterizerState*, winrt::com_ptr<ID3D11RasterizerState>>* rasterCache = nullptr;
-static eastl::vector<RE::NiAVObject*>* clipObjects = nullptr;
-static eastl::vector<RE::NiAVObject*>* shadowOnlyObjects = nullptr;
+static std::map<ID3D11RasterizerState*, winrt::com_ptr<ID3D11RasterizerState>>* rasterCache = nullptr;
+static std::vector<RE::NiAVObject*>* clipObjects = nullptr;
+static std::vector<RE::NiAVObject*>* shadowOnlyObjects = nullptr;
 static bool inFPV = false;
 
 typedef void(*RenderStuff)(Render::BatchRenderCommand* cmd, uint32_t id, bool alphaBlend, uint32_t passFlags);
-static eastl::unique_ptr<TypedDetour<RenderStuff>> detRenderStuff;
+static std::unique_ptr<TypedDetour<RenderStuff>> detRenderStuff;
 void mRenderStuff(Render::BatchRenderCommand* cmd, uint32_t id, bool alphaBlend, uint32_t passFlags) {
 	if (!inFPV || !cmd->geometry || !shadowOnlyObjects || !clipObjects || !rasterCache)
 		return detRenderStuff->GetBase()(cmd, id, alphaBlend, passFlags);
 
-	const auto bits = eastl::bitset<32>(passFlags);
+	const auto bits = std::bitset<32>(passFlags);
 	const bool isShadowCascade = bits[10];
 	const auto isZPass = bits[0] && bits[5];
 	const auto isGBufferPass = bits[6];
@@ -105,14 +105,14 @@ Camera::Firstperson::Firstperson(Camera* baseCamera) : ICamera(baseCamera, Camer
 	shadowOnlyObjects = &shadowsOnly;
 
 	// Game is switching player skeleton
-	detSwitchSkeleton = eastl::make_unique<TypedDetour<SwitchSkeleton>>(
+	detSwitchSkeleton = std::make_unique<TypedDetour<SwitchSkeleton>>(
 		g_Offsets->SwitchSkeleton,
 		mSwitchSkeleton
 	);
 	detSwitchSkeleton->Attach();
 
 	// Rendering stuffs
-	detRenderStuff = eastl::make_unique<TypedDetour<RenderStuff>>(
+	detRenderStuff = std::make_unique<TypedDetour<RenderStuff>>(
 		g_Offsets->RenderStuff,
 		mRenderStuff
 	);
@@ -314,7 +314,7 @@ void Camera::Firstperson::UpdateClipableWeaponNodes(RE::PlayerCharacter* player)
 
 	if (!player->loadedData || !player->loadedData->data3D) return;
 
-	eastl::function<void(RE::NiAVObject*)> walkFun;
+	std::function<void(RE::NiAVObject*)> walkFun;
 	walkFun = [this, &walkFun](RE::NiAVObject* obj) {
 		if (!obj) return;
 
@@ -343,7 +343,7 @@ void Camera::Firstperson::UpdateShadowOnlyNodes(RE::PlayerCharacter* player) noe
 
 	// @TODO: Hook update method when root changes
 
-	eastl::function<void(RE::NiAVObject*)> walkFun;
+	std::function<void(RE::NiAVObject*)> walkFun;
 	walkFun = [this, &walkFun](RE::NiAVObject* obj) {
 		if (!obj) return;
 

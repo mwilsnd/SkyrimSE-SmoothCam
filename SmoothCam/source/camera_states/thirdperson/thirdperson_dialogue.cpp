@@ -14,15 +14,15 @@ Camera::State::IThirdPersonDialogue::~IThirdPersonDialogue() noexcept {}
 Camera::State::ThirdpersonDialogueState::ThirdpersonDialogueState(Thirdperson* camera) noexcept
 	: BaseThird(camera)
 {
-	modes[static_cast<size_t>(Config::DialogueMode::Skyrim)] = eastl::move(
-		eastl::make_unique<State::SkyrimDialogue>(this)
+	modes[static_cast<size_t>(Config::DialogueMode::Skyrim)] = std::move(
+		std::make_unique<State::SkyrimDialogue>(this)
 	);
 #ifdef DEVELOPER
-	modes[static_cast<size_t>(Config::DialogueMode::Oblivion)] = eastl::move(
-		eastl::make_unique<State::OblivionDialogue>(this)
+	modes[static_cast<size_t>(Config::DialogueMode::Oblivion)] = std::move(
+		std::make_unique<State::OblivionDialogue>(this)
 	);
-	modes[static_cast<size_t>(Config::DialogueMode::FaceToFace)] = eastl::move(
-		eastl::make_unique<State::FaceToFaceDialogue>(this)
+	modes[static_cast<size_t>(Config::DialogueMode::FaceToFace)] = std::move(
+		std::make_unique<State::FaceToFaceDialogue>(this)
 	);
 #endif
 }
@@ -95,7 +95,7 @@ void Camera::State::ThirdpersonDialogueState::Update(RE::PlayerCharacter* player
 		activeMode->Update(player, cameraRef, playerCamera);
 }
 
-RE::NiAVObject* Camera::State::ThirdpersonDialogueState::FindFocalBone(RE::TESObjectREFR* ref, const eastl::string_view& filterBone)
+RE::NiAVObject* Camera::State::ThirdpersonDialogueState::FindFocalBone(RE::TESObjectREFR* ref, const std::string_view& filterBone)
 	const noexcept
 {
 	if (!ref->loadedData || !ref->loadedData->data3D) return nullptr;

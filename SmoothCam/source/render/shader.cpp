@@ -45,13 +45,13 @@ bool Render::Shader::IsValid() const noexcept {
 	return validProgram && validBinary;
 }
 
-bool Render::Shader::Compile(const eastl::string& source, const eastl::string& entryName, const eastl::string& version) noexcept {
+bool Render::Shader::Compile(const std::string& source, const std::string& entryName, const std::string& version) noexcept {
 	constexpr UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PACK_MATRIX_COLUMN_MAJOR;
 	winrt::com_ptr<ID3DBlob> errorBlob;
 
 	auto versionStr = stage == PipelineStage::Vertex ?
-		eastl::string("vs_").append(version) :
-		eastl::string("ps_").append(version);
+		std::string("vs_").append(version) :
+		std::string("ps_").append(version);
 
 	const auto result = D3DCompile(
 		source.c_str(), source.length(), nullptr, nullptr, nullptr,

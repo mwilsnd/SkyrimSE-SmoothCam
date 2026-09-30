@@ -3,7 +3,7 @@
 
 Debug::GetSetting::~GetSetting() {}
 
-void Debug::GetSetting::Run(const eastl::string& args) noexcept {
+void Debug::GetSetting::Run(const std::string& args) noexcept {
 	auto setting = RE::INISettingCollection::GetSingleton()->GetSetting(args.c_str());
 
 	if (!setting) {
@@ -42,7 +42,7 @@ void Debug::GetSetting::Run(const eastl::string& args) noexcept {
 	}
 }
 
-const eastl::string_view Debug::GetSetting::GetHelpString() const noexcept {
+const std::string_view Debug::GetSetting::GetHelpString() const noexcept {
 	return helpMsg;
 }
 #endif

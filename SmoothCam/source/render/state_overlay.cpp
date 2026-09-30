@@ -5,7 +5,7 @@
 #include "camera.h"
 #include "thirdperson.h"
 
-extern eastl::unique_ptr<Render::D2D> g_D2D;
+extern std::unique_ptr<Render::D2D> g_D2D;
 
 static const wchar_t* ActionStateEnumNames[] = {
 	L"Standing",
@@ -116,7 +116,7 @@ void Render::StateOverlay::Draw(const RE::Actor* focus, const Config::OffsetGrou
 	DrawBitset32(L"Action Bits: ", GameState::GetPlayerActionBits(focus), curPos, ctx);
 	curPos.y += lineHeight;
 
-	eastl::wstring cameraState = L"Camera State: ";
+	std::wstring cameraState = L"Camera State: ";
 	cameraState.append(CameraStateEnumNames[static_cast<uint8_t>(camera->m_camera->GetCurrentCameraState())]);
 	g_D2D->GetDWrite()->Write(
 		cameraState.c_str(),
@@ -126,7 +126,7 @@ void Render::StateOverlay::Draw(const RE::Actor* focus, const Config::OffsetGrou
 	);
 	curPos.y += lineHeight;
 
-	eastl::wstring actionState = L"Action State: ";
+	std::wstring actionState = L"Action State: ";
 	actionState.append(ActionStateEnumNames[static_cast<uint8_t>(camera->m_camera->GetCurrentCameraActionState())]);
 	g_D2D->GetDWrite()->Write(
 		actionState.c_str(),
@@ -223,7 +223,7 @@ void Render::StateOverlay::Draw(const RE::Actor* focus, const Config::OffsetGrou
 			{ 1.0f, 0.33f, 0.33f, 1.0f }
 		);
 	} else {
-		eastl::wstring ofs = L"Offset Group: ";
+		std::wstring ofs = L"Offset Group: ";
 		ofs.append(OffsetGroupNames[static_cast<uint8_t>(curGroup->id)]);
 		g_D2D->GetDWrite()->Write(
 			ofs,
@@ -248,10 +248,10 @@ void Render::StateOverlay::Draw(const RE::Actor* focus, const Config::OffsetGrou
 	curPos.y += 350.0f;
 }
 
-void Render::StateOverlay::DrawBitset32(const eastl::wstring& name, const eastl::bitset<32>& bits,
+void Render::StateOverlay::DrawBitset32(const std::wstring& name, const std::bitset<32>& bits,
 	const glm::vec2& pos, D3DContext& ctx) noexcept
 {
-	eastl::wstring str;
+	std::wstring str;
 	str.reserve(32);
 
 	for (auto i = 0; i < 32; i++) {
@@ -274,10 +274,10 @@ void Render::StateOverlay::DrawBitset32(const eastl::wstring& name, const eastl:
 	);
 }
 
-void Render::StateOverlay::DrawBool(const eastl::wstring& name, bool value, const glm::vec2& pos,
+void Render::StateOverlay::DrawBool(const std::wstring& name, bool value, const glm::vec2& pos,
 	D3DContext& ctx) noexcept
 {
-	eastl::wstring str;
+	std::wstring str;
 	str.reserve(name.length() + 10);
 	str.append(name);
 	str.append(L" = ");

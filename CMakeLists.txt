@@ -40,7 +40,6 @@ project(
 )
 
 add_subdirectory("Deps/CommonLibSSE" CommonLibSSE)
-add_subdirectory("Deps/EASTL" EASTL)
 add_subdirectory("Deps/PolyHook_2_0" PolyHook_2)
 
 find_package(fmt CONFIG REQUIRED)
@@ -84,7 +83,6 @@ target_link_libraries(
 	PRIVATE
 		CommonLibSSE::CommonLibSSE
 		spdlog::spdlog
-		EASTL
 		PolyHook_2
 		xbyak::xbyak
 		"$<$<CONFIG:RELEASE>:${PROJECT_SOURCE_DIR}/Deps/Detours/lib.X64/detours.lib>"

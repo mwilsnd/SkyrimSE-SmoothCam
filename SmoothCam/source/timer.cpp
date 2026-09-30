@@ -6,7 +6,7 @@ static double curQPC = 0.0;
 static double lastQPC = 0.0;
 
 constexpr const size_t DTAccumBufferSize = 40;
-static eastl::fixed_ring_buffer<double, DTAccumBufferSize> deltaHistory(DTAccumBufferSize);
+static Util::RingBuffer<double, DTAccumBufferSize> deltaHistory;
 static double deltaSmooth = 0.0;
 
 double GameTime::GetTime() noexcept {
