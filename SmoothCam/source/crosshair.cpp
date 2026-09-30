@@ -254,7 +254,7 @@ RE::NiAVObject* Crosshair::Manager::FindArrowNode(const RE::Actor* player) const
 	auto handNode = skyrim_cast<RE::NiNode*>(player->loadedData->data3D->GetObjectByName(Strings.weapon));
 	if (handNode && handNode->children.size() > 0) {
 		auto arrow = handNode->GetObjectByName(Strings.arrowName);
-		if (arrow) return arrow;
+		if (arrow) return handNode;
 	}
 
 	handNode = skyrim_cast<RE::NiNode*>(player->loadedData->data3D->GetObjectByName(Strings.rmag));
