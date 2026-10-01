@@ -1,4 +1,4 @@
-# Beta 1.7.2
+# Beta 1.8.0
 * Bumped module and MCM version number to 19
 
 **Fixes:**
